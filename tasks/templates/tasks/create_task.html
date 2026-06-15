@@ -1,0 +1,511 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="card shadow-sm border-0 rounded-3">
+
+                <div class="card-header bg-success p-3 rounded-top-3 border-0">
+                    <h3 class="card-title text-white mb-0 fs-4 fw-bold">
+                        <i class="bi bi-plus-circle me-2"></i>Create New Task (إنشاء مهمة جديدة)
+                    </h3>
+                </div>
+
+                <div class="card-body p-4 bg-white">
+                   <form id="taskForm" method="POST" enctype="multipart/form-data" novalidate
+      data-ajax-url="{% url 'get_sub_categories_ajax' %}">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger p-2 mb-3 small" role="alert">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small mb-1 {% if form.description.errors %}text-danger{% else %}text-secondary{% endif %}" for="{{ form.description.id_for_label }}">
+                                Description (الوصف)
+                                {% if form.description.field.required %}<span class="text-danger required-dot">*</span>{% endif %}
+                            </label>
+                            <div class="django-field-wrapper {% if form.description.errors %}has-error{% endif %}">
+                                {{ form.description }}
+                            </div>
+                            {% if form.description.errors %}
+                                <div class="text-danger d-block mt-1 fs-7 fw-medium">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="card border border-success border-opacity-25 p-3 mb-3 rounded-3 bg-light bg-opacity-50">
+                            <h6 class="fw-bold text-success mb-3 small">
+                                <i class="bi bi-geo-alt-fill me-1"></i> Task Location Settings (تحديد موقع العمل)
+                            </h6>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary">Building (البناية) <span class="text-danger">*</span></label>
+                                <div class="django-field-wrapper {% if form.building.errors %}has-error{% endif %}">
+                                    {{ form.building }}
+                                </div>
+                                {% if form.building.errors %}
+                                    <div class="text-danger d-block mt-1 fs-7 fw-medium">{{ form.building.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3" id="unit-container">
+                                <label class="form-label fw-semibold small text-secondary">Unit / Zone (الشقة / القسم) <span class="text-danger">*</span></label>
+                                <div class="django-field-wrapper {% if form.unit.errors %}has-error{% endif %}">
+                                    {{ form.unit }}
+                                </div>
+                                {% if form.unit.errors %}
+                                    <div class="text-danger d-block mt-1 fs-7 fw-medium">{{ form.unit.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-1" id="custom-location-container" style="display: none;">
+                                <label class="form-label fw-semibold small text-danger">Specify Location Details (تفاصيل الموقع المخصص) <span class="text-danger">*</span></label>
+                                <div class="django-field-wrapper {% if form.custom_location.errors %}has-error{% endif %}">
+                                    {{ form.custom_location }}
+                                </div>
+                                {% if form.custom_location.errors %}
+                                    <div class="text-danger d-block mt-1 fs-7 fw-medium">{{ form.custom_location.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {% if user.is_superuser or user.is_staff or user.groups.filter.name == 'Admin' %}
+    <div class="mb-3">
+        <label class="form-label">Assigned to (المسؤول):</label>
+        {{ form.assigned_to }}
+    </div>
+{% else %}
+    <!-- For technicians, render it hidden so the form submits successfully -->
+    <div style="display:none;">
+        {{ form.assigned_to }}
+    </div>
+{% endif %}
+                            {% if form.assigned_to.errors %}
+                                <div class="text-danger d-block mt-1 fs-7 fw-medium">{{ form.assigned_to.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+{%comment%}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small mb-1 {% if form.project_type.errors %}text-danger{% else %}text-secondary{% endif %}" for="{{ form.project_type.id_for_label }}">
+                                Project type (نوع المشروع)
+                                {% if form.project_type.field.required %}<span class="text-danger required-dot">*</span>{% endif %}
+                            </label>
+                            <div class="django-field-wrapper {% if form.project_type.errors %}has-error{% endif %}">
+                                {{ form.project_type }}
+                            </div>
+                            {% if form.project_type.errors %}
+                                <div class="text-danger d-block mt-1 fs-7 fw-medium">{{ form.project_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="card bg-light border-0 p-3 mb-4 rounded-3">
+                            <h5 class="fw-bold text-secondary mb-3 fs-6">
+                                <i class="bi bi-list-nested me-1"></i> Specific Maintenance Work Breakdown (تفاصيل العمل)
+                            </h5>
+
+                            <div id="dynamic-work-items-container">
+                                <div class="row g-2 align-items-center mb-2 work-item-row">
+                                    <div class="col-7">
+                                        <select name="sub_category[]" class="form-select sub-category-dropdown">
+                                            <option value="">-- Select Work Item (حدد عنصر العمل) --</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-3">
+                                        <input type="text" name="quantity[]" class="form-control" placeholder="Qty(الكمية/الحجم)">
+                                    </div>
+                                    <div class="col-2 text-end">
+                                        <button type="button" class="btn btn-success w-100 add-work-row-btn d-flex align-items-center justify-content-center" style="min-height: 38px;">
+                                            <i class="bi bi-plus-lg fs-5 fw-bold"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+{%endcomment%}
+
+
+
+<div class="mb-3">
+    <label class="form-label fw-semibold small mb-1 text-secondary" for="id_project_type">
+        Project Type (نوع المشروع) <span class="text-danger">*</span>
+    </label>
+    <select name="project_type" id="id_project_type" class="form-select" required>
+        <option value="">-- Select Project Type --</option>
+        {% for key, value in form.fields.project_type.choices %}
+            <option value="{{ key }}">{{ value }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="card bg-light border-0 p-3 mb-4 rounded-3">
+    <h5 class="fw-bold text-secondary mb-3 fs-6">
+        <i class="bi bi-list-nested me-1"></i> Specific Maintenance Work Breakdown
+    </h5>
+    <div id="dynamic-work-items-container">
+        <div class="row g-2 align-items-center mb-2 work-item-row">
+            <div class="col-7">
+                <select name="sub_category[]" class="form-select sub-category-dropdown" required>
+                    <option value="">-- Select Maintenance Task --</option>
+                </select>
+            </div>
+            <div class="col-3">
+                <input type="text" name="quantity[]" class="form-control" placeholder="Qty">
+            </div>
+            <div class="col-2 text-end">
+                <button type="button" class="btn btn-success w-100 add-work-row-btn">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small mb-1 {% if form.start_date.errors %}text-danger{% else %}text-secondary{% endif %}" for="{{ form.start_date.id_for_label }}">
+                                Start date (تاريخ البدء)
+                                {% if form.start_date.field.required %}<span class="text-danger required-dot">*</span>{% endif %}
+                            </label>
+                            <div class="django-field-wrapper {% if form.start_date.errors %}has-error{% endif %}">
+                                {{ form.start_date }}
+                            </div>
+                            {% if form.start_date.errors %}
+                                <div class="text-danger d-block mt-1 fs-7 fw-medium">{{ form.start_date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small mb-1 {% if form.deadline.errors %}text-danger{% else %}text-secondary{% endif %}" for="{{ form.deadline.id_for_label }}">
+                                Deadline (تاريخ الانتهاء)
+                                {% if form.deadline.field.required %}<span class="text-danger required-dot">*</span>{% endif %}
+                            </label>
+                            <div class="django-field-wrapper {% if form.deadline.errors %}has-error{% endif %}">
+                                {{ form.deadline }}
+                            </div>
+                            {% if form.deadline.errors %}
+                                <div class="text-danger d-block mt-1 fs-7 fw-medium">{{ form.deadline.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small mb-1 {% if form.status.errors %}text-danger{% else %}text-secondary{% endif %}" for="{{ form.status.id_for_label }}">
+                                Status (الحالة)
+                                {% if form.status.field.required %}<span class="text-danger required-dot">*</span>{% endif %}
+                            </label>
+                            <div class="django-field-wrapper {% if form.status.errors %}has-error{% endif %}">
+                                {{ form.status }}
+                            </div>
+                            {% if form.status.errors %}
+                                <div class="text-danger d-block mt-1 fs-7 fw-medium">{{ form.status.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        {% if user.is_superuser or user.is_staff %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small mb-1 {% if form.priority.errors %}text-danger{% else %}text-secondary{% endif %}" for="{{ form.priority.id_for_label }}">
+                                Priority (الأهمية)
+                                {% if form.priority.field.required %}<span class="text-danger required-dot">*</span>{% endif %}
+                            </label>
+                            <div class="django-field-wrapper {% if form.priority.errors %}has-error{% endif %}">
+                                {{ form.priority }}
+                            </div>
+                            {% if form.priority.errors %}
+                                <div class="text-danger d-block mt-1 fs-7 fw-medium">{{ form.priority.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center mt-4 pt-3 border-top gap-2">
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary px-4 order-2 order-md-1">
+                                Cancel (إلغاء)
+                            </a>
+                            <button type="submit" class="btn btn-success px-5 fw-bold order-1 order-md-2 shadow-sm">
+                                Save Task (حفظ المهمة)
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="validationWarningModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered px-3">
+        <div class="modal-content border-0 shadow rounded-3">
+            <div class="modal-body p-4 text-center">
+                <div class="text-warning mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="currentColor" class="bi bi-exclamation-triangle-fill" viewBox="0 0 16 16">
+                        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                    </svg>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">Incomplete Form! (نموذج غير مكتمل!)</h4>
+                <p class="text-secondary mb-3">Fill up all required fields please! (يرجى ملء جميع الحقول المطلوبة!)</p>
+                <div id="missingFieldsList" class="alert alert-danger text-start small mb-4 py-2 px-3"></div>
+                <button type="button" class="btn btn-warning py-2 fw-bold w-100 text-dark" data-bs-dismiss="modal">
+                    Fix Missing Fields (تعديل الحقول المفقودة)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    // --- (الجزء الخاص بـ Core Unit List والـ Flatpickr لا تغيير عليه كما طلبت) ---
+    // [ملاحظة: تم الاحتفاظ بنفس كود buildGlobalUnitsList والـ flatpickr الموجود لديك]
+    const buildGlobalUnitsList = () => {
+        let list = [];
+        for (let i = 1; i <= 7; i++) { let num = String(i).padStart(2, '0'); list.push(`Shop S${num} (محل S${num})`); }
+        for (let i = 1; i <= 20; i++) { let num = String(i).padStart(2, '0'); list.push(`Unit G${num} (شقة G${num})`); }
+        for (let i = 1; i <= 10; i++) { let num = String(i).padStart(2, '0'); list.push(`Unit M${num} (شقة M${num})`); }
+        for (let floor = 1; floor <= 9; floor++) {
+            for (let unit = 1; unit <= 10; unit++) {
+                let unitNum = `${floor}${String(unit).padStart(2, '0')}`;
+                list.push(`Flat ${unitNum} (شقة ${unitNum})`);
+            }
+        }
+        list.push("Service Area (منطقة الخدمات)");
+        list.push("Other (آخر)");
+        return list;
+    };
+
+    const globalUnifiedUnits = buildGlobalUnitsList();
+    const buildingSelect = document.querySelector('select[name="building"]');
+    const unitSelect = document.querySelector('select[name="unit"]');
+    const customLocationWrapper = document.getElementById('custom-location-container');
+    const customLocationInput = document.querySelector('input[name="custom_location"]');
+
+    if (buildingSelect && unitSelect) {
+        buildingSelect.addEventListener('change', function() {
+            const selectedBuilding = this.value;
+            unitSelect.innerHTML = '<option value="">-- Select Unit (اختر الشقة / القسم) --</option>';
+            if (selectedBuilding === 'Other (آخر)') {
+                unitSelect.innerHTML = '<option value="Other (آخر)" selected>Other (آخر)</option>';
+                if(customLocationWrapper) customLocationWrapper.style.display = 'block';
+                if(customLocationInput) customLocationInput.required = true;
+            } else if (selectedBuilding) {
+                if(customLocationWrapper) customLocationWrapper.style.display = 'none';
+                if(customLocationInput) { customLocationInput.value = ''; customLocationInput.required = false; }
+                globalUnifiedUnits.forEach(unitItem => {
+                    const option = document.createElement('option');
+                    option.value = unitItem;
+                    option.textContent = unitItem;
+                    unitSelect.appendChild(option);
+                });
+            }
+        });
+    }
+
+    flatpickr("input[name='start_date'], input[name='deadline']", {
+        enableTime: true,
+        time_24hr: true,
+        altInput: true,
+        altFormat: "d/m/Y H:i",
+        dateFormat: "Y-m-d H:i",
+        allowInput: true,
+        disableMobile: "true"
+    });
+
+    // --- تحديث منطق الـ Subcategories المعتمد على الـ Backend فقط ---
+    const projectTypeSelect = document.querySelector('select[name="project_type"]');
+    const container = document.getElementById('dynamic-work-items-container');
+    const ajaxUrl = document.getElementById('taskForm').dataset.ajaxUrl;
+
+    function fetchAndPopulateDropdown(dropdown, projectType) {
+        if (!projectType) {
+            dropdown.innerHTML = '<option value="">-- Select Project Type First --</option>';
+            return;
+        }
+
+        dropdown.innerHTML = '<option>Loading...</option>';
+
+        fetch(`${ajaxUrl}?project_type=${encodeURIComponent(projectType)}`)
+            .then(response => response.json())
+            .then(data => {
+                dropdown.innerHTML = '<option value="">-- Select Work Item (حدد عنصر العمل) --</option>';
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item;
+                        opt.textContent = item;
+                        dropdown.appendChild(opt);
+                    });
+                } else {
+                    dropdown.innerHTML = '<option value="">No items found</option>';
+                }
+            })
+            .catch(err => {
+                console.error("Error:", err);
+                dropdown.innerHTML = '<option value="">Error loading items</option>';
+            });
+    }
+
+    // الاستماع لتغيير نوع المشروع
+    if (projectTypeSelect) {
+        projectTypeSelect.addEventListener('change', function() {
+            document.querySelectorAll('.sub-category-dropdown').forEach(dropdown => {
+                fetchAndPopulateDropdown(dropdown, this.value);
+            });
+        });
+    }
+
+    // منطق إضافة وحذف الصفوف
+    container.addEventListener('click', function(e) {
+        if (e.target.closest('.add-work-row-btn')) {
+            const currentRow = e.target.closest('.work-item-row');
+            const clone = currentRow.cloneNode(true);
+            clone.querySelector('input').value = '';
+            const newSelect = clone.querySelector('select');
+
+            const btn = clone.querySelector('.add-work-row-btn');
+            btn.classList.remove('btn-success', 'add-work-row-btn');
+            btn.classList.add('btn-danger', 'remove-work-row-btn');
+            btn.innerHTML = '<i class="bi bi-trash"></i>';
+
+            container.appendChild(clone);
+            // جلب البيانات للصف الجديد بناءً على نوع المشروع المختار حالياً
+            fetchAndPopulateDropdown(newSelect, projectTypeSelect ? projectTypeSelect.value : "");
+        } else if (e.target.closest('.remove-work-row-btn')) {
+            e.target.closest('.work-item-row').remove();
+        }
+    });
+
+    // --- التحقق من صحة النموذج (Validation) ---
+    const form = document.getElementById('taskForm');
+    form.addEventListener('submit', function(event) {
+        // [كود التحقق الخاص بك كما هو]
+        // (تم اختصاره هنا لعدم التكرار ولكنه يجب أن يبقى كما كان في كودك)
+    });
+});
+
+
+
+
+const form = document.getElementById('taskForm');
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); // Stop raw standard submission routing path
+
+        let missingFields = [];
+        const formGroups = form.querySelectorAll('.mb-3, .card');
+
+        formGroups.forEach(group => {
+            const label = group.querySelector('.form-label');
+            const hasRequiredDot = group.querySelector('.required-dot') || (label && label.innerText.includes('*'));
+
+            if (hasRequiredDot && label && group.style.display !== 'none') {
+                const input = group.querySelector('input, select, textarea');
+                if (input && (!input.value || input.value.trim() === '')) {
+                    let fieldName = label.innerText.replace('*', '').trim();
+                    missingFields.push(fieldName);
+                    const wrapper = group.querySelector('.django-field-wrapper');
+                    if(wrapper) wrapper.classList.add('has-error');
+                } else if (input) {
+                    const wrapper = group.querySelector('.django-field-wrapper');
+                    if(wrapper) wrapper.classList.remove('has-error');
+                }
+            }
+        });
+
+        if (missingFields.length > 0) {
+            const listContainer = document.getElementById('missingFieldsList');
+            listContainer.innerHTML = '<strong>Required fields missing (الحقول المطلوبة مفقودة):</strong><ul class="mb-0 mt-1 pl-3">' +
+                missingFields.map(name => `<li>${name}</li>`).join('') + '</ul>';
+
+            var warningModal = new bootstrap.Modal(document.getElementById('validationWarningModal'));
+            warningModal.show();
+            return;
+        }
+
+        const formData = new FormData(form);
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                Swal.fire({
+                    title: 'Your Task is Created! (تم إنشاء المهمة بنجاح)',
+                    text: 'Choose your next step below (اختر خطوتك التالية أدناه):',
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonColor: '#198754',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Create More (إنشاء المزيد)',
+                    cancelButtonText: 'Go to Dashboard (الذهاب للوحة التحكم)',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.reset();
+                        if(buildingSelect) buildingSelect.dispatchEvent(new Event('change'));
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                        window.location.href = "{% url 'dashboard' %}";
+                    }
+                });
+            } else {
+                form.submit();
+            }
+        })
+        .catch(error => {
+            form.submit();
+        });
+    });
+
+</script>
+
+<style>
+    .django-field-wrapper input,
+    .django-field-wrapper select,
+    .django-field-wrapper textarea {
+        display: block;
+        width: 100%;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        appearance: none;
+        border-radius: 0.375rem;
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+
+    .django-field-wrapper input:focus,
+    .django-field-wrapper select:focus,
+    .django-field-wrapper textarea:focus {
+        color: #212529;
+        background-color: #fff;
+        border-color: #198754;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+    }
+
+    .django-field-wrapper.has-error input,
+    .django-field-wrapper.has-error select,
+    .django-field-wrapper.has-error textarea {
+        border-color: #dc3545 !important;
+        background-color: #fff8f8;
+    }
+    .flatpickr-input { background-color: #fff !important; }
+    .fs-7 { font-size: 0.8rem; }
+</style>
+{% endblock %}

@@ -1,0 +1,635 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .table-dark-bordered,
+    .table-dark-bordered th,
+    .table-dark-bordered td {
+        border-color: #495057 !important;
+    }
+</style>
+
+<div class="row mb-4">
+
+<div class="col-6 col-md-3 mb-3">
+<div class="card shadow-sm border-0 text-center h-100">
+<div class="card-body bg-warning text-white border border-dark rounded-3">
+<h5>Pending (قيد الانتظار)</h5>
+<h2 class="fw-bold">
+    {{ pending_tasks.count }}
+</h2>
+</div>
+</div>
+</div>
+
+<div class="col-6 col-md-3 mb-3">
+<div class="card shadow-sm border-0 text-center h-100">
+<div class="card-body bg-primary text-white border border-dark rounded-3">
+<h5>Active (نشط)</h5>
+<h2 class="fw-bold">
+    {{ active_tasks.count }}
+</h2>
+</div>
+</div>
+</div>
+
+<div class="col-6 col-md-3 mb-3">
+<div class="card shadow-sm border-0 text-center h-100">
+<div class="card-body bg-success text-white border border-dark rounded-3">
+<h5>Completed (مكتمل)</h5>
+<h2 class="fw-bold">
+    {{ completed_tasks.count }}
+</h2>
+</div>
+</div>
+</div>
+
+<div class="col-6 col-md-3 mb-3">
+<div class="card shadow-sm border-0 text-center h-100">
+<div class="card-body bg-danger text-white border border-dark rounded-3">
+<h5>Overdue (متأخر)</h5>
+<h2 class="fw-bold">
+    {{ overdue_tasks.count }}
+</h2>
+</div>
+</div>
+</div>
+
+</div>
+
+
+
+{% if user.profile.role == 'Admin' %}
+
+<div class="card my-3 shadow-sm ">
+    <div class="card-body text-center bg-light">
+        <h5 class="card-title">Maintenance Settings</h5>
+        <button type="button" class="btn btn-outline-success " data-bs-toggle="modal" data-bs-target="#addSubCategoryModal">
+            <i class="bi bi-plus-lg"></i> Add New Maintenance Work
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<div class="modal fade " id="addSubCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Maintenance Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addWorkItemForm">
+                    <div class="mb-3">
+                        <label>Project Type</label>
+
+                        <select class="form-select" id="new-item-type" required>
+    <option value="">-- Select Project Type --</option>
+    {% for key, value in project_types %}
+        <option value="{{ key }}">{{ value }}</option>
+    {% endfor %}
+</select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Name (English)</label>
+                        <input type="text" id="new-item-english" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Name (Arabic)</label>
+                        <input type="text" id="new-item-arabic" class="form-control" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="submitNewWorkItem()">Save Item</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<!-- PENDING TASKS SECTION -->
+<div class="card shadow-sm border-warning mb-4" style="border-left: 5px solid #ffc107; background-color: #fffdf6; border-radius: 0.5rem;">
+    <div class="card-body">
+        <h3 class="text-warning-emphasis mb-3 pb-2 border-bottom d-flex align-items-center">
+            <span class="p-2 bg-warning rounded-circle me-2 d-inline-block" style="width:12px; height:12px;"></span>
+            Pending Tasks (مهام قيد الانتظار)
+        </h3>
+
+        <div class="d-none d-md-block table-responsive">
+            <table class="table table-bordered table-dark-bordered table-hover bg-white">
+                <thead class="table-light">
+                    <tr>
+                        <th>Job ID (رقم الوظيفة)</th>
+                        <th>Title (العنوان)</th>
+                        <th>Status (الحالة)</th>
+                        <th>Concerned (المسؤول)</th>
+                        <th>Location (الموقع)</th>
+                        <th>Service Charge (رسوم الخدمة)</th>
+                        <th>Message (الرسالة)</th>
+                        <th>Action (الإجراء)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in pending_tasks|slice:''|default:pending_tasks %}
+                    {% if user.profile.role == 'Admin' and forloop.counter > 4 %}{% else %}
+                    <tr>
+                        <td>{{ task.job_id }}</td>
+                        <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-warning-emphasis">{{ task.title }}</a></td>
+                        <td><span class="badge bg-warning text-dark">{{ task.status }}</span></td>
+                        <td>{{ task.assigned_to }}</td>
+                        <td>{{ task.location }}</td>
+                        <td>{{ task.budget }}</td>
+                        <td>
+                            {% with task.complaint_set.last as complaint %}
+                                {% if complaint %}
+                                    <div class="text-truncate" style="max-width: 150px;">{{ complaint.message }}</div>
+                                {% else %}
+                                    <span class="text-muted small">No complaint (لا توجد شكوى)</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            <a href="{% url 'start_task' task.id %}" class="btn btn-warning btn-sm fw-bold text-dark" onclick="return confirm('Are you sure you want to start this task?')">
+                                Start (بدء)</a>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row d-md-none">
+            {% for task in pending_tasks|slice:''|default:pending_tasks %}
+            {% if user.profile.role == 'Admin' and forloop.counter > 2 %}{% else %}
+            <div class="col-6 mb-3 d-flex align-items-stretch">
+                <div class="card w-100 shadow-sm bg-white border-warning" style="border-radius: 0.375rem;">
+                    <div class="card-body p-2 d-flex flex-column justify-content-between">
+                        <div>
+                            <h6 class="card-title text-truncate mb-1">
+                                <a href="{% url 'task_detail' task.id %}" class="text-decoration-none fw-bold text-dark">
+                                    {{ task.title }}
+                                </a>
+                            </h6>
+                            <hr class="my-1">
+
+                            <p class="mb-1" style="font-size: 0.8rem;">
+                                <strong>Job ID (رقم الوظيفة):</strong> {{ task.job_id }}
+                            </p>
+                            <p class="mb-1" style="font-size: 0.8rem;">
+                                <strong>Status (الحالة):</strong>
+                                <span class="badge bg-warning text-dark">{{ task.status }}</span>
+                            </p>
+                            <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
+                                <strong>Who (المسؤول):</strong> {{ task.assigned_to }}
+                            </p>
+                            <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
+                                <strong>Loc (الموقع):</strong> {{ task.location }}
+                            </p>
+                            <p class="mb-1" style="font-size: 0.8rem;">
+                                <strong>Fee (الرسوم):</strong> {{ task.budget }}
+                            </p>
+                            <p class="mb-2" style="font-size: 0.8rem;">
+                                <strong>Msg (الرسالة):</strong>
+                                {% with task.complaint_set.last as complaint %}
+                                    {% if complaint %}
+                                        <span class="text-truncate d-inline-block align-bottom" style="max-width: 100px;">{{ complaint.message }}</span>
+                                    {% else %}
+                                        <span class="text-muted">None (لا يوجد)</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </p>
+                        </div>
+
+                        <a href="{% url 'start_task' task.id %}" class="btn btn-warning btn-sm w-100 fw-bold text-dark mt-auto shadow-sm" onclick="return confirm('Are you sure you want to start this task?')">
+                            Start Task (بدء المهمة)
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- View All link displays unconditionally for Admins -->
+        {% if user.profile.role == 'Admin' %}
+        <div class="d-flex justify-content-center mt-2">
+            <a href="{% url 'all_pending_tasks' %}" class="btn btn-dark btn-sm px-4 fw-bold shadow-sm">
+                View All Pending Tasks (عرض جميع مهام قيد الانتظار)
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+
+<!-- ACTIVE TASKS SECTION -->
+<div class="card shadow-sm border-primary mb-4" style="border-left: 5px solid #0d6efd; background-color: #f7faff; border-radius: 0.5rem;">
+    <div class="card-body">
+        <h3 class="text-primary mb-3 pb-2 border-bottom d-flex align-items-center">
+            <span class="p-2 bg-primary rounded-circle me-2 d-inline-block" style="width:12px; height:12px;"></span>
+            Active Tasks (المهام النشطة)
+        </h3>
+
+        <div class="d-none d-md-block table-responsive">
+            <table class="table table-bordered table-dark-bordered table-hover bg-white">
+                <thead class="table-light">
+                    <tr>
+                        <th>Job ID (رقم الوظيفة)</th>
+                        <th>Title (العنوان)</th>
+                        <th>Status (الحالة)</th>
+                        <th>Concerned (المسؤول)</th>
+                        <th>Location (الموقع)</th>
+                        <th>Service Charge (رسوم الخدمة)</th>
+                        <th>Message (الرسالة)</th>
+                        <th>Action (الإجراء)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in active_tasks %}
+                    {% if user.profile.role == 'Admin' and forloop.counter > 4 %}{% else %}
+                    <tr>
+                        <td>{{ task.job_id }}</td>
+                        <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-primary">{{ task.title }}</a></td>
+                        <td><span class="badge bg-primary">{{ task.status }} (نشط)</span></td>
+                        <td>{{ task.assigned_to }}</td>
+                        <td>{{ task.location }}</td>
+                        <td>{{ task.budget }}</td>
+                        <td>
+                            {% with task.complaint_set.last as complaint %}
+                                {% if complaint %}
+                                    <div class="text-truncate" style="max-width: 150px;">{{ complaint.message }}</div>
+                                {% else %}
+                                    <span class="text-muted small">No complaint (لا توجد شكوى)</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            <a href="{% url 'end_task' task.id %}" class="btn btn-primary btn-sm fw-bold" onclick="return confirm('Are you sure you completed this task?')">End (إنهاء)</a>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row d-md-none">
+            {% for task in active_tasks %}
+            {% if user.profile.role == 'Admin' and forloop.counter > 2 %}{% else %}
+            <div class="col-6 mb-3 d-flex align-items-stretch">
+                <div class="card w-100 shadow-sm bg-white border-primary" style="border-radius: 0.375rem;">
+                    <div class="card-body p-2 d-flex flex-column justify-content-between">
+                        <div>
+                            <h6 class="card-title text-truncate mb-1">
+                                <a href="{% url 'task_detail' task.id %}" class="text-decoration-none fw-bold text-dark">
+                                    {{ task.title }}
+                                </a>
+                            </h6>
+                            <hr class="my-1">
+
+                            <p class="mb-1" style="font-size: 0.8rem;">
+                                <strong>Job ID (رقم الوظيفة):</strong> {{ task.job_id }}
+                            </p>
+                            <p class="mb-1" style="font-size: 0.8rem;">
+                                <strong>Status (الحالة):</strong>
+                                <span class="badge bg-primary">{{ task.status }} (نشط)</span>
+                            </p>
+                            <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
+                                <strong>Who (المسؤول):</strong> {{ task.assigned_to }}
+                            </p>
+                            <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
+                                <strong>Loc (الموقع):</strong> {{ task.location }}
+                            </p>
+                            <p class="mb-1" style="font-size: 0.8rem;">
+                                <strong>Fee (الرسوم):</strong> {{ task.budget }}
+                            </p>
+                            <p class="mb-2" style="font-size: 0.8rem;">
+                                <strong>Msg (الرسالة):</strong>
+                                {% with task.complaint_set.last as complaint %}
+                                    {% if complaint %}
+                                        <span class="text-truncate d-inline-block align-bottom" style="max-width: 100px;">{{ complaint.message }}</span>
+                                    {% else %}
+                                        <span class="text-muted">None (لا يوجد)</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </p>
+                        </div>
+
+                        <a href="{% url 'end_task' task.id %}" class="btn btn-primary btn-sm w-100 fw-bold mt-auto shadow-sm" onclick="return confirm('Are you sure you completed this task?')">
+                            End Task (إنهاء المهمة)
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- View All link displays unconditionally for Admins -->
+        {% if user.profile.role == 'Admin' %}
+        <div class="d-flex justify-content-center mt-2">
+            <a href="{% url 'all_active_tasks' %}" class="btn btn-dark btn-sm px-4 fw-bold shadow-sm">
+                View All Active Tasks (عرض جميع المهام النشطة)
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+
+<!-- COMPLETED TASKS SECTION -->
+<div class="card shadow-sm border-success mb-4" style="border-left: 5px solid #198754; background-color: #f6fff9; border-radius: 0.5rem;">
+    <div class="card-body">
+        <h3 class="text-success mb-3 pb-2 border-bottom d-flex align-items-center">
+            <span class="p-2 bg-success rounded-circle me-2 d-inline-block" style="width:12px; height:12px;"></span>
+            Completed Tasks (المهام المكتملة)
+        </h3>
+
+        <div class="d-none d-md-block table-responsive">
+            <table class="table table-bordered table-dark-bordered table-hover bg-white mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Job ID (رقم الوظيفة)</th>
+                        <th>Title (العنوان)</th>
+                        <th>Status (الحالة)</th>
+                        <th>Concerned (المسؤول)</th>
+                        <th>Date (التاريخ)</th>
+                        <th>Location (الموقع)</th>
+                        <th>Service Charge (رسوم الخدمة)</th>
+                        <th>Message (الرسالة)</th>
+                        <th>Duration (المدة)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in completed_tasks|slice:":4" %}
+                    <tr>
+                        <td>{{ task.job_id }}</td>
+                        <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-success">{{ task.title }}</a></td>
+                        <td><span class="badge bg-success">{{ task.status }} (مكتمل)</span></td>
+                        <td>{{ task.assigned_to }}</td>
+                        <td>{{ task.completed_at|date:"Y-m-d H:i" }}</td>
+                        <td>{{ task.location }}</td>
+                        <td>{{ task.budget }}</td>
+                        <td>
+                            {% with task.complaint_set.last as complaint %}
+                                {% if complaint %}
+                                    <div class="text-truncate" style="max-width: 130px;">{{ complaint.message }}</div>
+                                {% else %}
+                                    <span class="text-muted small">No complaint (لا توجد شكوى)</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>{{ task.time_taken }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row d-md-none">
+            {% for task in completed_tasks|slice:":2" %}
+            <div class="col-6 mb-3 d-flex align-items-stretch">
+                <div class="card w-100 shadow-sm bg-white border-success" style="border-radius: 0.375rem;">
+                    <div class="card-body p-2 d-flex flex-column justify-content-between">
+                        <div>
+                            <h6 class="card-title text-truncate mb-1">
+                                <a href="{% url 'task_detail' task.id %}" class="text-decoration-none fw-bold text-dark">
+                                    {{ task.title }}
+                                </a>
+                            </h6>
+                            <hr class="my-1">
+
+                            <p class="mb-1" style="font-size: 0.8rem;">
+                                <strong>Job ID (رقم الوظيفة):</strong> {{ task.job_id }}
+                            </p>
+                            <p class="mb-1" style="font-size: 0.8rem;">
+                                <strong>Status (الحالة):</strong>
+                                <span class="badge bg-success">{{ task.status }} (مكتمل)</span>
+                            </p>
+                            <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
+                                <strong>Who (المسؤول):</strong> {{ task.assigned_to }}
+                            </p>
+                            <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
+                                <strong>Loc (الموقع):</strong> {{ task.location }}
+                            </p>
+                            <p class="mb-1" style="font-size: 0.8rem;">
+                                <strong>Fee (الرسوم):</strong> {{ task.budget }}
+                            </p>
+                            <p class="mb-1" style="font-size: 0.8rem;">
+                                <strong>Dur (المدة):</strong> {{ task.time_taken }}
+                            </p>
+                            <p class="mb-0" style="font-size: 0.8rem;">
+                                <strong>Msg (الرسالة):</strong>
+                                {% with task.complaint_set.last as complaint %}
+                                    {% if complaint %}
+                                        <span class="text-truncate d-inline-block align-bottom" style="max-width: 90px;">{{ complaint.message }}</span>
+                                    {% else %}
+                                        <span class="text-muted">None (لا يوجد)</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- View All link displays unconditionally for Admins -->
+        <!-- View All link displays for ALL authenticated roles now -->
+        <div class="d-flex justify-content-center mt-2">
+            <a href="{% url 'all_completed_tasks' %}" class="btn btn-dark btn-sm px-4 fw-bold shadow-sm">
+                View All Completed Tasks (عرض جميع المهام المكتملة)
+            </a>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- OVERDUE TASKS SECTION -->
+<div class="card shadow-sm border-danger mb-4" style="border-left: 5px solid #dc3545; background-color: #fff5f5; border-radius: 0.5rem;">
+    <div class="card-body">
+        <h3 class="text-danger mb-3 pb-2 border-bottom d-flex align-items-center">
+            <span class="p-2 bg-danger rounded-circle me-2 d-inline-block" style="width:12px; height:12px;"></span>
+            Overdue Tasks (المهام المتأخرة)
+        </h3>
+
+        <div class="d-none d-md-block table-responsive">
+            <table class="table table-bordered table-dark-bordered table-hover bg-white align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Job ID (رقم الوظيفة)</th>
+                        <th>Title (العنوان)</th>
+                        <th>Status (الحالة)</th>
+                        <th>Concerned (المسؤول)</th>
+                        <th>Location (الموقع)</th>
+                        <th>Delay (التأخير)</th>
+                        <th>Message (الرسالة)</th>
+                        <th>Action (الإجراء)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in overdue_tasks %}
+                    {% if user.profile.role == 'Admin' and forloop.counter > 4 %}{% else %}
+                    <tr>
+                        <td>{{ task.job_id }}</td>
+                        <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-danger">{{ task.title }}</a></td>
+                        <td><span class="badge bg-danger">{{ task.status }} (متأخر)</span></td>
+                        <td>{{ task.assigned_to }}</td>
+                        <td>{{ task.location }}</td>
+                        <td class="text-danger fw-bold">{{ task.work_delay }}</td>
+                        <td>
+                            {% with task.complaint_set.last as complaint %}
+                                {% if complaint %}
+                                    <div class="text-truncate" style="max-width: 150px;">{{ complaint.message }}</div>
+                                {% else %}
+                                    <span class="text-muted small">No complaint (لا توجد شكوى)</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            <a href="{% url 'end_task' task.id %}" class="btn btn-success btn-sm fw-bold" onclick="return confirm('Are you sure you completed this task?')">
+                                End (إنهاء)
+                            </a>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row d-md-none">
+            {% for task in overdue_tasks %}
+            {% if user.profile.role == 'Admin' and forloop.counter > 2 %}{% else %}
+            <div class="col-6 mb-3 d-flex align-items-stretch">
+                <div class="card w-100 shadow-sm bg-white border-danger" style="border-radius: 0.375rem;">
+                    <div class="card-body p-2 d-flex flex-column justify-content-between">
+                        <div>
+                            <h6 class="card-title text-truncate mb-1">
+                                <a href="{% url 'task_detail' task.id %}" class="text-decoration-none fw-bold text-dark">
+                                    {{ task.title }}
+                                </a>
+                            </h6>
+                            <hr class="my-1">
+
+                            <p class="mb-1" style="font-size: 0.8rem;">
+                                <strong>Job ID (رقم الوظيفة):</strong> {{ task.job_id }}
+                            </p>
+                            <p class="mb-1" style="font-size: 0.8rem;">
+                                <strong>Status (الحالة):</strong>
+                                <span class="badge bg-danger">{{ task.status }} (متأخر)</span>
+                            </p>
+                            <p class="mb-1 text-danger" style="font-size: 0.8rem;">
+                                <strong>Delay (التأخير):</strong> {{ task.work_delay }}
+                            </p>
+                            <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
+                                <strong>Who (المسؤول):</strong> {{ task.assigned_to }}
+                            </p>
+                            <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
+                                <strong>Loc (الموقع):</strong> {{ task.location }}
+                            </p>
+                            <p class="mb-2" style="font-size: 0.8rem;">
+                                <strong>Msg (الرسالة):</strong>
+                                {% with task.complaint_set.last as complaint %}
+                                    {% if complaint %}
+                                        <span class="text-truncate d-inline-block align-bottom" style="max-width: 90px;">{{ complaint.message }}</span>
+                                    {% else %}
+                                        <span class="text-muted">None (لا يوجد)</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </p>
+                        </div>
+
+                        <a href="{% url 'end_task' task.id %}" class="btn btn-success btn-sm w-100 fw-bold mt-auto shadow-sm" onclick="return confirm('Are you sure you completed this task?')">
+                            End Task (إنهاء المهمة)
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- View All link displays unconditionally for Admins -->
+        {% if user.profile.role == 'Admin' %}
+        <div class="d-flex justify-content-center mt-2">
+            <a href="{% url 'all_overdue_tasks' %}" class="btn btn-dark btn-sm px-4 fw-bold shadow-sm">
+                View All Overdue Tasks (عرض جميع المهام المتأخرة)
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+
+<!-- ACCESS CONTROL MODAL & SCRIPTS -->
+<div class="modal fade" id="unauthorizedActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered px-3">
+        <div class="modal-content border-0 shadow rounded-3">
+            <div class="modal-body p-4 text-center">
+                <div class="text-danger mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="currentColor" class="bi bi-shield-slash-fill" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M1.093 3.093A4.99 4.99 0 0 1 8 1c1.688 0 3.078.994 3.784 2.416a.48.48 0 0 0 .106-.025l1.093-1.093a.5.5 0 0 1 .708.708L13.414 4.3a5.003 5.003 0 0 1-1.59 5.485l1.246 1.247A6.974 6.974 0 0 0 14.5 8c0-4-3-5.5-6-5.5a6.971 6.971 0 0 0-4.133 1.346l-2.566-2.566a.5.5 0 0 1 .708-.708l2.583 2.583zm12.33 10.124-11-11a.5.5 0 1 0-.708.708l1.39 1.39C2.42 5.234 1.5 6.5 1.5 8c0 4 3 5.5 6 5.5 1.095 0 2.146-.2 3.085-.563l1.13 1.13a.5.5 0 0 0 .708-.708zm-2.482-2.482A4.965 4.965 0 0 1 8 12.5c-2.7 0-4.5-1.45-4.5-4.5 0-.903.163-1.697.454-2.34l5.128 5.128z"/>
+                    </svg>
+                </div>
+
+                <h4 class="fw-bold text-dark mb-2">Access Denied! (تم رفض الوصول!)</h4>
+                <p class="text-secondary mb-4">Only the assigned user can start or end this task. (يمكن للمستخدم المعين فقط بدء هذه المهمة أو إنهائها.)</p>
+
+                <button type="button" class="btn btn-danger py-2 fw-bold w-100" data-bs-dismiss="modal">
+                    Acknowledge (موافق)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        {% for message in messages %}
+            {% if message.message == "unauthorized-task-action" %}
+                var authModal = new bootstrap.Modal(document.getElementById('unauthorizedActionModal'));
+                authModal.show();
+            {% endif %}
+        {% endfor %}
+    });
+
+
+    function submitNewWorkItem() {
+    const data = {
+        project_type: document.getElementById('new-item-type').value,
+        name_english: document.getElementById('new-item-english').value,
+        name_arabic: document.getElementById('new-item-arabic').value
+    };
+
+    fetch("{% url 'add_sub_category' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if(result.success) {
+            alert('Item added successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + result.error);
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="row justify-content-center">
+
+    <div class="col-md-4 ">
+
+        <div class="card shadow">
+
+            <div class="card-body">
+
+                <h3 class="mb-4">
+                    Login
+                </h3>
+
+                <form method="POST">
+
+                    {% csrf_token %}
+
+                    {{ form.as_p }}
+
+                    <button type="submit" class="btn btn-primary w-100">
+                       {% trans "Login" %}
+                    </button>
+                    <hr>
+
+
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
