@@ -76,7 +76,6 @@
                         </div>
 
                         <div class="mb-3">
-                            {% if user.is_superuser or user.is_staff or user.groups.filter.name == 'Admin' %}
     <div class="mb-3">
     <label class="form-label fw-bold">Assigned Technicians (المسؤولون)</label>
     <div id="tech-container">
@@ -95,12 +94,8 @@
         <i class="bi bi-plus-lg"></i> Add Another Technician
     </button>
 </div>
-{% else %}
-    <!-- For technicians, render it hidden so the form submits successfully -->
-    <div style="display:none;">
-        {{ form.assigned_to }}
-    </div>
-{% endif %}
+
+
                             {% if form.assigned_to.errors %}
                                 <div class="text-danger d-block mt-1 fs-7 fw-medium">{{ form.assigned_to.errors.0 }}</div>
                             {% endif %}

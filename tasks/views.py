@@ -137,12 +137,22 @@ def task_list(request):
 @login_required
 def create_task(request):
     user = request.user
+    tech_ids = []
+    user_role = getattr(user.profile, 'role', None)
     # Simplified role check
     is_admin = user.is_superuser or user.groups.filter(name="Admin").exists()
 
     if request.method == 'POST':
-        form = TaskForm(request.POST, request.FILES)
+        # 1. Create a mutable copy of the POST data
+        post_data = request.POST.copy()
 
+        # 2. Check role and set priority if it's missing or if it's a technician
+        # Assuming you determine role via user.profile.role
+        user_role = getattr(user.profile, 'role', None)
+
+        if user_role == 'Technician' or not post_data.get('priority'):
+            post_data['priority'] = 'Medium'
+        form = TaskForm(post_data, request.FILES)
         if form.is_valid():
             task = form.save(commit=False)
 
@@ -171,6 +181,13 @@ def create_task(request):
             else:
                 task.title = f"{location}-{first_sub}({first_qty})"[:200]
 
+
+            tech_ids = request.POST.getlist('technicians')
+
+            # If the user is a technician and they didn't select anyone,
+            # auto-assign to self (optional safety)
+            if not tech_ids and hasattr(user, 'profile') and user.profile.role == 'Technician':
+                tech_ids = [user.id]
             # Save task and M2M
             task.save()
             task.assigned_technicians.set(tech_ids)  # Correctly save ManyToMany
@@ -189,6 +206,27 @@ def create_task(request):
 
     # Pass the technicians list to the template for the dropdown
     technicians = User.objects.filter(profile__role='Technician')
+    if request.method == 'POST':
+        # Create a mutable copy of the POST data
+        post_data = request.POST.copy()
+
+        # If 'priority' is missing or empty, set it to default
+        if not post_data.get('priority'):
+            post_data['priority'] = 'Medium'
+
+        form = TaskForm(post_data, request.FILES)
+
+
+        if form.is_valid():
+            task = form.save(commit=False)
+            # ... title logic ...
+            task.save()
+            task.assigned_technicians.set(tech_ids)
+            # ... rest of code
+        else:
+            # THIS IS CRITICAL
+            print("❌ FORM ERRORS:", form.errors)
+            # If you are in development, return an error page or print to logs
     return render(request, 'tasks/create_task.html', {
         'form': form,
         'technicians': technicians
