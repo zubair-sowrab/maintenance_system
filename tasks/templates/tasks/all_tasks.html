@@ -30,9 +30,11 @@
 
 
                <div class="col-6 col-md-2">
-                   <label class="form-label small fw-semibold text-muted mb-1">User (المستخدم)</label>
-                   <input type="text" name="user" class="form-control form-control-sm" value="{{ request.GET.user }}" placeholder="User Name">
-               </div>
+    <label class="form-label small fw-semibold text-muted mb-1">User (المستخدم)</label>
+    <!-- 'name="user"' matches request.GET.user -->
+    <input type="text" name="user" class="form-control form-control-sm"
+           value="{{ request.GET.user|default:'' }}" placeholder="User Name">
+</div>
 
 
                <div class="col-12 col-md-2">
@@ -50,7 +52,7 @@
                </div>
 
 
-               {% if "Completed" in title or "مكتمل" in title %}
+
                <div class="col-6 col-md-2">
                    <label class="form-label small fw-semibold text-muted mb-1">Date From</label>
                    <input type="text" name="date_from" class="form-control form-control-sm flatpickr-date" placeholder="dd/mm/yyyy" value="{{ request.GET.date_from }}">
@@ -61,7 +63,7 @@
                    <label class="form-label small fw-semibold text-muted mb-1">Date To</label>
                    <input type="text" name="date_to" class="form-control form-control-sm flatpickr-date" placeholder="dd/mm/yyyy" value="{{ request.GET.date_to }}">
                </div>
-               {% endif %}
+
 
 
                <div class="col-12 col-md-1 d-flex align-items-end gap-1 mt-2 mt-md-0">
@@ -87,7 +89,6 @@
            <button type="button" id="btnQuickClipboardCopy" class="btn btn-success btn-sm fw-bold" title="Click to copy all values instantly">
                <i class="bi bi-file-earmark-spreadsheet-fill me-1"></i> Copy Values
            </button>
-
            <button type="button" class="btn btn-success btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                <span class="visually-hidden">Toggle Options</span>
            </button>
@@ -106,21 +107,49 @@
                <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="10" checked id="cCol10"><label class="form-check-label text-dark" for="cCol10">Complaints</label></div></li>
                <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="11" checked id="cCol11"><label class="form-check-label text-dark" for="cCol11">Location</label></div></li>
            </ul>
+
+
+
        </div>
 
 
        <button type="button" class="btn btn-dark btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#printSetupModal">
            <i class="bi bi-printer-fill me-1"></i> Print Report
        </button>
-     <button type="button" class="btn btn-primary btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#exportSetupModal">
-    <i class="bi bi-download me-1"></i> Export CSV
-</button>
-   </div>
+
+
+    <div class="btn-group shadow-sm">
+    <button type="button" id="btnExportCSV" class="btn btn-info btn-sm fw-bold text-white">
+        <i class="bi bi-download me-1"></i> Export CSV
+    </button>
+
+    <button type="button" class="btn btn-info btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+        <span class="visually-hidden">Toggle</span>
+    </button>
+
+    <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 200px; max-height: 300px; overflow-y: auto; font-size: 0.82rem;">
+        <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns to Export</li>
+        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="0" checked id="eCol0"><label class="form-check-label text-dark" for="eCol0">Job ID</label></div></li>
+        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="1" checked id="eCol1"><label class="form-check-label text-dark" for="eCol1">Title</label></div></li>
+        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="2" checked id="eCol2"><label class="form-check-label text-dark" for="eCol2">Description</label></div></li>
+        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="eCol3"><label class="form-check-label text-dark" for="eCol3">Sub Cat 1</label></div></li>
+        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="4" checked id="eCol4"><label class="form-check-label text-dark" for="eCol4">Qty 1</label></div></li>
+        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="5" checked id="eCol5"><label class="form-check-label text-dark" for="eCol5">Sub Cat 2</label></div></li>
+        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="6" checked id="eCol6"><label class="form-check-label text-dark" for="eCol6">Qty 2</label></div></li>
+        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="7" checked id="eCol7"><label class="form-check-label text-dark" for="eCol7">Assigned To</label></div></li>
+        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="8" checked id="eCol8"><label class="form-check-label text-dark" for="eCol8">Service Charge</label></div></li>
+        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="9" checked id="eCol9"><label class="form-check-label text-dark" for="eCol9">Date Ended</label></div></li>
+        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="10" checked id="eCol10"><label class="form-check-label text-dark" for="eCol10">Complaints</label></div></li>
+        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="11" checked id="eCol11"><label class="form-check-label text-dark" for="eCol11">Location</label></div></li>
+    </ul>
+</div>
+
+</div>
    {% endif %}
 {% endif %}
 
 
-
+<div id="tasksListContainer" class="container-fluid px-0 border rounded overflow-hidden shadow-sm">
 
 <div class="container-fluid px-0 border rounded overflow-hidden shadow-sm">
 
@@ -211,9 +240,16 @@
 
 
        <div class="col-12 col-md-3 mb-3 mb-md-0 py-md-2 task-col">
-           <div class="small text-dark mb-1">
-               <i class="bi bi-person-fill text-secondary me-1"></i><strong>{{ task.assigned_to|default:"Unassigned" }}</strong>
-           </div>
+   <div class="small text-dark mb-1">
+   <i class="bi bi-person-fill text-secondary me-1"></i>
+   <strong>
+       {% for tech in task.assigned_technicians.all %}
+           {{ tech.username }}{% if not forloop.last %}, {% endif %}
+       {% empty %}
+           Unassigned
+       {% endfor %}
+   </strong>
+</div>
            <div class="small text-secondary mb-1">
                <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ task.location }}
            </div>
@@ -278,40 +314,9 @@
 
 
 </div>
-
-
-
-
-<div class="modal fade" id="exportSetupModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Select Columns to Export</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row g-2" id="exportCustomColumnPanel">
-                    <div class="col-6"><input class="form-check-input export-col-check" type="checkbox" value="0" checked id="eCol0"><label class="ms-2">Job ID</label></div>
-                    <div class="col-6"><input class="form-check-input export-col-check" type="checkbox" value="1" checked id="eCol1"><label class="ms-2">Title</label></div>
-                    <div class="col-6"><input class="form-check-input export-col-check" type="checkbox" value="2" checked id="eCol2"><label class="ms-2">Description</label></div>
-                    <div class="col-6"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="eCol3"><label class="ms-2">Sub Cat 1</label></div>
-                    <div class="col-6"><input class="form-check-input export-col-check" type="checkbox" value="4" checked id="eCol4"><label class="ms-2">Qty 1</label></div>
-                    <div class="col-6"><input class="form-check-input export-col-check" type="checkbox" value="5" checked id="eCol5"><label class="ms-2">Sub Cat 2</label></div>
-                    <div class="col-6"><input class="form-check-input export-col-check" type="checkbox" value="6" checked id="eCol6"><label class="ms-2">Qty 2</label></div>
-                    <div class="col-6"><input class="form-check-input export-col-check" type="checkbox" value="7" checked id="eCol7"><label class="ms-2">Assigned To</label></div>
-                    <div class="col-6"><input class="form-check-input export-col-check" type="checkbox" value="8" checked id="eCol8"><label class="ms-2">Service Charge</label></div>
-                    <div class="col-6"><input class="form-check-input export-col-check" type="checkbox" value="9" checked id="eCol9"><label class="ms-2">Date Ended</label></div>
-                    <div class="col-6"><input class="form-check-input export-col-check" type="checkbox" value="10" checked id="eCol10"><label class="ms-2">Complaints</label></div>
-                    <div class="col-6"><input class="form-check-input export-col-check" type="checkbox" value="11" checked id="eCol11"><label class="ms-2">Location</label></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" id="btnExecuteExportCSV" class="btn btn-primary">Export to CSV</button>
-            </div>
-        </div>
-    </div>
 </div>
+
+
 
 
 
@@ -323,6 +328,7 @@
        </span>
    </div>
 </div>
+
 
 
 
@@ -461,7 +467,7 @@
                        cleanStr("{{ task.description|default:''|escapejs }}"),
                        subCat1, qty1,
                        subCat2, qty2,
-                       "{{ task.assigned_to.username|default:'Unassigned'|escapejs }}",
+                       "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
                        "{{ task.budget|default:'0.00'|escapejs }}",
                        "{{ task.completed_at|date:'d/m/Y H:i' }}",
                        cleanStr(complaintMsg),
@@ -575,7 +581,7 @@ document.addEventListener("DOMContentLoaded", function() {
                        cleanStr("{{ task.description|default:''|escapejs }}"),
                        subCat1, qty1,
                        subCat2, qty2,
-                       "{{ task.assigned_to.username|default:'Unassigned'|escapejs }}",
+                       "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
                        "{{ task.budget|default:'0.00'|escapejs }}",
                        "{{ task.completed_at|date:'d/m/Y H:i' }}",
                        cleanStr(complaintMsg),
@@ -712,66 +718,87 @@ rpSaveButtons.forEach(button => {
 
 
 
-document.getElementById("btnExecuteExportCSV").addEventListener("click", function() {
-    const headersList = [
-        "Job ID", "Title", "Description", "Sub Category-1", "Quantity-1",
-        "Sub Category-2", "Quantity-2", "Assigned To", "Service Charge",
-        "Date Completed", "Complaints", "Location"
+
+
+
+
+
+
+//CSV
+
+document.getElementById('btnExportCSV').addEventListener('click', function() {
+    // 1. The FULL master list of headers (12 items total)
+    const masterHeaders = [
+        "Job ID", "Title", "Description",
+        "Sub Cat 1", "Qty 1", "Sub Cat 2", "Qty 2",
+        "Assigned To", "Service Charge", "Date Ended", "Complaints", "Location"
     ];
 
-    let exportRows = [];
-    const cleanStr = (val) => val ? val.replace(/[\t\n\r]/g, " ").trim() : "";
+    // 2. Identify which columns the user checked
+    let activeIndices = [];
+    document.querySelectorAll(".export-col-check:checked").forEach(cb => {
+        activeIndices.push(parseInt(cb.value));
+    });
 
+    if (activeIndices.length === 0) {
+        alert("Please select at least one column to export.");
+        return;
+    }
+
+    // 3. Prepare the CSV content with UTF-8 BOM for Arabic support
+    let csvRows = [];
+    csvRows.push(activeIndices.map(idx => `"${masterHeaders[idx]}"`).join(","));
+
+    // Helper to escape commas/quotes and clean strings
+    const cleanStr = (val) => val ? val.replace(/"/g, '""').replace(/[\t\n\r]/g, " ").trim() : "";
+
+    // 4. Build Rows
     {% for task in tasks %}
         (function() {
+            // Get Tech List safely
+            let techNames = [];
+            {% for tech in task.assigned_technicians.all %}
+                techNames.push("{{ tech.username|escapejs }}");
+            {% endfor %}
+            let techString = techNames.length > 0 ? techNames.join(", ") : "Unassigned";
+
+            // Get Items
             let itemData = [];
             {% for item in task.items.all %}
                 itemData.push({ cat: "{{ item.sub_category|escapejs }}", qty: "{{ item.quantity|escapejs }}" });
             {% endfor %}
 
-            let complaintMsg = "No complaints";
-            {% with task.complaint_set.last as comp %}
-                {% if comp %} complaintMsg = "{{ comp.message|escapejs }}"; {% endif %}
-            {% endwith %}
-
-            exportRows.push([
+            // Build the full 12-column record array
+            let fullDataRecord = [
                 "{{ task.job_id|escapejs }}",
                 cleanStr("{{ task.title|escapejs }}"),
                 cleanStr("{{ task.description|default:''|escapejs }}"),
                 itemData[0] ? cleanStr(itemData[0].cat) : "-",
-                itemData[0] ? cleanStr(itemData[0].qty) : "-",
+                itemData[0] ? itemData[0].qty : "0",
                 itemData[1] ? cleanStr(itemData[1].cat) : "-",
-                itemData[1] ? cleanStr(itemData[1].qty) : "-",
-                "{{ task.assigned_to.username|default:'Unassigned'|escapejs }}",
+                itemData[1] ? itemData[1].qty : "0",
+                techString, // This is a single string now
                 "{{ task.budget|default:'0.00'|escapejs }}",
                 "{{ task.completed_at|date:'d/m/Y H:i' }}",
-                cleanStr(complaintMsg),
+                "{{ task.complaint_set.last.message|default:'No complaints'|escapejs }}",
                 cleanStr("{{ task.location|escapejs }}")
-            ]);
+            ];
+
+            // Filter this record by the activeIndices
+            let filteredRow = activeIndices.map(idx => `"${fullDataRecord[idx]}"`);
+            csvRows.push(filteredRow.join(","));
         })();
     {% endfor %}
 
-    // Get selected indices
-    let activeIndices = [];
-    document.querySelectorAll(".export-col-check:checked").forEach(cb => activeIndices.push(parseInt(cb.value)));
-
-    if (activeIndices.length === 0) { alert("Select at least one column."); return; }
-
-    // Build CSV
-    let csvContent = "\ufeff" + activeIndices.map(idx => headersList[idx]).join(",") + "\n";
-    exportRows.forEach(row => {
-        csvContent += activeIndices.map(idx => `"${String(row[idx]).replace(/"/g, '""')}"`).join(",") + "\n";
-    });
-
-    // Download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // 5. Trigger Download with UTF-8 BOM
+    const csvString = "\uFEFF" + csvRows.join("\n");
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", "Tasks_Report.csv");
+    link.setAttribute("download", "tasks_export.csv");
+    document.body.appendChild(link);
     link.click();
-
-    const modalEl = document.getElementById('exportSetupModal');
-    bootstrap.Modal.getInstance(modalEl).hide();
+    document.body.removeChild(link);
 });
 </script>
 

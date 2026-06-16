@@ -141,7 +141,7 @@
                         <td>{{ task.job_id }}</td>
                         <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-warning-emphasis">{{ task.title }}</a></td>
                         <td><span class="badge bg-warning text-dark">{{ task.status }}</span></td>
-                        <td>{{ task.assigned_to }}</td>
+                        <td>{{ task.assigned_to_display }}</td>
                         <td>{{ task.location }}</td>
                         <td>{{ task.budget }}</td>
                         <td>
@@ -186,7 +186,7 @@
                                 <span class="badge bg-warning text-dark">{{ task.status }}</span>
                             </p>
                             <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
-                                <strong>Who (المسؤول):</strong> {{ task.assigned_to }}
+                                <strong>Who (المسؤول):</strong> {{ task.assigned_to_display  }}
                             </p>
                             <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
                                 <strong>Loc (الموقع):</strong> {{ task.location }}
@@ -258,7 +258,7 @@
                         <td>{{ task.job_id }}</td>
                         <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-primary">{{ task.title }}</a></td>
                         <td><span class="badge bg-primary">{{ task.status }} (نشط)</span></td>
-                        <td>{{ task.assigned_to }}</td>
+                        <td>{{ task.assigned_to_display  }}</td>
                         <td>{{ task.location }}</td>
                         <td>{{ task.budget }}</td>
                         <td>
@@ -302,7 +302,7 @@
                                 <span class="badge bg-primary">{{ task.status }} (نشط)</span>
                             </p>
                             <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
-                                <strong>Who (المسؤول):</strong> {{ task.assigned_to }}
+                                <strong>Who (المسؤول):</strong> {{ task.assigned_to_display  }}
                             </p>
                             <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
                                 <strong>Loc (الموقع):</strong> {{ task.location }}
@@ -374,7 +374,7 @@
                         <td>{{ task.job_id }}</td>
                         <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-success">{{ task.title }}</a></td>
                         <td><span class="badge bg-success">{{ task.status }} (مكتمل)</span></td>
-                        <td>{{ task.assigned_to }}</td>
+                        <td>{{ task.assigned_to_display  }}</td>
                         <td>{{ task.completed_at|date:"Y-m-d H:i" }}</td>
                         <td>{{ task.location }}</td>
                         <td>{{ task.budget }}</td>
@@ -415,7 +415,7 @@
                                 <span class="badge bg-success">{{ task.status }} (مكتمل)</span>
                             </p>
                             <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
-                                <strong>Who (المسؤول):</strong> {{ task.assigned_to }}
+                                <strong>Who (المسؤول):</strong> {{ task.assigned_to_display  }}
                             </p>
                             <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
                                 <strong>Loc (الموقع):</strong> {{ task.location }}
@@ -484,7 +484,7 @@
                         <td>{{ task.job_id }}</td>
                         <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-danger">{{ task.title }}</a></td>
                         <td><span class="badge bg-danger">{{ task.status }} (متأخر)</span></td>
-                        <td>{{ task.assigned_to }}</td>
+                        <td>{{ task.assigned_to_display  }}</td>
                         <td>{{ task.location }}</td>
                         <td class="text-danger fw-bold">{{ task.work_delay }}</td>
                         <td>
@@ -533,7 +533,7 @@
                                 <strong>Delay (التأخير):</strong> {{ task.work_delay }}
                             </p>
                             <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
-                                <strong>Who (المسؤول):</strong> {{ task.assigned_to }}
+                                <strong>Who (المسؤول):</strong> {{ task.assigned_to_display  }}
                             </p>
                             <p class="mb-1 text-truncate" style="font-size: 0.8rem;">
                                 <strong>Loc (الموقع):</strong> {{ task.location }}
@@ -594,6 +594,15 @@
         </div>
     </div>
 </div>
+
+
+
+
+
+
+
+
+
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {

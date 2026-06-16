@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'tasks',
 'rest_framework',
+'import_export',
+
 
 ]
 

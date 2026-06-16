@@ -48,6 +48,10 @@
                             <p class="mb-1 text-muted small">End Date (تاريخ الانتهاء)</p>
                             <h6 class="text-success fw-bold">{{ task.completed_at|date:"d/m/Y H:i"|default:"--" }}</h6>
                         </div>
+                        <div class="col-md-6 col-lg-3">
+                            <p class="mb-1 text-muted small">Assigned To:</p>
+                            <p class="bg-light p-3 rounded border">{{ task.assigned_to_display }}</p>
+                        </div>
                     </div>
 
                     <div class="row mt-4">
@@ -350,15 +354,13 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    // 1. PROJECT CATEGORY FETCH LOGIC
     const currentProjectType = "{{ task.project_type }}";
     const selectElement = document.getElementById("dynamic_sub_category");
-
-    // تأكد من وجود مسار الـ AJAX (يجب تمريره من القالب أو استخدامه مباشرة)
     const ajaxUrl = "{% url 'get_sub_categories_ajax' %}";
 
-    // دالة لجلب البيانات من قاعدة البيانات
     function fetchSubCategories() {
-        if (!currentProjectType) return;
+        if (!currentProjectType || !selectElement) return;
 
         selectElement.innerHTML = '<option value="" selected disabled>-- Loading Items... --</option>';
 
@@ -366,9 +368,8 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(response => response.json())
             .then(data => {
                 selectElement.innerHTML = '<option value="" selected disabled>-- Select Work Item --</option>';
-
                 if (data.items && data.items.length > 0) {
-                    data.items.forEach(function(item) {
+                    data.items.forEach(item => {
                         const option = document.createElement("option");
                         option.value = item;
                         option.textContent = item;
@@ -381,45 +382,47 @@ document.addEventListener("DOMContentLoaded", function() {
                     selectElement.appendChild(option);
                 }
             })
-            .catch(error => {
-                console.error('Error fetching subcategories:', error);
-                selectElement.innerHTML = '<option value="">Error loading items</option>';
-            });
+            .catch(error => console.error('Error fetching subcategories:', error));
     }
-
-    // استدعاء الدالة عند تحميل الصفحة
     fetchSubCategories();
 
-    // --- بقية الكود الخاص بـ rewardPointsForm لا تغيير عليه ---
-    document.getElementById('rewardPointsForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const form = this;
-        const url = form.getAttribute('action');
-        const pointsValue = form.querySelector('input[name="points_awarded"]').value;
-        const formData = new URLSearchParams();
-        formData.append('points_awarded', pointsValue);
+    // 2. REWARD POINTS AJAX LOGIC
+    const rewardForm = document.getElementById('rewardPointsForm');
+    if (rewardForm) {
+        rewardForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // This is what stops the page from navigating
 
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                location.reload();
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Something went wrong.');
+            const form = this;
+            const url = form.getAttribute('action');
+            const formData = new FormData(form);
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const btn = form.querySelector('button[type="submit"]');
+                    const originalText = btn.innerHTML;
+
+                    btn.innerHTML = '<i class="bi bi-check-lg"></i> Saved!';
+                    btn.classList.replace('btn-success', 'btn-outline-success');
+                    btn.classList.replace('btn-primary', 'btn-outline-success');
+
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.classList.replace('btn-outline-success', 'btn-success');
+                        btn.classList.replace('btn-outline-success', 'btn-primary');
+                    }, 2000);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Fetch Error:', error));
         });
-    });
+    }
 });
 </script>
 

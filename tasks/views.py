@@ -3,9 +3,8 @@ from .models import Task, Complaint, SubTask, Notification
 from .forms import TaskForm
 import json
 import logging
-from django.core.exceptions import PermissionDenied
 from django.contrib.auth.views import LoginView
-from django.http import JsonResponse, Http404
+from django.http import JsonResponse
 from django.db import models
 from .models import MaintenanceWorkItem
 from django.http import JsonResponse
@@ -51,11 +50,7 @@ def home(request):
    return redirect('dashboard')
 
 
-# Better pattern:
-def get_authorized_task(user, task_id):
-    if user.is_staff or user.is_superuser or user.groups.filter(name="Admin").exists():
-        return get_object_or_404(Task, id=task_id)
-    return get_object_or_404(Task, id=task_id, assigned_to=user)
+
 
 def is_admin(user):
    return hasattr(user, "profile") and user.profile.role == "Admin"
@@ -75,22 +70,20 @@ def task_list(request):
 
    # If the user is a Superuser, or has an explicit Admin/Supervisor role,
    # OR if they belong to a Django Group named Admin/Supervisor:
-   if user.is_superuser or \
-           user.is_staff or \
-           user_role in ['Admin'] or \
-           user.groups.filter(name__in=['Admin']).exists():
+       # UPDATED: Admin/Supervisor logic
+       if user.is_superuser or user.is_staff or user_role in ['Admin'] or \
+               user.groups.filter(name__in=['Admin']).exists():
+           tasks = Task.objects.all()
+       else:
+           # UPDATED: Many-to-Many filter
+           # Django automatically checks if 'user' is in the 'assigned_technicians' set
+           tasks = Task.objects.filter(assigned_technicians=user)
+
+       check_and_update_overdue_tasks(tasks)
 
 
-       # Admins and Supervisors see ALL tasks (This keeps the list full so date filtering works!)
-       tasks = Task.objects.all()
 
 
-   else:
-       # Technicians see only tasks explicitly assigned to them
-       tasks = Task.objects.filter(assigned_to=user)
-
-
-   check_and_update_overdue_tasks(tasks)
    # FILTERS FROM URL
    status = request.GET.get('status')
    project_type = request.GET.get('project_type')
@@ -144,58 +137,62 @@ def task_list(request):
 @login_required
 def create_task(request):
     user = request.user
-    is_admin = user.is_superuser or user.is_staff or getattr(user, "role", None) == "Admin" or user.groups.filter(name="Admin").exists()
+    # Simplified role check
+    is_admin = user.is_superuser or user.groups.filter(name="Admin").exists()
 
     if request.method == 'POST':
         form = TaskForm(request.POST, request.FILES)
-        if not is_admin:
-            form.fields['priority'].required = False
-        if form.is_valid():
-            task = form.save(commit=False)
-            if not is_admin:
-                task.priority = 'Medium'  # Or whatever your default is
-                task.assigned_to = user
-        if not form.is_valid():
-            print("Form Errors:", form.errors)  # Check your terminal for this!
+
         if form.is_valid():
             task = form.save(commit=False)
 
-            # --- AUTO-TITLE GENERATION ---
+            # 1. AUTO-TITLE GENERATION (Updated to use first tech instead of old assigned_to)
+            project_type = request.GET.get('project_type')
             sub_categories = request.POST.getlist('sub_category[]')
             quantities = request.POST.getlist('quantity[]')
-
-            # Get first item for the title
             first_sub = next((s for s in sub_categories if s and s.strip()), "General")
             first_qty = next((q for q, s in zip(quantities, sub_categories) if s and s.strip()), "0")
 
-            # Get Location and Assigned To
             loc_parts = [str(task.building), str(task.unit)]
             location = "-".join([p for p in loc_parts if p]) or "No Location"
-            assigned = task.assigned_to.username if task.assigned_to else "Unassigned"
 
-            # Format: subcategory(quantity)-location-assigned_to
-            task.title = f"{first_sub}({first_qty}) - {location} - {assigned}"[:200]
-            # -----------------------------
+            # Use the first assigned technician's username for the title
+            tech_ids = request.POST.getlist('technicians')
+            first_tech = User.objects.filter(id__in=tech_ids).first()
+            #assigned_name = first_tech.username if first_tech else "Unassigned"
 
-            if not is_admin:
-                task.assigned_to = user
+            #task.title = f"{location}-{first_sub}({first_qty})"[:200]
 
+
+
+            # To something that handles the case explicitly:
+            if not tech_ids:
+                task.title = f"{location}-{first_sub}({first_qty}) - [UNASSIGNED]"[:200]
+            else:
+                task.title = f"{location}-{first_sub}({first_qty})"[:200]
+
+            # Save task and M2M
             task.save()
-            form.save_m2m()
+            task.assigned_technicians.set(tech_ids)  # Correctly save ManyToMany
 
+            # Save items
             for sub, qty in zip(sub_categories, quantities):
                 if sub:
                     TaskItem.objects.create(task=task, sub_category=sub, quantity=qty)
 
             messages.success(request, "Task saved successfully.")
             return redirect('dashboard')
+        else:
+            print("Form Errors:", form.errors)
     else:
         form = TaskForm()
-        if not is_admin:
-            form.fields['assigned_to'].queryset = User.objects.filter(id=user.id)
-            form.fields['assigned_to'].initial = user
 
-    return render(request, 'tasks/create_task.html', {'form': form})
+    # Pass the technicians list to the template for the dropdown
+    technicians = User.objects.filter(profile__role='Technician')
+    return render(request, 'tasks/create_task.html', {
+        'form': form,
+        'technicians': technicians
+    })
 # Update your view logic to this:
 @login_required
 def award_reward_points_ajax(request, task_id):
@@ -238,162 +235,127 @@ def award_reward_points_ajax(request, task_id):
     except (ValueError, TypeError):
         return JsonResponse({'status': 'error', 'message': 'Invalid number format.'}, status=400)
 
-
 @login_required
 def start_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
 
+    if not task.assigned_technicians.filter(id=request.user.id).exists():
+        # Update this message to trigger your existing JavaScript modal
+        messages.error(request, "unauthorized-task-action")
+        return redirect('dashboard') # Redirect back to the dashboard
 
-   task = get_object_or_404(
-       Task,
-       id=task_id,
-   )
-
-
-   if task.assigned_to != request.user:
-       messages.error(request, "unauthorized-task-action")
-       return redirect('task_list')
-
-
-   task.status = 'In Progress'
-
-
-   task.started_at = timezone.now()
-
-
-   task.save()
-
-
-   return redirect('task_list')
-
+    task.status = 'In Progress'
+    task.started_at = timezone.now()
+    task.save()
+    return redirect('dashboard')
 
 @login_required
 def end_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
 
+    if not task.assigned_technicians.filter(id=request.user.id).exists():
+        # Update this message to trigger your existing JavaScript modal
+        messages.error(request, "unauthorized-task-action")
+        return redirect('dashboard')
 
-   task = get_object_or_404(
-       Task,
-       id=task_id,
-   )
-   if task.assigned_to != request.user:
-       messages.error(request, "unauthorized-task-action")
-       return redirect('task_list')
-   task.status = 'Completed'
-
-
-   task.completed_at = timezone.now()
-
-
-   task.save()
-
-
-   return redirect('task_list')
-
-
+    task.status = 'Completed'
+    task.completed_at = timezone.now()
+    task.save()
+    return redirect('dashboard')
 @login_required
 def dashboard(request):
-   tasks = Task.objects.filter(assigned_to=request.user)
-   user = request.user
-   project_types = MaintenanceWorkItem.PROJECT_TYPE_CHOICES
+    user = request.user
+    project_types = MaintenanceWorkItem.PROJECT_TYPE_CHOICES
 
-   # 1. Check user roles dynamically
-   user_role = getattr(user, 'role', None)
-   if not user_role and hasattr(user, 'profile'):
-       user_role = getattr(user.profile, 'role', None)
+    # 1. Check user roles dynamically
+    user_role = getattr(user, 'role', None)
+    if not user_role and hasattr(user, 'profile'):
+        user_role = getattr(user.profile, 'role', None)
+
+    # 2. Base QuerySet with prefetch_related
+    # PREFETCH is critical here so the template can see the assigned technicians
+    base_queryset = Task.objects.prefetch_related('assigned_technicians')
+
+    # 3. Logic for Admin vs Technicians
+    if user.is_superuser or \
+            user.is_staff or \
+            user_role in ["Admin"] or \
+            user.groups.filter(name__in=["Admin"]).exists():
+        tasks = base_queryset.all()
+    else:
+        # Filter tasks where the user is one of the assigned technicians
+        tasks = base_queryset.filter(assigned_technicians=user)
+
+    check_and_update_overdue_tasks(tasks)
+
+    # 4. Filtering logic
+    user_filter = request.GET.get('user')
+    status = request.GET.get('status')
+    project_type = request.GET.get('project_type')
+    completed_at = request.GET.get('completed_at')
+
+    if status:
+        tasks = tasks.filter(status=status)
+    if project_type:
+        tasks = tasks.filter(project_type=project_type)
+    if completed_at:
+        try:
+            selected_date = datetime.strptime(completed_at, '%Y-%m-%d')
+            next_day = selected_date + timedelta(days=1)
+            tasks = tasks.filter(completed_at__gte=selected_date, completed_at__lt=next_day)
+        except ValueError:
+            pass # Ignore invalid date formats
+
+    if user_filter:
+            # We filter the 'tasks' queryset to only include those
+            # where an assigned technician's username matches the search
+            tasks = tasks.filter(assigned_technicians__username__icontains=user_filter.strip()).distinct()
+    # 5. Categorize tasks
+    # Using 'distinct()' is good practice when filtering ManyToMany fields
+    # to avoid duplicate task objects in the list
+    pending_tasks = tasks.filter(status='Pending(قيد الانتظار)').distinct()
+    active_tasks = tasks.filter(status='In Progress').distinct()
+    completed_tasks = tasks.filter(status='Completed').distinct()
+    overdue_tasks = tasks.filter(status='Overdue').distinct()
+
+    context = {
+        'project_types': project_types,
+        'pending_tasks': pending_tasks,
+        'active_tasks': active_tasks,
+        'completed_tasks': completed_tasks,
+        'overdue_tasks': overdue_tasks,
+        'tasks': tasks
+    }
+
+    return render(request, 'tasks/task_list.html', context)
 
 
-   # Admins see all tasks, Technicians/Supervisors see only their assigned tasks
-   if user.is_superuser or \
-           user.is_staff or \
-           user_role in ["Admin"] or \
-           user.groups.filter(name__in=["Admin"]).exists():
-       tasks = Task.objects.all()
-   else:
-       tasks = Task.objects.filter(assigned_to=user)
 
-
-   check_and_update_overdue_tasks(tasks)
-
-
-   status = request.GET.get('status')
-   project_type = request.GET.get('project_type')
-   completed_at = request.GET.get('completed_at')
-
-
-   if status:
-       tasks = tasks.filter(status=status)
-
-
-   if project_type:
-       tasks = tasks.filter(project_type=project_type)
-
-
-   if completed_at:
-       selected_date = datetime.strptime(completed_at, '%Y-%m-%d')
-
-
-       next_day = selected_date + timedelta(days=1)
-
-
-       tasks = tasks.filter(
-           completed_at__gte=selected_date,
-           completed_at__lt=next_day
-       )
-
-
-   pending_tasks = tasks.filter(status='Pending(قيد الانتظار)')
-   active_tasks = tasks.filter(status='In Progress')
-   completed_tasks = tasks.filter(status='Completed')
-   overdue_tasks = tasks.filter(status='Overdue')
-
-
-   context = {
-       'project_types': project_types,
-       'pending_tasks': pending_tasks,
-       'active_tasks': active_tasks,
-       'completed_tasks': completed_tasks,
-       'overdue_tasks': overdue_tasks,
-   }
-
-
-   return render(request, 'tasks/task_list.html', context)
-
-
-def get_authorized_task(user, task_id):
-    """Centralized authorization check for Task access."""
-    # Define admin check logic in one place
-    is_admin = (
-            user.is_superuser or
-            user.is_staff or
-            (hasattr(user, 'profile') and user.profile.role == "Admin") or
-            user.groups.filter(name="Admin").exists()
-    )
-
-    if is_admin:
-        return get_object_or_404(Task, id=task_id)
-
-    # Non-admins can only access tasks assigned to them
-    return get_object_or_404(Task, id=task_id, assigned_to=user)
 
 
 
 @login_required
 def task_detail(request, task_id):
-    # Use the helper to automatically handle the authorization
+    # 1. UPDATED: Visibility restriction for Technicians
+    # We check if the current user is in the assigned_technicians ManyToMany set
+    if request.user.profile.role == 'Technician':
+        task = get_object_or_404(
+            Task,
+            id=task_id,
+            assigned_technicians=request.user # Django handles the 'in' logic automatically
+        )
+    else:
+        # Admins/Supervisors can see everything
+        task = get_object_or_404(Task, id=task_id)
 
-    try:
-        task = get_authorized_task(request.user, task_id)
-    except PermissionDenied:
-        messages.error(request, "You do not have permission to view this task.")
-        return redirect('task_list')
-    except Exception:
-        # If it's a 404, it means the ID simply doesn't exist
-        raise Http404("Task has not been assigned to you.")
-
-    task = get_authorized_task(request.user, task_id)
+    # Rest of your logic remains the same
     complaints = Complaint.objects.filter(task=task)
     subtasks = SubTask.objects.filter(task=task)
     task_items = task.items.all()
     attachments = task.attachments.all().order_by('-created_at')
+
+    complaint_form = ComplaintForm()
+    subtask_form = SubTaskForm()
 
     context = {
         'task': task,
@@ -401,9 +363,10 @@ def task_detail(request, task_id):
         'subtasks': subtasks,
         'task_items': task_items,
         'attachments': attachments,
-        'complaint_form': ComplaintForm(),
-        'subtask_form': SubTaskForm(),
+        'complaint_form': complaint_form,
+        'subtask_form': subtask_form,
     }
+
     return render(request, 'tasks/task_detail.html', context)
 
 
@@ -411,231 +374,72 @@ def task_detail(request, task_id):
 
 
 
-@login_required
-def submit_complaint(request, task_id):
-   if request.user.profile.role == 'Technician':
-
-
-       task = get_object_or_404(
-           Task,
-           id=task_id,
-           assigned_to=request.user
-       )
-
-
-   else:
-
-
-       task = get_object_or_404(
-           Task,
-           id=task_id
-       )
-
-
-   if request.method == 'POST':
-
-
-       form = ComplaintForm(
-           request.POST,
-           request.FILES
-       )
-
-
-       if form.is_valid():
-
-
-           complaint = form.save(commit=False)
-
-
-           complaint.task = task
-
-
-           complaint.technician = request.user
-
-
-           complaint.save()
-
-
-   return redirect(
-       'task_detail',
-       task_id=task.id
-   )
-
-
-@login_required
-def add_subtask(request, task_id):
-   if request.user.profile.role == 'Technician':
-
-
-       task = get_object_or_404(
-           Task,
-           id=task_id,
-           assigned_to=request.user
-       )
-
-
-   else:
-
-
-       task = get_object_or_404(
-           Task,
-           id=task_id
-       )
-
-
-   if request.method == 'POST':
-
-
-       form = SubTaskForm(request.POST)
-
-
-       if form.is_valid():
-
-
-           subtask = form.save(commit=False)
-
-
-           subtask.task = task
-
-
-           subtask.save()
-
-
-   return redirect(
-       'task_detail',
-       task_id=task.id
-   )
-
-
-@login_required
-def toggle_subtask(request, subtask_id):
-   if request.user.profile.role == 'Technician':
-
-
-       subtask = get_object_or_404(
-           Task,
-           id=subtask_id,
-           assigned_to=request.user
-       )
-
-
-   else:
-
-
-       subtask = get_object_or_404(
-           Task,
-           id=subtask_id
-       )
-
-
-   subtask.completed = not subtask.completed
-   subtask.save()
-
-
-   return redirect(
-       'task_detail',
-       task_id=subtask.task.id
-   )
 
 
 @login_required
 def submit_complaint(request, task_id):
+    # 1. UPDATED: Visibility restriction for Technicians
+    # We check if the current user is in the assigned_technicians ManyToMany set
+    if request.user.profile.role == 'Technician':
+        task = get_object_or_404(
+            Task,
+            id=task_id,
+            assigned_technicians=request.user # Many-to-Many query
+        )
+    else:
+        # Admins/Supervisors can access any task
+        task = get_object_or_404(Task, id=task_id)
 
+    if request.method == 'POST':
+        form = ComplaintForm(request.POST, request.FILES)
+        if form.is_valid():
+            complaint = form.save(commit=False)
+            complaint.task = task
+            # Assuming your Complaint model has a technician field
+            complaint.technician = request.user
+            complaint.save()
 
-   task = get_object_or_404(
-       Task,
-       id=task_id
-   )
-
-
-   if request.method == 'POST':
-
-
-       form = ComplaintForm(
-           request.POST,
-           request.FILES
-       )
-
-
-       if form.is_valid():
-
-
-           complaint = form.save(commit=False)
-
-
-           complaint.task = task
-
-
-           complaint.technician = request.user
-
-
-           complaint.save()
-
-
-   return redirect(
-       'task_detail',
-       task_id=task.id
-   )
-
-
+    return redirect('task_detail', task_id=task.id)
 
 
 @login_required
 def add_subtask(request, task_id):
+    # 1. UPDATED: Visibility restriction using ManyToMany field
+    if request.user.profile.role == 'Technician':
+        task = get_object_or_404(
+            Task,
+            id=task_id,
+            assigned_technicians=request.user  # Many-to-Many lookup
+        )
+    else:
+        task = get_object_or_404(Task, id=task_id)
 
+    if request.method == 'POST':
+        form = SubTaskForm(request.POST)
+        if form.is_valid():
+            subtask = form.save(commit=False)
+            subtask.task = task
+            subtask.save()
 
-   task = get_object_or_404(
-       Task,
-       id=task_id
-   )
-
-
-   if request.method == 'POST':
-
-
-       form = SubTaskForm(request.POST)
-
-
-       if form.is_valid():
-
-
-           subtask = form.save(commit=False)
-
-
-           subtask.task = task
-
-
-           subtask.save()
-
-
-   return redirect(
-       'task_detail',
-       task_id=task.id
-   )
-
-
+    return redirect('task_detail', task_id=task.id)
 
 
 @login_required
 def toggle_subtask(request, subtask_id):
+    # 2. UPDATED: Fetching the SubTask itself, then checking its parent Task
+    subtask = get_object_or_404(SubTask, id=subtask_id)
+    task = subtask.task
 
+    # Check permissions on the parent task
+    if request.user.profile.role == 'Technician':
+        if not task.assigned_technicians.filter(id=request.user.id).exists():
+            messages.error(request, "Unauthorized")
+            return redirect('task_list')
 
-   subtask = get_object_or_404(
-       SubTask,
-       id=subtask_id
-   )
+    subtask.completed = not subtask.completed
+    subtask.save()
 
-
-   subtask.completed = not subtask.completed
-
-
-   subtask.save()
-
-
-   return redirect(
-       'task_detail',
-       task_id=subtask.task.id
-   )
+    return redirect('task_detail', task_id=task.id)
 
 
 
@@ -709,14 +513,14 @@ def reports(request):
    months_labels = [trend['month'].strftime('%b %Y') for trend in monthly_trends]
    months_data = [trend['count'] for trend in monthly_trends]
 
-
-   # 5. Team Output Chart Breakdown
    techs_summary = User.objects.annotate(
        assigned_count=Count(
-           Case(When(assigned_tasks__id__in=base_tasks.values('id'), then=1), output_field=IntegerField())),
+           Case(When(assigned_tasks__id__in=base_tasks.values('id'), then=1), output_field=IntegerField())
+       ),
        completed_count=Count(
            Case(When(assigned_tasks__id__in=base_tasks.values('id'), assigned_tasks__status='Completed', then=1),
-                output_field=IntegerField()))
+                output_field=IntegerField())
+       )
    ).filter(assigned_count__gt=0).order_by('-completed_count')
 
 
@@ -727,10 +531,14 @@ def reports(request):
 
    # 6. Simplified Individual Worker Overview
    tech_stats = None
+   # 6. Simplified Individual Worker Overview
    if selected_tech_id:
        try:
            target_tech = User.objects.get(id=selected_tech_id)
-           tech_jobs = base_tasks.filter(assigned_to=target_tech)
+           # UPDATED: Use the ManyToMany field lookup
+           tech_jobs = base_tasks.filter(assigned_technicians=target_tech)
+
+           # ... rest of your logic remains the same ...
 
 
            t_total = tech_jobs.count()
@@ -819,80 +627,75 @@ def api_tasks(request):
 
 from django.db.models import Q
 
-
 def all_completed_tasks(request):
-   user = request.user
+    user = request.user
+
+    # 1. Gather Role Configuration Strings
+    user_role = getattr(user, "role", None)
+    if not user_role and hasattr(user, "profile"):
+        user_role = getattr(user.profile, "role", None)
+
+    # 2. Enforce Role Visibility Restrictions
+    # PREFETCH is added here so the template can display assigned technicians correctly
+    base_queryset = Task.objects.filter(status="Completed").prefetch_related("assigned_technicians")
+
+    if (
+            user.is_superuser
+            or user.is_staff
+            or user_role in ["Admin"]
+            or user.groups.filter(name__in=["Admin"]).exists()
+    ):
+        base_tasks = base_queryset
+    else:
+        # FIXED: Use ManyToMany filter
+        base_tasks = base_queryset.filter(assigned_technicians=user)
+
+    # 3. Apply Filters from URL Query Parameters
+    job_id = request.GET.get("job_id")
+    user_query = request.GET.get("user")
+    project_type = request.GET.get("project_type")
+    date_from = request.GET.get("date_from")
+    date_to = request.GET.get("date_to")
+
+    if job_id and job_id.strip():
+        base_tasks = base_tasks.filter(job_id__icontains=job_id.strip())
+
+    # FIXED: Filter by technician username in ManyToMany
+    if user_query and user_query.strip():
+        base_tasks = base_tasks.filter(
+            assigned_technicians__username__icontains=user_query.strip()
+        ).distinct()
+
+    if project_type and project_type.strip():
+        base_tasks = base_tasks.filter(project_type=project_type)
+
+    if date_from and date_from.strip():
+        base_tasks = base_tasks.filter(completed_at__date__gte=date_from)
+
+    if date_to and date_to.strip():
+        try:
+            parsed_date_to = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
+            next_day = parsed_date_to + timedelta(days=1)
+            base_tasks = base_tasks.filter(completed_at__lt=next_day)
+        except ValueError:
+            base_tasks = base_tasks.filter(completed_at__date__lte=date_to)
+
+    return render(
+        request,
+        "tasks/all_tasks.html",
+        {"tasks": base_tasks.distinct(), "title": "Completed Tasks (المهام المكتملة)"},
+    )
 
 
-   # 1. Gather Role Configuration Strings
-   user_role = getattr(user, "role", None)
-   if not user_role and hasattr(user, "profile"):
-       user_role = getattr(user.profile, "role", None)
 
 
-   # 2. Enforce Role Visibility Restrictions
-   if (
-           user.is_superuser
-           or user.is_staff
-           or user_role in ["Admin"]
-           or user.groups.filter(name__in=["Admin"]).exists()
-   ):
-       base_tasks = Task.objects.filter(status="Completed")
-   else:
-       base_tasks = Task.objects.filter(status="Completed", assigned_to=user)
-
-
-   # 3. Apply Filters from URL Query Parameters
-   job_id = request.GET.get("job_id")
-   user_query = request.GET.get("user")
-   project_type = request.GET.get("project_type")
-   date_from = request.GET.get("date_from")
-   date_to = request.GET.get("date_to")
-
-
-   if job_id and job_id.strip():
-       base_tasks = base_tasks.filter(job_id__icontains=job_id.strip())
-
-
-   if user_query and user_query.strip():
-       base_tasks = base_tasks.filter(
-           assigned_to__username__icontains=user_query.strip()
-       )
-
-
-   if project_type and project_type.strip():
-       base_tasks = base_tasks.filter(project_type=project_type)
-
-
-   # Safe Date parsing to handle timezone shifts smoothly
-   if date_from and date_from.strip():
-       base_tasks = base_tasks.filter(completed_at__date__gte=date_from)
-
-
-   if date_to and date_to.strip():
-       try:
-           # Parse 'YYYY-MM-DD' and add 1 full day to make the filter inclusive
-           parsed_date_to = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
-           next_day = parsed_date_to + timedelta(days=1)
-           # Find everything strictly before the next day (covers up to 23:59:59 of selected date)
-           base_tasks = base_tasks.filter(completed_at__lt=next_day)
-       except ValueError:
-           # Fallback handling if format string parsing encounters exceptions
-           base_tasks = base_tasks.filter(completed_at__date__lte=date_to)
-
-
-   return render(
-       request,
-       "tasks/all_tasks.html",
-       {"tasks": base_tasks, "title": "Completed Tasks (المهام المكتملة)"},
-   )
 
 
 # 1. New Pending Tasks View
 def all_pending_tasks(request):
    # Base query for tasks that are currently pending
-   tasks = Task.objects.filter(status='Pending(قيد الانتظار)')
-
+   # Added distinct() because filtering by ManyToMany can return duplicates
+   tasks = Task.objects.filter(status='Pending(قيد الانتظار)').distinct()
 
    # Gather URL Query Parameters
    job_id = request.GET.get('job_id')
@@ -901,35 +704,27 @@ def all_pending_tasks(request):
    date_from = request.GET.get('date_from')
    date_to = request.GET.get('date_to')
 
-
    if job_id and job_id.strip():
        tasks = tasks.filter(job_id__icontains=job_id.strip())
 
-
+   # FIXED: Changed 'assigned_to' to 'assigned_technicians'
    if user and user.strip():
-       tasks = tasks.filter(assigned_to__username__icontains=user.strip())
-
+       tasks = tasks.filter(assigned_technicians__username__icontains=user.strip()).distinct()
 
    if project_type and project_type.strip():
        tasks = tasks.filter(project_type=project_type)
 
-
-   # FIX: Filter Pending tasks by creation date (created_at) instead of completion date
+   # Filter Pending tasks by creation date
    if date_from and date_from.strip():
        tasks = tasks.filter(created_at__date__gte=date_from)
 
-
    if date_to and date_to.strip():
        try:
-           # Parse date string and add 1 day to make the upper boundary fully inclusive
            parsed_date_to = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
            next_day = parsed_date_to + timedelta(days=1)
-           # Captures everything up to 23:59:59 on the selected date safely
            tasks = tasks.filter(created_at__lt=next_day)
        except ValueError:
-           # Fallback block if parsing strings fails
            tasks = tasks.filter(created_at__date__lte=date_to)
-
 
    return render(
        request,
@@ -940,13 +735,9 @@ def all_pending_tasks(request):
        }
    )
 
-
 # 2. New Active Tasks View
 def all_active_tasks(request):
-
-
-   tasks = Task.objects.filter(status='In Progress')
-
+   tasks = Task.objects.filter(status='In Progress').distinct()
 
    job_id = request.GET.get('job_id')
    user = request.GET.get('user')
@@ -954,51 +745,27 @@ def all_active_tasks(request):
    date_from = request.GET.get('date_from')
    date_to = request.GET.get('date_to')
 
+   if job_id and job_id.strip():
+       tasks = tasks.filter(job_id__icontains=job_id.strip())
 
-   if job_id:
-       tasks = tasks.filter(job_id__icontains=job_id)
+   # FIXED: Changed 'assigned_to' to 'assigned_technicians'
+   if user and user.strip():
+       tasks = tasks.filter(assigned_technicians__username__icontains=user.strip()).distinct()
 
-
-   if user:
-       tasks = tasks.filter(
-           assigned_to__username__icontains=user
-       )
-
-
-   if project_type:
+   if project_type and project_type.strip():
        tasks = tasks.filter(project_type=project_type)
 
+   if date_from and date_from.strip():
+       tasks = tasks.filter(started_at__date__gte=date_from)
 
-   if date_from:
-       tasks = tasks.filter(
-           completed_at__date__gte=date_from
-       )
+   if date_to and date_to.strip():
+       tasks = tasks.filter(started_at__date__lte=date_to)
 
-
-   if date_to:
-       tasks = tasks.filter(
-           completed_at__date__lte=date_to
-       )
+   return render(request, 'tasks/all_tasks.html', {'tasks': tasks, 'title': 'Active Tasks'})
 
 
-   return render(
-       request,
-       'tasks/all_tasks.html',
-       {
-           'tasks': tasks,
-           'title': 'Active Tasks'
-       }
-   )
-
-
-
-
-# 3. New Overdue Tasks View
 def all_overdue_tasks(request):
-
-
-   tasks = Task.objects.filter(status='Overdue')
-
+   tasks = Task.objects.filter(status='Overdue').distinct()
 
    job_id = request.GET.get('job_id')
    user = request.GET.get('user')
@@ -1006,41 +773,23 @@ def all_overdue_tasks(request):
    date_from = request.GET.get('date_from')
    date_to = request.GET.get('date_to')
 
+   if job_id and job_id.strip():
+       tasks = tasks.filter(job_id__icontains=job_id.strip())
 
-   if job_id:
-       tasks = tasks.filter(job_id__icontains=job_id)
+   # FIXED: Changed 'assigned_to' to 'assigned_technicians'
+   if user and user.strip():
+       tasks = tasks.filter(assigned_technicians__username__icontains=user.strip()).distinct()
 
-
-   if user:
-       tasks = tasks.filter(
-           assigned_to__username__icontains=user
-       )
-
-
-   if project_type:
+   if project_type and project_type.strip():
        tasks = tasks.filter(project_type=project_type)
 
+   if date_from and date_from.strip():
+       tasks = tasks.filter(created_at__date__gte=date_from)
 
-   if date_from:
-       tasks = tasks.filter(
-           completed_at__date__gte=date_from
-       )
+   if date_to and date_to.strip():
+       tasks = tasks.filter(created_at__date__lte=date_to)
 
-
-   if date_to:
-       tasks = tasks.filter(
-           completed_at__date__lte=date_to
-       )
-
-
-   return render(
-       request,
-       'tasks/all_tasks.html',
-       {
-           'tasks': tasks,
-           'title': 'Overdue Tasks'
-       }
-   )
+   return render(request, 'tasks/all_tasks.html', {'tasks': tasks, 'title': 'Overdue Tasks'})
 
 
 
@@ -1090,53 +839,35 @@ def add_task_item_detail(request, task_id):
 
 @login_required
 def upload_task_attachment(request, task_id):
-   if request.user.profile.role == 'Technician':
-       task = get_object_or_404(Task, id=task_id, assigned_to=request.user)
-   else:
-       task = get_object_or_404(Task, id=task_id)
+    # 1. Base query: get the task
+    task = get_object_or_404(Task, id=task_id)
 
+    # 2. Authorization check: If technician, ensure they are in the assigned_technicians list
+    if request.user.profile.role == 'Technician':
+        if not task.assigned_technicians.filter(id=request.user.id).exists():
+            messages.error(request, "You are not authorized to upload to this task.")
+            return redirect('task_detail', task_id=task.id)
 
-   if request.method == 'POST':
-       print("\n=== 🛠️ DEBUGGING ATTACHMENT UPLOAD ===")
-       print(f"Request POST keys: {list(request.POST.keys())}")
-       print(f"Request FILES keys: {list(request.FILES.keys())}")
+    if request.method == 'POST':
+        uploaded_image = request.FILES.get('task_image')
 
+        if uploaded_image:
+            allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+            ext = os.path.splitext(uploaded_image.name)[1].lower()
 
-       uploaded_image = request.FILES.get('task_image')
-       print(f"Fetched 'task_image': {uploaded_image}")
+            if ext in allowed_extensions:
+                attachment = TaskAttachment.objects.create(
+                    task=task,
+                    uploaded_by=request.user,
+                    image=uploaded_image
+                )
+                messages.success(request, "Picture uploaded successfully!")
+            else:
+                messages.error(request, f"Unsupported file format: {ext}")
+        else:
+            messages.error(request, "No image file was received by the server.")
 
-
-       if uploaded_image:
-           print(f"File Name: {uploaded_image.name}")
-           print(f"File Size: {uploaded_image.size} bytes")
-
-
-           allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
-           ext = os.path.splitext(uploaded_image.name)[1].lower()
-           print(f"Detected Extension: '{ext}'")
-
-
-           if ext in allowed_extensions:
-               attachment = TaskAttachment.objects.create(
-                   task=task,
-                   uploaded_by=request.user,
-                   image=uploaded_image
-               )
-               print(f"✅ SUCCESS: Created database attachment record with ID {attachment.id}")
-               messages.success(request, "Picture uploaded successfully!")
-           else:
-               print(f"❌ ERROR: Extension '{ext}' is not in allowed list {allowed_extensions}")
-               messages.error(request, f"Unsupported file format: {ext}")
-       else:
-           print("❌ ERROR: 'task_image' was completely empty in request.FILES!")
-           messages.error(request, "No image file was received by the server.")
-
-
-       print("=======================================\n")
-
-
-   return redirect('task_detail', task_id=task.id)
-
+    return redirect('task_detail', task_id=task.id)
 
 
 
@@ -1164,7 +895,7 @@ def delete_task_attachment(request, attachment_id):
 
 
 
-@csrf_exempt
+
 def update_budget_ajax(request, task_id):
    # Ensure request method parameter is a POST structure
    if request.method != 'POST':

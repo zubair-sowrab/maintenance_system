@@ -78,9 +78,23 @@
                         <div class="mb-3">
                             {% if user.is_superuser or user.is_staff or user.groups.filter.name == 'Admin' %}
     <div class="mb-3">
-        <label class="form-label">Assigned to (المسؤول):</label>
-        {{ form.assigned_to }}
+    <label class="form-label fw-bold">Assigned Technicians (المسؤولون)</label>
+    <div id="tech-container">
+        <div class="input-group mb-2 tech-row">
+            <select name="technicians" class="form-select">
+    {% for tech in technicians %}
+        <option value="{{ tech.id }}">{{ tech.username }}</option>
+    {% endfor %}
+</select>
+            <button type="button" class="btn btn-outline-danger" onclick="removeRow(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
     </div>
+    <button type="button" class="btn btn-sm btn-outline-success mt-1" onclick="addTechRow()">
+        <i class="bi bi-plus-lg"></i> Add Another Technician
+    </button>
+</div>
 {% else %}
     <!-- For technicians, render it hidden so the form submits successfully -->
     <div style="display:none;">
@@ -468,6 +482,37 @@ const form = document.getElementById('taskForm');
         });
     });
 
+
+
+
+
+
+
+
+
+
+
+
+
+function addTechRow() {
+    const container = document.getElementById('tech-container');
+    const firstRow = container.querySelector('.tech-row');
+    const newRow = firstRow.cloneNode(true);
+
+    // Reset the value of the cloned select box
+    newRow.querySelector('select').value = "";
+
+    container.appendChild(newRow);
+}
+
+function removeRow(btn) {
+    const rows = document.querySelectorAll('.tech-row');
+    if (rows.length > 1) {
+        btn.closest('.tech-row').remove();
+    } else {
+        alert("You must assign at least one technician.");
+    }
+}
 </script>
 
 <style>

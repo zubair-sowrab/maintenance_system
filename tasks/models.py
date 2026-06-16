@@ -5,7 +5,6 @@ from django.dispatch import receiver
 from datetime import timedelta
 from django.utils import timezone
 import uuid
-from deep_translator import GoogleTranslator
 class Task(models.Model):
 
     PROJECT_TYPES = [
@@ -60,11 +59,10 @@ class Task(models.Model):
         choices=PROJECT_TYPES
     )
 
-    assigned_to = models.ForeignKey(
+    assigned_technicians = models.ManyToManyField(
         User,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='assigned_tasks'
+        related_name='assigned_tasks',
+        blank=True
     )
 
     supervisor = models.ForeignKey(
@@ -120,6 +118,11 @@ class Task(models.Model):
         return self.title
 
     @property
+    def assigned_to_display(self):
+        names = [tech.username for tech in self.assigned_technicians.all()]
+        return ", ".join(names)
+
+    @property
     def location(self):
         if self.building == 'Other (آخر)':
             return self.custom_location or "Custom Location"
@@ -128,13 +131,6 @@ class Task(models.Model):
         return f"{self.building} ({self.unit})"
 
     def save(self, *args, **kwargs):
-        translator = GoogleTranslator(source='auto', target='en')
-
-        # Translate title and description if they are provided
-        if self.title:
-            self.title = translator.translate(self.title)
-        if self.description:
-            self.description = translator.translate(self.description)
         if not self.job_id:
             self.job_id = f"JOB-{uuid.uuid4().hex[:8].upper()}"
 

@@ -8,10 +8,18 @@ from .models import (
 )
 
 from django import forms
+from django.contrib.auth.models import User # <-- ADD THIS LINE
 from .models import Task
 
 
 class TaskForm(forms.ModelForm):
+    assigned_technicians = forms.ModelMultipleChoiceField(
+        # Try removing the .filter() first to see if names appear.
+        # If they do, your filter logic (profile__role) is the problem.
+        queryset=User.objects.all(),
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        required=False,
+        label="Assigned Technicians (المسؤولون)")
     class Meta:
         model = Task
         exclude = [

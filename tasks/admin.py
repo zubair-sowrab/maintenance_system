@@ -22,19 +22,24 @@ class TaskItemInline(admin.TabularInline):
     extra = 1  # Shows one blank slot to add items manually if needed
 
 admin.site.register(Profile)
+
+
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-
     list_display = (
         'title',
         'job_id',
-        'description',
         'location',
         'budget',
-        'assigned_to',
+        'assigned_to_display',  # Use the new property here
         'status',
         'priority',
     )
+
+    # This adds a nice selection box in the Admin UI
+    filter_horizontal = ('assigned_technicians',)
+
+
 
 
     search_fields = (
