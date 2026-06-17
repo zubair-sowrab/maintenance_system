@@ -40,6 +40,17 @@ from .models import MaintenanceWorkItem
 from .serializers import TaskSerializer
 from django.db.models import Sum
 from .models import Task, Complaint, SubTask, Notification, Profile, TaskItem
+from deep_translator import GoogleTranslator
+
+def translate_to_english(text):
+    if not text or not text.strip():
+        return text
+    try:
+        # Detects language automatically and translates to English
+        return GoogleTranslator(source='auto', target='en').translate(text)
+    except Exception as e:
+        print(f"Translation error: {e}")
+        return text # Return original if translation fails
 
 
 
@@ -156,12 +167,36 @@ def create_task(request):
         if form.is_valid():
             task = form.save(commit=False)
 
+
+
+            translator = GoogleTranslator(source='auto', target='en')
+
+            # Translate Description if it exists
+            if task.description:
+                try:
+                    task.description = translator.translate(task.description)
+                except Exception as e:
+                    print(f"Translation error: {e}")
+
+
+
+
             # 1. AUTO-TITLE GENERATION (Updated to use first tech instead of old assigned_to)
             project_type = request.GET.get('project_type')
             sub_categories = request.POST.getlist('sub_category[]')
             quantities = request.POST.getlist('quantity[]')
+
+            translated_subs = []
+            for sub in sub_categories:
+                if sub and sub.strip():
+                    translated_subs.append(translator.translate(sub))
+                else:
+                    translated_subs.append("General")
+
+
             first_sub = next((s for s in sub_categories if s and s.strip()), "General")
             first_qty = next((q for q, s in zip(quantities, sub_categories) if s and s.strip()), "0")
+
 
             loc_parts = [str(task.building), str(task.unit)]
             location = "-".join([p for p in loc_parts if p]) or "No Location"
@@ -181,7 +216,7 @@ def create_task(request):
             else:
                 task.title = f"{location}-{first_sub}({first_qty})"[:200]
 
-
+            first_sub = translated_subs[0] if translated_subs else "General"
             tech_ids = request.POST.getlist('technicians')
 
             # If the user is a technician and they didn't select anyone,
@@ -193,7 +228,7 @@ def create_task(request):
             task.assigned_technicians.set(tech_ids)  # Correctly save ManyToMany
 
             # Save items
-            for sub, qty in zip(sub_categories, quantities):
+            for sub, qty in zip(translated_subs, quantities):
                 if sub:
                     TaskItem.objects.create(task=task, sub_category=sub, quantity=qty)
 
@@ -434,8 +469,14 @@ def submit_complaint(request, task_id):
             complaint = form.save(commit=False)
             complaint.task = task
             # Assuming your Complaint model has a technician field
+            try:
+                complaint.message = GoogleTranslator(source='auto', target='en').translate(complaint.message)
+            except:
+                pass
             complaint.technician = request.user
             complaint.save()
+            messages.success(request, "Complaint submitted.")
+            return redirect('task_detail', task_id=task.id)
 
     return redirect('task_detail', task_id=task.id)
 

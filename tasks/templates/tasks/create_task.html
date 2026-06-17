@@ -4,6 +4,9 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
+
+
+
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-12 col-md-10 col-lg-8">
@@ -175,6 +178,12 @@
         </div>
     </div>
 </div>
+
+
+
+
+
+
 
 
 
@@ -507,6 +516,46 @@ function removeRow(btn) {
     } else {
         alert("You must assign at least one technician.");
     }
+}
+
+
+
+
+
+document.addEventListener("DOMContentLoaded", function() {
+        {% for message in messages %}
+            {% if message.message == "unauthorized-task-action" %}
+                var authModal = new bootstrap.Modal(document.getElementById('unauthorizedActionModal'));
+                authModal.show();
+            {% endif %}
+        {% endfor %}
+    });
+
+
+    function submitNewWorkItem() {
+    const data = {
+        project_type: document.getElementById('new-item-type').value,
+        name_english: document.getElementById('new-item-english').value,
+        name_arabic: document.getElementById('new-item-arabic').value
+    };
+
+    fetch("{% url 'add_sub_category' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if(result.success) {
+            alert('Item added successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + result.error);
+        }
+    });
 }
 </script>
 
