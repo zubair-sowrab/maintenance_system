@@ -186,3 +186,11 @@ X_FRAME_OPTIONS = 'DENY'  # Prevents your site from being embedded in iframes (C
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+
+# settings.py
+DATETIME_INPUT_FORMATS = [
+    '%Y-%m-%dT%H:%M',    # '2026-06-18T13:06'
+    '%m/%d/%Y %I:%M %p', # '06/18/2026 01:06 PM'
+    '%Y-%m-%d %H:%M:%S',
+]
