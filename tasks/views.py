@@ -216,6 +216,9 @@ def create_task(request):
        if form.is_valid():
            task = form.save(commit=False)
 
+           if task.status == 'In Progress' and not task.started_at:
+               task.started_at = timezone.now()
+
            # Set the dates directly on the object
            now = timezone.now()
            task.start_date = now
@@ -223,6 +226,8 @@ def create_task(request):
 
 
            translator = GoogleTranslator(source='auto', target='en')
+
+
 
 
            # Translate Description if it exists
@@ -351,7 +356,6 @@ def create_task(request):
 
 
 
-
            task.save()
            task.assigned_technicians.set(tech_ids)
            # ... rest of code
@@ -361,7 +365,8 @@ def create_task(request):
            # If you are in development, return an error page or print to logs
    return render(request, 'tasks/create_task.html', {
        'form': form,
-       'technicians': technicians
+       'technicians': technicians,
+       'project_types': MaintenanceWorkItem.PROJECT_TYPE_CHOICES
    })
 # Update your view logic to this:
 @login_required
@@ -509,10 +514,14 @@ def dashboard(request):
    # 5. Categorize tasks
    # Using 'distinct()' is good practice when filtering ManyToMany fields
    # to avoid duplicate task objects in the list
-   pending_tasks = tasks.filter(status='Pending(قيد الانتظار)').distinct()
-   active_tasks = tasks.filter(status='In Progress').distinct()
-   completed_tasks = tasks.filter(status='Completed').distinct()
-   overdue_tasks = tasks.filter(status='Overdue').distinct()
+   # 5. Categorize tasks
+   # We use order_by('-created_at') to ensure the newest ones appear first.
+   # (Ensure 'created_at' exists in your Task model, otherwise use '-id')
+
+   pending_tasks = tasks.filter(status='Pending(قيد الانتظار)').distinct().order_by('-created_at')
+   active_tasks = tasks.filter(status='In Progress').distinct().order_by('-created_at')
+   completed_tasks = tasks.filter(status='Completed').distinct().order_by('-completed_at')  # Newest completions first
+   overdue_tasks = tasks.filter(status='Overdue').distinct().order_by('deadline')  # Closest to deadline first
 
 
    context = {
@@ -1403,3 +1412,17 @@ def complete_overdue_task(request, task_id):
    return JsonResponse({'status': 'success'})
 
 
+
+
+@login_required
+def add_maintenance_item(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        # Assuming you have a model named MaintenanceWorkItem
+        MaintenanceWorkItem.objects.create(
+            project_type=data.get('project_type'),
+            name_english=data.get('name_en'),
+            name_arabic=data.get('name_ar')
+        )
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False, 'message': 'Invalid request'})

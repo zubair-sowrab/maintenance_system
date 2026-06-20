@@ -3,6 +3,65 @@
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+
+
+<div class="card my-3 shadow-sm ">
+   <div class="card-body text-center bg-light">
+       <h5 class="card-title">Maintenance Settings</h5>
+       <button type="button" class="btn btn-outline-success " data-bs-toggle="modal" data-bs-target="#addSubCategoryModal">
+           <i class="bi bi-plus-lg"></i> Add New Maintenance Work
+       </button>
+   </div>
+</div>
+
+
+
+<div class="modal fade " id="addSubCategoryModal" tabindex="-1" aria-hidden="true">
+   <div class="modal-dialog">
+       <div class="modal-content">
+           <div class="modal-header">
+               <h5 class="modal-title">Add New Maintenance Item</h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+           </div>
+           <div class="modal-body">
+               <form id="addWorkItemForm">
+                   <div class="mb-3">
+                       <label>Project Type</label>
+
+
+                       <select class="form-select" id="new-item-type" required>
+   <option value="">-- Select Project Type --</option>
+   {% for key, value in project_types %}
+       <option value="{{ key }}">{{ value }}</option>
+   {% endfor %}
+</select>
+                   </div>
+                   <div class="mb-3">
+                       <label>Name (English)</label>
+                       <input type="text" id="new-item-english" class="form-control" required>
+                   </div>
+                   <div class="mb-3">
+                       <label>Name (Arabic)</label>
+                       <input type="text" id="new-item-arabic" class="form-control" required>
+                   </div>
+               </form>
+           </div>
+           <div class="modal-footer">
+               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+               <button type="button" class="btn btn-primary" onclick="submitNewWorkItem()">Save Item</button>
+           </div>
+       </div>
+   </div>
+</div>
+
+
+
 
 
 
@@ -123,12 +182,16 @@
                             </h5>
 
                             <div id="dynamic-work-items-container">
-                                <div class="row g-2 align-items-center mb-2 work-item-row">
-                                    <div class="col-7">
-                                        <select name="sub_category[]" class="form-select sub-category-dropdown">
-                                            <option value="">-- Select Work Item (حدد عنصر العمل) --</option>
-                                        </select>
-                                    </div>
+                               <div class="row g-2 align-items-center mb-2 work-item-row">
+    <div class="col-7">
+        <select name="sub_category[]" class="form-select work-select">
+            <option value="">-- Search Work Item --</option>
+            {% for item in all_maintenance_items %}
+                <option value="{{ item.id }}">{{ item.name_english }} ({{ item.name_arabic }})</option>
+            {% endfor %}
+        </select>
+    </div>
+    </div>
                                     <div class="col-3">
                                         <input type="text" name="quantity[]" class="form-control" placeholder="Material Details">
                                     </div>
@@ -163,9 +226,12 @@
     <div id="dynamic-work-items-container">
         <div class="row g-2 align-items-center mb-2 work-item-row">
             <div class="col-7">
-                <select name="sub_category[]" class="form-select sub-category-dropdown" required>
-                    <option value="">-- Select Maintenance Task --</option>
-                </select>
+                <select name="sub_category[]" class="form-select sub-category-dropdown">
+    <option value="">-- Search/Select Work Item --</option>
+    {% for item in all_maintenance_items %}
+        <option value="{{ item.id }}">{{ item.name_english }} ({{ item.name_arabic }})</option>
+    {% endfor %}
+</select>
             </div>
             <div class="col-3">
                 <input type="text" name="quantity[]" class="form-control" placeholder="Material Details">
@@ -277,8 +343,13 @@
     </div>
 </div>
 
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
@@ -557,6 +628,153 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 }
+
+
+
+
+
+
+
+
+
+
+
+// 4. Maintenance Item Submission
+   function submitNewWorkItem() {
+       const data = {
+           project_type: document.getElementById('new-item-type').value,
+           name_english: document.getElementById('new-item-english').value,
+           name_arabic: document.getElementById('new-item-arabic').value
+       };
+
+
+       fetch("{% url 'add_sub_category' %}", {
+           method: 'POST',
+           headers: {
+               'Content-Type': 'application/json',
+               'X-CSRFToken': '{{ csrf_token }}'
+           },
+           body: JSON.stringify(data)
+       })
+       .then(response => response.json())
+       .then(result => {
+           if(result.success) {
+               alert('Item added successfully!');
+               location.reload();
+           } else {
+               alert('Error: ' + result.error);
+           }
+       });
+   }
+
+
+
+
+
+
+
+
+
+
+function submitNewWorkItem() {
+    // 1. Grab elements
+    const typeEl = document.getElementById('new-item-type');
+    const enEl = document.getElementById('new-item-english');
+    const arEl = document.getElementById('new-item-arabic');
+
+    // 2. Validate
+    if (!typeEl.value || !enEl.value || !arEl.value) {
+        alert("Error: All fields are required!");
+        return; // Stop execution if fields are empty
+    }
+
+    // 3. Prepare Data
+    const formData = {
+        project_type: typeEl.value,
+        name_en: enEl.value,
+        name_ar: arEl.value
+    };
+
+    // 4. Send
+    fetch("{% url 'add_maintenance_item' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Success!");
+            // Reset and close
+            document.getElementById('addWorkItemForm').reset();
+            const modalEl = document.getElementById('addSubCategoryModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+        } else {
+            alert("Server Error: " + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+//searchable sub categories
+
+$(document).ready(function() {
+    function initSelect2(element) {
+        $(element).select2({
+            theme: "bootstrap-5",
+            width: '100%',
+            placeholder: "Search for work...",
+            allowClear: true,
+            // Custom matcher for fuzzy searching
+            matcher: function(params, data) {
+                if ($.trim(params.term) === '') return data;
+                if (typeof data.text === 'undefined') return null;
+
+                // Case insensitive match
+                if (data.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
+                    return data;
+                }
+                return null;
+            }
+        });
+    }
+
+    // Initialize existing dropdowns
+    $('.sub-category-dropdown').each(function() {
+        initSelect2(this);
+    });
+});
+
+
+
+
+// Whenever you clone your work-item-row:
+function addNewRow() {
+    let newRow = $('.work-item-row').first().clone();
+    newRow.find('select').removeClass('select2-hidden-accessible').removeAttr('data-select2-id');
+    newRow.find('.select2-container').remove(); // Remove old Select2 container
+    $('#dynamic-work-items-container').append(newRow);
+
+    // RE-INITIALIZE Select2 for the new dropdown
+    initSelect2(newRow.find('select'));
+}
+
 </script>
 
 <style>
@@ -596,5 +814,95 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     .flatpickr-input { background-color: #fff !important; }
     .fs-7 { font-size: 0.8rem; }
+
+    .select2-container--bootstrap-5 .select2-dropdown {
+        z-index: 99999 !important;
+    }
 </style>
+
+
+
+
+<script>
+// Use standard JS instead of jQuery for the initial trigger to avoid conflict
+document.addEventListener('DOMContentLoaded', function() {
+
+    // We use a small delay to ensure Bootstrap's modal has finished initializing
+    setTimeout(function() {
+        if (typeof jQuery !== 'undefined' && $.fn.select2) {
+            $('.sub-category-dropdown').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                dropdownParent: $('#addSubCategoryModal') // IMPORTANT: This tells Select2 the dropdown lives inside a modal
+            });
+            console.log("Select2 successfully initialized inside modal.");
+        } else {
+            console.error("Select2 or jQuery not found.");
+        }
+    }, 500);
+
+});
+</script>
+
+
+
+<script>
+    window.addEventListener('load', function() {
+        if (typeof jQuery === 'undefined') {
+            console.error("DEBUG: jQuery is NOT loaded.");
+        } else if (typeof $.fn.select2 === 'undefined') {
+            console.error("DEBUG: Select2 is NOT loaded.");
+        } else {
+            console.log("DEBUG: Both jQuery and Select2 are loaded correctly.");
+            $('.sub-category-dropdown').select2({ theme: 'bootstrap-5' });
+        }
+    });
+</script>
+
+
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        console.log("Checking Select2:", typeof $.fn.select2); // Should print 'function'
+        $('.sub-category-dropdown').select2({
+            theme: 'bootstrap-5',
+            width: '100%'
+        });
+    });
+</script>
+
+
+
+<script>
+// Function to turn a select element into a searchable TomSelect
+function initSearchableSelect(el) {
+    new TomSelect(el, {
+        create: false,
+        sortField: { field: "text", direction: "asc" },
+        placeholder: "Type to search...",
+        maxOptions: 100 // Adjust based on how many items you have
+    });
+}
+
+// 1. Initialize existing ones on page load
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll('.work-select').forEach(initSearchableSelect);
+});
+
+// 2. IMPORTANT: If you have a button to add new rows, call this:
+document.querySelector('#dynamic-work-items-container').addEventListener('click', function(e) {
+    if (e.target.closest('.add-work-row-btn')) {
+        // ... YOUR CLONE LOGIC HERE ...
+
+        // After cloning and appending the new row to the container:
+        let newSelect = document.querySelector('.work-item-row:last-child .work-select');
+        initSearchableSelect(newSelect);
+    }
+});
+</script>
 {% endblock %}

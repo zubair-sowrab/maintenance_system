@@ -1,347 +1,436 @@
 {% extends 'base.html' %}
 
 
+
+
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 <div class="sticky-top bg-white p-2 shadow-sm d-flex align-items-center mb-3">
-   <a href="javascript:history.back()" class="btn btn-outline-dark btn-sm">
-       ← Back (رجوع)
-   </a>
-   <h5 class="ms-3 mb-0 fw-bold text-dark">{{ title }}</h5>
+  <a href="javascript:history.back()" class="btn btn-outline-dark btn-sm">
+      ← Back (رجوع)
+  </a>
+  <h5 class="ms-3 mb-0 fw-bold text-dark">{{ title }}</h5>
 </div>
+
+
 
 
 <div class="card shadow-sm border-0 mb-4 bg-light">
-   <div class="card-body p-3">
-       <h6 class="fw-bold text-secondary mb-3">
-           <i class="bi bi-funnel-fill text-dark me-1"></i> Filters (التصفية)
-       </h6>
+  <div class="card-body p-3">
+      <h6 class="fw-bold text-secondary mb-3">
+          <i class="bi bi-funnel-fill text-dark me-1"></i> Filters (التصفية)
+      </h6>
 
 
-       <form method="GET">
-           <div class="row g-2">
-               <div class="col-6 col-md-3">
-                   <label class="form-label small fw-semibold text-muted mb-1">Job ID</label>
-                   <input type="text" name="job_id" class="form-control form-control-sm" value="{{ request.GET.job_id }}" placeholder="Enter ID">
-               </div>
 
 
-               <div class="col-6 col-md-2">
-    <label class="form-label small fw-semibold text-muted mb-1">User (المستخدم)</label>
-    <!-- 'name="user"' matches request.GET.user -->
-    <input type="text" name="user" class="form-control form-control-sm"
-           value="{{ request.GET.user|default:'' }}" placeholder="User Name">
+      <form method="GET">
+          <div class="row g-2">
+              <div class="col-6 col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Job ID</label>
+                  <input type="text" name="job_id" class="form-control form-control-sm" value="{{ request.GET.job_id }}" placeholder="Enter ID">
+              </div>
+
+
+
+
+              <div class="col-6 col-md-2">
+   <label class="form-label small fw-semibold text-muted mb-1">User (المستخدم)</label>
+   <!-- 'name="user"' matches request.GET.user -->
+   <input type="text" name="user" class="form-control form-control-sm"
+          value="{{ request.GET.user|default:'' }}" placeholder="User Name">
 </div>
 
 
-               <div class="col-12 col-md-2">
-                   <label class="form-label small fw-semibold text-muted mb-1">Work Type</label>
-                   <select name="project_type" class="form-select form-select-sm">
-                       <option value="">All Types</option>
-                       <option value="Paint" {% if request.GET.project_type == 'Paint' %}selected{% endif %}>Paint</option>
-                       <option value="Electric" {% if request.GET.project_type == 'Electric' %}selected{% endif %}>Electric</option>
-                       <option value="Plumbing" {% if request.GET.project_type == 'Plumbing' %}selected{% endif %}>Plumbing</option>
-                       <option value="Cleaning" {% if request.GET.project_type == 'Cleaning' %}selected{% endif %}>Cleaning</option>
-                       <option value="AC" {% if request.GET.project_type == 'AC' %}selected{% endif %}>AC</option>
-                       <option value="Carpenter" {% if request.GET.project_type == 'Carpenter' %}selected{% endif %}>Carpenter</option>
-                       <option value="Mason" {% if request.GET.project_type == 'Mason' %}selected{% endif %}>Mason</option>
-                   </select>
-               </div>
+
+
+              <div class="col-12 col-md-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Work Type</label>
+                  <select name="project_type" class="form-select form-select-sm">
+                      <option value="">All Types</option>
+                      <option value="Paint" {% if request.GET.project_type == 'Paint' %}selected{% endif %}>Paint</option>
+                      <option value="Electric" {% if request.GET.project_type == 'Electric' %}selected{% endif %}>Electric</option>
+                      <option value="Plumbing" {% if request.GET.project_type == 'Plumbing' %}selected{% endif %}>Plumbing</option>
+                      <option value="Cleaning" {% if request.GET.project_type == 'Cleaning' %}selected{% endif %}>Cleaning</option>
+                      <option value="AC" {% if request.GET.project_type == 'AC' %}selected{% endif %}>AC</option>
+                      <option value="Carpenter" {% if request.GET.project_type == 'Carpenter' %}selected{% endif %}>Carpenter</option>
+                      <option value="Mason" {% if request.GET.project_type == 'Mason' %}selected{% endif %}>Mason</option>
+                  </select>
+              </div>
 
 
 
-               <div class="col-6 col-md-2">
-                   <label class="form-label small fw-semibold text-muted mb-1">Date From</label>
-                   <input type="text" name="date_from" class="form-control form-control-sm flatpickr-date" placeholder="dd/mm/yyyy" value="{{ request.GET.date_from }}">
-               </div>
-
-
-               <div class="col-6 col-md-2">
-                   <label class="form-label small fw-semibold text-muted mb-1">Date To</label>
-                   <input type="text" name="date_to" class="form-control form-control-sm flatpickr-date" placeholder="dd/mm/yyyy" value="{{ request.GET.date_to }}">
-               </div>
 
 
 
-               <div class="col-12 col-md-1 d-flex align-items-end gap-1 mt-2 mt-md-0">
-                   <button type="submit" class="btn btn-dark btn-sm w-100 fw-bold py-1.5" title="Filter">
-                       <i class="bi bi-search"></i>
-                   </button>
-                   <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm w-100 py-1.5" title="Reset">
-                       <i class="bi bi-arrow-counterclockwise"></i>
-                   </a>
-               </div>
-           </div>
-       </form>
-   </div>
+              <div class="col-6 col-md-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Date From</label>
+                  <input type="text" name="date_from" class="form-control form-control-sm flatpickr-date" placeholder="dd/mm/yyyy" value="{{ request.GET.date_from }}">
+              </div>
+
+
+
+
+              <div class="col-6 col-md-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Date To</label>
+                  <input type="text" name="date_to" class="form-control form-control-sm flatpickr-date" placeholder="dd/mm/yyyy" value="{{ request.GET.date_to }}">
+              </div>
+
+
+
+
+
+
+              <div class="col-12 col-md-1 d-flex align-items-end gap-1 mt-2 mt-md-0">
+                  <button type="submit" class="btn btn-dark btn-sm w-100 fw-bold py-1.5" title="Filter">
+                      <i class="bi bi-search"></i>
+                  </button>
+                  <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm w-100 py-1.5" title="Reset">
+                      <i class="bi bi-arrow-counterclockwise"></i>
+                  </a>
+              </div>
+          </div>
+      </form>
+  </div>
 </div>
+
+
+
+
 
 
 
 
 {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
-   {% if "Completed" in title or "مكتمل" in title %}
-   <div class="d-flex justify-content-end gap-2 mb-3">
-       <div class="btn-group shadow-sm">
-           <button type="button" id="btnQuickClipboardCopy" class="btn btn-success btn-sm fw-bold" title="Click to copy all values instantly">
-               <i class="bi bi-file-earmark-spreadsheet-fill me-1"></i> Copy Values
-           </button>
-           <button type="button" class="btn btn-success btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-               <span class="visually-hidden">Toggle Options</span>
-           </button>
-           <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 200px; max-height: 300px; overflow-y: auto; font-size: 0.82rem;">
-               <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns to Copy</li>
-               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="0" checked id="cCol0"><label class="form-check-label text-dark" for="cCol0">Job ID</label></div></li>
-               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="1" checked id="cCol1"><label class="form-check-label text-dark" for="cCol1">Title</label></div></li>
-               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="2" checked id="cCol2"><label class="form-check-label text-dark" for="cCol2">Description</label></div></li>
-               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="3" checked id="cCol3"><label class="form-check-label text-dark" for="cCol3">Sub Cat 1</label></div></li>
-               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="4" checked id="cCol4"><label class="form-check-label text-dark" for="cCol4">Qty 1</label></div></li>
-               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="5" checked id="cCol5"><label class="form-check-label text-dark" for="cCol5">Sub Cat 2</label></div></li>
-               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="6" checked id="cCol6"><label class="form-check-label text-dark" for="cCol6">Qty 2</label></div></li>
-               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="7" checked id="cCol7"><label class="form-check-label text-dark" for="cCol7">Assigned To</label></div></li>
-               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="8" checked id="cCol8"><label class="form-check-label text-dark" for="cCol8">Service Charge</label></div></li>
-               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="9" checked id="cCol9"><label class="form-check-label text-dark" for="cCol9">Date Ended</label></div></li>
-               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="10" checked id="cCol10"><label class="form-check-label text-dark" for="cCol10">Complaints</label></div></li>
-               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="11" checked id="cCol11"><label class="form-check-label text-dark" for="cCol11">Location</label></div></li>
-           </ul>
+  {% if "Completed" in title or "مكتمل" in title %}
+  <div class="d-flex justify-content-end gap-2 mb-3">
+      <div class="btn-group shadow-sm">
+          <button type="button" id="btnQuickClipboardCopy" class="btn btn-success btn-sm fw-bold" title="Click to copy all values instantly">
+              <i class="bi bi-file-earmark-spreadsheet-fill me-1"></i> Copy Values
+          </button>
+          <button type="button" class="btn btn-success btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+              <span class="visually-hidden">Toggle Options</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 200px; max-height: 300px; overflow-y: auto; font-size: 0.82rem;">
+              <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns to Copy</li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="0" checked id="cCol0"><label class="form-check-label text-dark" for="cCol0">Job ID</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="1" checked id="cCol1"><label class="form-check-label text-dark" for="cCol1">Title</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="2" checked id="cCol2"><label class="form-check-label text-dark" for="cCol2">Description</label></div></li><li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="eCol3"><label class="form-check-label text-dark" for="eCol3">Items & Quantities</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="7" checked id="cCol7"><label class="form-check-label text-dark" for="cCol7">Assigned To</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="8" checked id="cCol8"><label class="form-check-label text-dark" for="cCol8">Service Charge</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="9" checked id="cCol9"><label class="form-check-label text-dark" for="cCol9">Date Ended</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="10" checked id="cCol10"><label class="form-check-label text-dark" for="cCol10">Complaints</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="11" checked id="cCol11"><label class="form-check-label text-dark" for="cCol11">Location</label></div></li>
+          </ul>
 
 
 
-       </div>
 
 
-       <button type="button" class="btn btn-dark btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#printSetupModal">
-           <i class="bi bi-printer-fill me-1"></i> Print Report
-       </button>
+
+      </div>
 
 
-    <div class="btn-group shadow-sm">
-    <button type="button" id="btnExportCSV" class="btn btn-info btn-sm fw-bold text-white">
-        <i class="bi bi-download me-1"></i> Export CSV
-    </button>
 
-    <button type="button" class="btn btn-info btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-        <span class="visually-hidden">Toggle</span>
-    </button>
 
-    <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 200px; max-height: 300px; overflow-y: auto; font-size: 0.82rem;">
-        <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns to Export</li>
-        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="0" checked id="eCol0"><label class="form-check-label text-dark" for="eCol0">Job ID</label></div></li>
-        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="1" checked id="eCol1"><label class="form-check-label text-dark" for="eCol1">Title</label></div></li>
-        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="2" checked id="eCol2"><label class="form-check-label text-dark" for="eCol2">Description</label></div></li>
-        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="eCol3"><label class="form-check-label text-dark" for="eCol3">Sub Cat 1</label></div></li>
-        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="4" checked id="eCol4"><label class="form-check-label text-dark" for="eCol4">Qty 1</label></div></li>
-        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="5" checked id="eCol5"><label class="form-check-label text-dark" for="eCol5">Sub Cat 2</label></div></li>
-        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="6" checked id="eCol6"><label class="form-check-label text-dark" for="eCol6">Qty 2</label></div></li>
-        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="7" checked id="eCol7"><label class="form-check-label text-dark" for="eCol7">Assigned To</label></div></li>
-        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="8" checked id="eCol8"><label class="form-check-label text-dark" for="eCol8">Service Charge</label></div></li>
-        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="9" checked id="eCol9"><label class="form-check-label text-dark" for="eCol9">Date Ended</label></div></li>
-        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="10" checked id="eCol10"><label class="form-check-label text-dark" for="eCol10">Complaints</label></div></li>
-        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="11" checked id="eCol11"><label class="form-check-label text-dark" for="eCol11">Location</label></div></li>
-    </ul>
+      <button type="button" class="btn btn-dark btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#printSetupModal">
+          <i class="bi bi-printer-fill me-1"></i> Print Report
+      </button>
+
+
+
+
+   <div class="btn-group shadow-sm">
+   <button type="button" id="btnExportCSV" class="btn btn-info btn-sm fw-bold text-white">
+       <i class="bi bi-download me-1"></i> Export CSV
+   </button>
+
+
+   <button type="button" class="btn btn-info btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+       <span class="visually-hidden">Toggle</span>
+   </button>
+
+
+   <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 200px; max-height: 300px; overflow-y: auto; font-size: 0.82rem;">
+       <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns to Export</li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="0" checked id="eCol0"><label class="form-check-label text-dark" for="eCol0">Job ID</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="1" checked id="eCol1"><label class="form-check-label text-dark" for="eCol1">Title</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="2" checked id="eCol2"><label class="form-check-label text-dark" for="eCol2">Description</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="eCol3"><label class="form-check-label text-dark" for="eCol3">Sub Cat 1</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="4" checked id="eCol4"><label class="form-check-label text-dark" for="eCol4">Qty 1</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="5" checked id="eCol5"><label class="form-check-label text-dark" for="eCol5">Sub Cat 2</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="6" checked id="eCol6"><label class="form-check-label text-dark" for="eCol6">Qty 2</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="7" checked id="eCol7"><label class="form-check-label text-dark" for="eCol7">Assigned To</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="8" checked id="eCol8"><label class="form-check-label text-dark" for="eCol8">Service Charge</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="9" checked id="eCol9"><label class="form-check-label text-dark" for="eCol9">Date Ended</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="10" checked id="eCol10"><label class="form-check-label text-dark" for="eCol10">Complaints</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="11" checked id="eCol11"><label class="form-check-label text-dark" for="eCol11">Location</label></div></li>
+   </ul>
 </div>
 
+
 </div>
-   {% endif %}
+  {% endif %}
 {% endif %}
+
+
 
 
 <div id="tasksListContainer" class="container-fluid px-0 border rounded overflow-hidden shadow-sm">
 
+
 <div class="container-fluid px-0 border rounded overflow-hidden shadow-sm">
 
 
-   <div class="row mx-0 px-3 py-2 bg-dark text-white fw-semibold small d-none d-md-flex header-row">
-       <div class="col-md-3 py-1 header-col">Task Title & Details (العنوان والبيانات)</div>
-       <div class="col-md-2 text-center py-1 header-col">Job ID / Work Type</div>
-       <div class="col-md-2 text-center py-1 header-col">Status / RP Points</div>
-       <div class="col-md-3 py-1 header-col">Personnel & Location (الموقع)</div>
-       <div class="col-md-2 text-end py-1">Action</div>
-   </div>
 
 
-   {% for task in tasks %}
-   <div class="row mx-0 px-3 py-3 align-items-center bg-white task-row {% if task.status == 'Pending' %}status-pending{% elif task.status == 'In Progress' or task.status == 'Active' %}status-active{% elif task.status == 'Completed' %}status-completed{% elif task.status == 'Overdue' %}status-overdue{% endif %}">
+  <div class="row mx-0 px-3 py-2 bg-dark text-white fw-semibold small d-none d-md-flex header-row">
+      <div class="col-md-3 py-1 header-col">Task Title & Details (العنوان والبيانات)</div>
+      <div class="col-md-2 text-center py-1 header-col">Job ID / Work Type</div>
+      <div class="col-md-2 text-center py-1 header-col">Status / RP Points</div>
+      <div class="col-md-3 py-1 header-col">Personnel & Location (الموقع)</div>
+      <div class="col-md-2 text-end py-1">Action</div>
+  </div>
 
 
-       <div class="col-12 col-md-3 mb-2 mb-md-0 py-md-2 task-col">
-           <h6 class="mb-1">
-               <a href="{% url 'task_detail' task.id %}" class="text-decoration-none fw-bold text-dark hover-primary-link">
-                   {{ task.title }}
-               </a>
-           </h6>
 
 
-           {% with task.complaint_set.last as complaint %}
-               {% if complaint %}
-                   <div class="text-danger small fw-semibold d-flex align-items-center mt-1" style="font-size: 0.78rem;">
-                       <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                       <span class="text-truncate" style="max-width: 250px;">{{ complaint.message }}</span>
-                   </div>
-               {% else %}
-                   <span class="text-muted d-block small text-truncate" style="font-size: 0.75rem;">
-                       <i class="bi bi-chat-left-text me-1"></i>No complaints
-                   </span>
-               {% endif %}
-           {% endwith %}
+  {% for task in tasks %}
+  <div class="row mx-0 px-3 py-3 align-items-center bg-white task-row {% if task.status == 'Pending' %}status-pending{% elif task.status == 'In Progress' or task.status == 'Active' %}status-active{% elif task.status == 'Completed' %}status-completed{% elif task.status == 'Overdue' %}status-overdue{% endif %}">
+
+
+
+
+      <div class="col-12 col-md-3 mb-2 mb-md-0 py-md-2 task-col">
+          <h6 class="mb-1">
+              <a href="{% url 'task_detail' task.id %}" class="text-decoration-none fw-bold text-dark hover-primary-link">
+                  {{ task.title }}
+              </a>
+          </h6>
+
+
+
+
+          {% with task.complaint_set.last as complaint %}
+              {% if complaint %}
+                  <div class="text-danger small fw-semibold d-flex align-items-center mt-1" style="font-size: 0.78rem;">
+                      <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                      <span class="text-truncate" style="max-width: 250px;">{{ complaint.message }}</span>
+                  </div>
+              {% else %}
+                  <span class="text-muted d-block small text-truncate" style="font-size: 0.75rem;">
+                      <i class="bi bi-chat-left-text me-1"></i>No complaints
+                  </span>
+              {% endif %}
+          {% endwith %}
+      </div>
+
+
+
+
+      <div class="col-6 col-md-2 text-md-center mb-2 mb-md-0 py-md-2 task-col">
+          <span class="d-md-none text-muted small block-label">Job ID: </span>
+          <span class="fw-bold d-block text-dark small">{{ task.job_id }}</span>
+          <span class="badge bg-secondary opacity-75 mt-1" style="font-size: 0.7rem;">{{ task.project_type }}</span>
+      </div>
+
+
+
+
+      <div class="col-6 col-md-2 text-md-center mb-2 mb-md-0 py-md-2 task-col">
+          <span class="d-md-none text-muted small block-label">Status: </span>
+          <div class="mb-1">
+              {% if task.status == 'Pending' %}
+                  <span class="badge bg-warning text-dark px-2 py-1 small-badge">Pending</span>
+              {% elif task.status == 'In Progress' or task.status == 'Active' %}
+                  <span class="badge bg-primary px-2 py-1 small-badge">Active</span>
+              {% elif task.status == 'Completed' %}
+                  <span class="badge bg-success px-2 py-1 small-badge">Completed</span>
+              {% elif task.status == 'Overdue' %}
+                  <span class="badge bg-danger px-2 py-1 small-badge">Overdue</span>
+              {% else %}
+                  <span class="badge bg-secondary px-2 py-1 small-badge">{{ task.status }}</span>
+              {% endif %}
+          </div>
+
+
+
+
+          <div>
+              {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
+       <div class="d-inline-flex align-items-center gap-1 rp-edit-container">
+           <input type="number"
+                  id="rp-input-{{ task.id }}"
+                  class="form-control form-control-sm px-1 py-0 text-dark fw-bold border-secondary"
+                  value="{{ task.reward_points_awarded|default:0 }}"
+                  style="width: 60px; height: 24px; font-size: 0.75rem;">
+           <button type="button"
+                   class="btn btn-warning btn-xs p-0 px-1 d-flex align-items-center justify-content-center btn-save-rp"
+                   data-task-id="{{ task.id }}"
+                   style="height: 24px; font-size: 0.7rem;"
+                   title="Save RP">
+               <i class="bi bi-check-lg"></i>
+           </button>
        </div>
+   {% else %}
+       {% if task.is_rewarded %}
+           <span class="badge bg-info text-dark" style="font-size: 0.7rem;">+{{ task.reward_points_awarded }} RP</span>
+       {% endif %}
+   {% endif %}
+          </div>
+      </div>
 
 
-       <div class="col-6 col-md-2 text-md-center mb-2 mb-md-0 py-md-2 task-col">
-           <span class="d-md-none text-muted small block-label">Job ID: </span>
-           <span class="fw-bold d-block text-dark small">{{ task.job_id }}</span>
-           <span class="badge bg-secondary opacity-75 mt-1" style="font-size: 0.7rem;">{{ task.project_type }}</span>
-       </div>
 
 
-       <div class="col-6 col-md-2 text-md-center mb-2 mb-md-0 py-md-2 task-col">
-           <span class="d-md-none text-muted small block-label">Status: </span>
-           <div class="mb-1">
-               {% if task.status == 'Pending' %}
-                   <span class="badge bg-warning text-dark px-2 py-1 small-badge">Pending</span>
-               {% elif task.status == 'In Progress' or task.status == 'Active' %}
-                   <span class="badge bg-primary px-2 py-1 small-badge">Active</span>
-               {% elif task.status == 'Completed' %}
-                   <span class="badge bg-success px-2 py-1 small-badge">Completed</span>
-               {% elif task.status == 'Overdue' %}
-                   <span class="badge bg-danger px-2 py-1 small-badge">Overdue</span>
-               {% else %}
-                   <span class="badge bg-secondary px-2 py-1 small-badge">{{ task.status }}</span>
-               {% endif %}
-           </div>
-
-
-           <div>
-               {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
-        <div class="d-inline-flex align-items-center gap-1 rp-edit-container">
-            <input type="number"
-                   id="rp-input-{{ task.id }}"
-                   class="form-control form-control-sm px-1 py-0 text-dark fw-bold border-secondary"
-                   value="{{ task.reward_points_awarded|default:0 }}"
-                   style="width: 60px; height: 24px; font-size: 0.75rem;">
-            <button type="button"
-                    class="btn btn-warning btn-xs p-0 px-1 d-flex align-items-center justify-content-center btn-save-rp"
-                    data-task-id="{{ task.id }}"
-                    style="height: 24px; font-size: 0.7rem;"
-                    title="Save RP">
-                <i class="bi bi-check-lg"></i>
-            </button>
-        </div>
-    {% else %}
-        {% if task.is_rewarded %}
-            <span class="badge bg-info text-dark" style="font-size: 0.7rem;">+{{ task.reward_points_awarded }} RP</span>
-        {% endif %}
-    {% endif %}
-           </div>
-       </div>
-
-
-       <div class="col-12 col-md-3 mb-3 mb-md-0 py-md-2 task-col">
-   <div class="small text-dark mb-1">
-   <i class="bi bi-person-fill text-secondary me-1"></i>
-   <strong>
-       {% for tech in task.assigned_technicians.all %}
-           {{ tech.username }}{% if not forloop.last %}, {% endif %}
-       {% empty %}
-           Unassigned
-       {% endfor %}
-   </strong>
+      <div class="col-12 col-md-3 mb-3 mb-md-0 py-md-2 task-col">
+  <div class="small text-dark mb-1">
+  <i class="bi bi-person-fill text-secondary me-1"></i>
+  <strong>
+      {% for tech in task.assigned_technicians.all %}
+          {{ tech.username }}{% if not forloop.last %}, {% endif %}
+      {% empty %}
+          Unassigned
+      {% endfor %}
+  </strong>
 </div>
-           <div class="small text-secondary mb-1">
-               <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ task.location }}
-           </div>
-
-
-           <div class="small mb-1" style="font-size: 0.8rem;">
-               <i class="bi bi-cash-stack me-1 text-success"></i>Service Charge:
-               {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
-                   <div class="d-inline-flex align-items-center gap-1 mt-1 mt-sm-0 budget-edit-container">
-                       <input type="text"
-                              id="budget-input-{{ task.id }}"
-                              class="form-control form-control-sm px-1 py-0 text-success fw-bold border-secondary custom-excel-cell"
-                              value="{{ task.budget|default:'' }}"
-                              style="width: 80px; height: 24px; font-size: 0.75rem;"
-                              placeholder="0.00">
-                       <button type="button"
-                               class="btn btn-success btn-xs p-0 px-1 d-flex align-items-center justify-content-center btn-save-budget"
-                               data-task-id="{{ task.id }}"
-                               style="height: 24px; font-size: 0.7rem;"
-                               title="Save Budget">
-                           <i class="bi bi-check-lg"></i>
-                       </button>
-                   </div>
-               {% else %}
-                   <span class="fw-bold text-success" id="budget-text-{{ task.id }}">{{ task.budget|default:"0.00" }}</span>
-               {% endif %}
-           </div>
-
-
-           {% if task.status == 'Completed' %}
-               {% if task.time_taken %}
-                   <div class="text-success small mb-1" style="font-size: 0.75rem;">
-                       <i class="bi bi-clock-history me-1"></i>Took: {{ task.time_taken }}
-                   </div>
-               {% endif %}
-               {% if task.completed_at %}
-                   <div class="text-muted small" style="font-size: 0.75rem;">
-                       <i class="bi bi-calendar-check-fill text-success me-1"></i>Ended: <span class="fw-semibold text-dark">{{ task.completed_at|date:"d/m/Y H:i" }}</span>
-                   </div>
-               {% endif %}
+          <div class="small text-secondary mb-1">
+              <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ task.location }}
+          </div>
 
 
 
 
+          <div class="small mb-1" style="font-size: 0.8rem;">
+              <i class="bi bi-cash-stack me-1 text-success"></i>Service Charge:
+              {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
+                  <div class="d-inline-flex align-items-center gap-1 mt-1 mt-sm-0 budget-edit-container">
+                      <input type="text"
+                             id="budget-input-{{ task.id }}"
+                             class="form-control form-control-sm px-1 py-0 text-success fw-bold border-secondary custom-excel-cell"
+                             value="{{ task.budget|default:'' }}"
+                             style="width: 80px; height: 24px; font-size: 0.75rem;"
+                             placeholder="0.00">
+                      <button type="button"
+                              class="btn btn-success btn-xs p-0 px-1 d-flex align-items-center justify-content-center btn-save-budget"
+                              data-task-id="{{ task.id }}"
+                              style="height: 24px; font-size: 0.7rem;"
+                              title="Save Budget">
+                          <i class="bi bi-check-lg"></i>
+                      </button>
+                  </div>
+              {% else %}
+                  <span class="fw-bold text-success" id="budget-text-{{ task.id }}">{{ task.budget|default:"0.00" }}</span>
+              {% endif %}
+          </div>
 
-           {%comment%}
-           {% if task.work_delay %}
-                   <div class="text-muted small" style="font-size: 0.75rem;">
-                       <i class="bi bi-calendar-check-fill text-success me-1"></i>Delay: <span class="fw-semibold text-dark">{{ task.work_delay }}</span>
-                   </div>
-               {% endif %}
-           {%endcomment%}
 
 
-           {% elif task.status == 'Overdue' and task.work_delay %}
-               <div class="text-danger small fw-bold mt-1" style="font-size: 0.75rem;">
-                   <i class="bi bi-alarm-fill me-1"></i>Delayed: {{ task.work_delay }}
-               </div>
-           {% endif %}
-       </div>
+
+          {% if task.status == 'Completed' %}
+              {% if task.time_taken %}
+                  <div class="text-success small mb-1" style="font-size: 0.75rem;">
+                      <i class="bi bi-clock-history me-1"></i>Took: {{ task.time_taken }}
+                  </div>
+              {% endif %}
+              {% if task.completed_at %}
+                  <div class="text-muted small" style="font-size: 0.75rem;">
+                      <i class="bi bi-calendar-check-fill text-success me-1"></i>Ended: <span class="fw-semibold text-dark">{{ task.completed_at|date:"d/m/Y H:i" }}</span>
+                  </div>
+              {% endif %}
 
 
-       <div class="col-12 col-md-2 text-end py-md-2">
-           <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-dark w-100-mobile fw-bold text-center">
-               View Details <i class="bi bi-arrow-right-short ms-1"></i>
-           </a>
-       </div>
 
 
-   </div>
-   {% empty %}
-   <div class="text-center py-5 bg-white">
-       <p class="text-muted fs-6 mb-0">No tasks found matching this criteria. (لم يتم العثور على مهام)</p>
-   </div>
-   {% endfor %}
+
+
+
+
+
+
+          {%comment%}
+          {% if task.work_delay %}
+                  <div class="text-muted small" style="font-size: 0.75rem;">
+                      <i class="bi bi-calendar-check-fill text-success me-1"></i>Delay: <span class="fw-semibold text-dark">{{ task.work_delay }}</span>
+                  </div>
+              {% endif %}
+          {%endcomment%}
+
+
+
+
+          {% elif task.status == 'Overdue' and task.work_delay %}
+              <div class="text-danger small fw-bold mt-1" style="font-size: 0.75rem;">
+                  <i class="bi bi-alarm-fill me-1"></i>Delayed: {{ task.work_delay }}
+              </div>
+          {% endif %}
+      </div>
+
+
+
+
+      <div class="col-12 col-md-2 text-end py-md-2">
+          <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-dark w-100-mobile fw-bold text-center">
+              View Details <i class="bi bi-arrow-right-short ms-1"></i>
+          </a>
+      </div>
+
+
+
+
+  </div>
+  {% empty %}
+  <div class="text-center py-5 bg-white">
+      <p class="text-muted fs-6 mb-0">No tasks found matching this criteria. (لم يتم العثور على مهام)</p>
+  </div>
+  {% endfor %}
+
+
 
 
 </div>
 </div>
+
+
+
+
+
 
 
 
 
 
 <div id="copyToastNotification" class="custom-toast shadow border border-success d-none animate-fade-in">
-   <div class="d-flex align-items-center gap-2">
-       <i class="bi bi-check-circle-fill text-success fs-5"></i>
-       <span class="fw-semibold text-dark" style="font-size: 0.85rem;">
-           Values copied and ready to paste in spreadsheet!
-       </span>
-   </div>
+  <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-check-circle-fill text-success fs-5"></i>
+      <span class="fw-semibold text-dark" style="font-size: 0.85rem;">
+          Values copied and ready to paste in spreadsheet!
+      </span>
+  </div>
 </div>
+
+
+
+
+
+
+
 
 
 
@@ -351,176 +440,216 @@
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-   document.addEventListener("DOMContentLoaded", function() {
-       // Flatpickr Calendar Core Initializer Routine
-       flatpickr(".flatpickr-date", {
-           altInput: true,
-           altFormat: "d/m/Y",
-           dateFormat: "Y-m-d",
-           allowInput: true,
-           disableMobile: "true"
-       });
+  document.addEventListener("DOMContentLoaded", function() {
+      // Flatpickr Calendar Core Initializer Routine
+      flatpickr(".flatpickr-date", {
+          altInput: true,
+          altFormat: "d/m/Y",
+          dateFormat: "Y-m-d",
+          allowInput: true,
+          disableMobile: "true"
+      });
 
 
-       // AJAX Inline Excel-Style Budget Update Execution Handling
-       const saveButtons = document.querySelectorAll('.btn-save-budget');
-       saveButtons.forEach(button => {
-           button.addEventListener('click', function() {
-               const taskId = this.getAttribute('data-task-id');
-               const inputField = document.getElementById(`budget-input-${taskId}`);
-               const budgetValue = inputField.value;
 
 
-               // Toggle Visual Spinner Loader System State Indicators
-               this.disabled = true;
-               const originalContent = this.innerHTML;
-               this.innerHTML = `<span class="spinner-border spinner-border-sm" style="width: 10px; height: 10px;" role="status" aria-hidden="true"></span>`;
+      // AJAX Inline Excel-Style Budget Update Execution Handling
+      const saveButtons = document.querySelectorAll('.btn-save-budget');
+      saveButtons.forEach(button => {
+          button.addEventListener('click', function() {
+              const taskId = this.getAttribute('data-task-id');
+              const inputField = document.getElementById(`budget-input-${taskId}`);
+              const budgetValue = inputField.value;
 
 
-               fetch(`/tasks/update-budget-ajax/${taskId}/`, {
-                   method: 'POST',
-                   headers: {
-                       'Content-Type': 'application/json',
-                       'X-CSRFToken': '{{ csrf_token }}'
-                   },
-                   body: JSON.stringify({ 'budget': budgetValue })
-               })
-               .then(response => response.json())
-               .then(data => {
-                   this.disabled = false;
-                   this.innerHTML = originalContent;
 
 
-                   if (data.status === 'success') {
-                       // Success Blink Response UI Animation
-                       inputField.classList.remove('border-secondary', 'is-invalid');
-                       inputField.classList.add('is-valid');
-                       setTimeout(() => inputField.classList.remove('is-valid'), 1500);
-                   } else {
-                       inputField.classList.add('is-invalid');
-                       alert("Error updating value: " + data.message);
-                   }
-               })
-               .catch(error => {
-                   this.disabled = false;
-                   this.innerHTML = originalContent;
-                   inputField.classList.add('is-invalid');
-                   console.error('Error:', error);
-                   alert("Network backend server system interface error. Verification failed.");
-               });
-           });
-       });
-   });
+              // Toggle Visual Spinner Loader System State Indicators
+              this.disabled = true;
+              const originalContent = this.innerHTML;
+              this.innerHTML = `<span class="spinner-border spinner-border-sm" style="width: 10px; height: 10px;" role="status" aria-hidden="true"></span>`;
 
 
- document.addEventListener("DOMContentLoaded", function() {
-   const quickCopyBtn = document.getElementById("btnQuickClipboardCopy");
-   const toastNode = document.getElementById("copyToastNotification");
 
 
-   if (quickCopyBtn) {
-       quickCopyBtn.addEventListener("click", function() {
-           // 1. Compile total baseline array structures
-           const headersList = [
-               "Job ID", "Title", "Description",
-               "Sub Category-1", "Quantity-1",
-               "Sub Category-2", "Quantity-2",
-               "Assigned To", "Service Charge (Budget)",
-               "Date Completed", "Complaints", "Location"
-           ];
+              fetch(`/tasks/update-budget-ajax/${taskId}/`, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRFToken': '{{ csrf_token }}'
+                  },
+                  body: JSON.stringify({ 'budget': budgetValue })
+              })
+              .then(response => response.json())
+              .then(data => {
+                  this.disabled = false;
+                  this.innerHTML = originalContent;
 
 
-           // 2. Determine user's target selected column array indices
-           let activeIndices = [];
-           const checkedBoxes = document.querySelectorAll(".copy-col-check:checked");
-           checkedBoxes.forEach(cb => activeIndices.push(parseInt(cb.value)));
 
 
-           if (activeIndices.length === 0) {
-               alert("Please leave at least one dataset parameter column checked to compile values.");
-               return;
-           }
+                  if (data.status === 'success') {
+                      // Success Blink Response UI Animation
+                      inputField.classList.remove('border-secondary', 'is-invalid');
+                      inputField.classList.add('is-valid');
+                      setTimeout(() => inputField.classList.remove('is-valid'), 1500);
+                  } else {
+                      inputField.classList.add('is-invalid');
+                      alert("Error updating value: " + data.message);
+                  }
+              })
+              .catch(error => {
+                  this.disabled = false;
+                  this.innerHTML = originalContent;
+                  inputField.classList.add('is-invalid');
+                  console.error('Error:', error);
+                  alert("Network backend server system interface error. Verification failed.");
+              });
+          });
+      });
+  });
 
 
-           // Construct localized header array output matching selection
-           let rows = [activeIndices.map(idx => headersList[idx])];
 
 
-           // Clean data line integrity helper
-           const cleanStr = (val) => val ? val.replace(/[\t\n\r]/g, " ").trim() : "";
+document.addEventListener("DOMContentLoaded", function() {
+  const quickCopyBtn = document.getElementById("btnQuickClipboardCopy");
+  const toastNode = document.getElementById("copyToastNotification");
 
 
-           // 3. Loop through current context filtered records dataset
-           {% for task in tasks %}
-               (function() {
-                   let itemData = [];
-                   {% for item in task.items.all %}
-                       itemData.push({
-                           cat: "{{ item.sub_category|escapejs }}",
-                           qty: "{{ item.quantity|escapejs }}"
-                       });
-                   {% endfor %}
 
 
-                   let subCat1 = itemData[0] ? cleanStr(itemData[0].cat) : "-";
-                   let qty1    = itemData[0] ? cleanStr(itemData[0].qty) : "-";
-                   let subCat2 = itemData[1] ? cleanStr(itemData[1].cat) : "-";
-                   let qty2    = itemData[1] ? cleanStr(itemData[1].qty) : "-";
+  if (quickCopyBtn) {
+      quickCopyBtn.addEventListener("click", function() {
+          // 1. Compile total baseline array structures
+          const headersList = [
+              "Job ID", "Title", "Description",
+              "Sub Category-1", "Quantity-1",
+              "Sub Category-2", "Quantity-2",
+              "Assigned To", "Service Charge (Budget)",
+              "Date Completed", "Complaints", "Location"
+          ];
 
 
-                   let complaintMsg = "No complaints";
-                   {% with task.complaint_set.last as comp %}
-                       {% if comp %} complaintMsg = "{{ comp.message|escapejs }}"; {% endif %}
-                   {% endwith %}
 
 
-                   // Full source index matching dataset scheme arrays
-                   let fullDataRecord = [
-                       "{{ task.job_id|escapejs }}",
-                       cleanStr("{{ task.title|escapejs }}"),
-                       cleanStr("{{ task.description|default:''|escapejs }}"),
-                       subCat1, qty1,
-                       subCat2, qty2,
-                       "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
-                       "{{ task.budget|default:'0.00'|escapejs }}",
-                       "{{ task.completed_at|date:'d/m/Y H:i' }}",
-                       cleanStr(complaintMsg),
-                       cleanStr("{{ task.location|escapejs }}")
-                   ];
+          // 2. Determine user's target selected column array indices
+          let activeIndices = [];
+          const checkedBoxes = document.querySelectorAll(".copy-col-check:checked");
+          checkedBoxes.forEach(cb => activeIndices.push(parseInt(cb.value)));
 
 
-                   // Extrapolate values chosen explicitly by checked matrixes
-                   let filteredRecord = activeIndices.map(idx => fullDataRecord[idx]);
-                   rows.push(filteredRecord);
-               })();
-           {% endfor %}
 
 
-           if (rows.length <= 1) {
-               alert("No completed task entries found matching your current filters.");
-               return;
-           }
+          if (activeIndices.length === 0) {
+              alert("Please leave at least one dataset parameter column checked to compile values.");
+              return;
+          }
 
 
-           // 4. Flatten layout into TSV text stream data maps
-           const matrixString = rows.map(row => row.join("\t")).join("\n");
 
 
-           // 5. Transfer into system hardware pipeline clipboard context
-           navigator.clipboard.writeText(matrixString).then(() => {
-               if (toastNode) {
-                   toastNode.classList.remove('d-none');
-                   setTimeout(() => {
-                       toastNode.classList.add('d-none');
-                   }, 4500);
-               }
-           }).catch(err => {
-               console.error("Clipboard access rejected: ", err);
-               alert("Failed to write to clipboard. Please check application runtime browser permissions.");
-           });
-       });
-   }
+          // Construct localized header array output matching selection
+          let rows = [activeIndices.map(idx => headersList[idx])];
+
+
+
+
+          // Clean data line integrity helper
+          const cleanStr = (val) => val ? val.replace(/[\t\n\r]/g, " ").trim() : "";
+
+
+
+
+          // 3. Loop through current context filtered records dataset
+          {% for task in tasks %}
+              (function() {
+                  let itemData = [];
+                  {% for item in task.items.all %}
+                      itemData.push({
+                          cat: "{{ item.sub_category|escapejs }}",
+                          qty: "{{ item.quantity|escapejs }}"
+                      });
+                  {% endfor %}
+
+
+
+
+                 let itemsStr = itemData.map(i => `${i.cat} (x${i.qty})`).join(" | ");
+if (itemsStr === "") itemsStr = "-";
+
+
+
+
+                  let complaintMsg = "No complaints";
+                  {% with task.complaint_set.last as comp %}
+                      {% if comp %} complaintMsg = "{{ comp.message|escapejs }}"; {% endif %}
+                  {% endwith %}
+
+
+
+
+                  // Full source index matching dataset scheme arrays
+                  let fullDataRecord = [
+                      "{{ task.job_id|escapejs }}",
+                      cleanStr("{{ task.title|escapejs }}"),
+                      cleanStr("{{ task.description|default:''|escapejs }}"),
+                      subCat1, qty1,
+                      subCat2, qty2,
+                      "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
+                      "{{ task.budget|default:'0.00'|escapejs }}",
+                      "{{ task.completed_at|date:'d/m/Y H:i' }}",
+                      cleanStr(complaintMsg),
+                      cleanStr("{{ task.location|escapejs }}")
+                  ];
+
+
+
+
+                  // Extrapolate values chosen explicitly by checked matrixes
+                  let filteredRecord = activeIndices.map(idx => fullDataRecord[idx]);
+                  rows.push(filteredRecord);
+              })();
+          {% endfor %}
+
+
+
+
+          if (rows.length <= 1) {
+              alert("No completed task entries found matching your current filters.");
+              return;
+          }
+
+
+
+
+          // 4. Flatten layout into TSV text stream data maps
+          const matrixString = rows.map(row => row.join("\t")).join("\n");
+
+
+
+
+          // 5. Transfer into system hardware pipeline clipboard context
+          navigator.clipboard.writeText(matrixString).then(() => {
+              if (toastNode) {
+                  toastNode.classList.remove('d-none');
+                  setTimeout(() => {
+                      toastNode.classList.add('d-none');
+                  }, 4500);
+              }
+          }).catch(err => {
+              console.error("Clipboard access rejected: ", err);
+              alert("Failed to write to clipboard. Please check application runtime browser permissions.");
+          });
+      });
+  }
 });
+
+
+
+
+
+
 
 
 
@@ -529,206 +658,248 @@
 
 // Data Reporting Print Engine Routine
 document.addEventListener("DOMContentLoaded", function() {
-   const radioAll = document.getElementById("printTypeAll");
-   const radioCustom = document.getElementById("printTypeCustom");
-   const customPanel = document.getElementById("printCustomColumnPanel");
-   const printExecuteBtn = document.getElementById("btnExecutePrintReport");
+  const radioAll = document.getElementById("printTypeAll");
+  const radioCustom = document.getElementById("printTypeCustom");
+  const customPanel = document.getElementById("printCustomColumnPanel");
+  const printExecuteBtn = document.getElementById("btnExecutePrintReport");
 
 
-   // Dynamic visibility toggle for the custom checkbox selection panel
-   if (radioAll && radioCustom && customPanel) {
-       const togglePanelVisibility = () => {
-           if (radioCustom.checked) {
-               customPanel.classList.remove("d-none");
-           } else {
-               customPanel.classList.add("d-none");
-           }
-       };
-       radioAll.addEventListener("change", togglePanelVisibility);
-       radioCustom.addEventListener("change", togglePanelVisibility);
-   }
 
 
-   if (printExecuteBtn) {
-       printExecuteBtn.addEventListener("click", function() {
-           // 1. Gather all header configuration sets
-           const headersList = [
-               "Job ID", "Title", "Description",
-               "Sub Category-1", "Quantity-1",
-               "Sub Category-2", "Quantity-2",
-               "Assigned To", "Service Charge",
-               "Date Completed", "Complaints", "Location"
-           ];
+  // Dynamic visibility toggle for the custom checkbox selection panel
+  if (radioAll && radioCustom && customPanel) {
+      const togglePanelVisibility = () => {
+          if (radioCustom.checked) {
+              customPanel.classList.remove("d-none");
+          } else {
+              customPanel.classList.add("d-none");
+          }
+      };
+      radioAll.addEventListener("change", togglePanelVisibility);
+      radioCustom.addEventListener("change", togglePanelVisibility);
+  }
 
 
-           // 2. Fetch dataset rows using identical structure logic as your copy routing engine
-           let printRows = [];
-           const cleanStr = (val) => val ? val.replace(/[\t\n\r]/g, " ").trim() : "";
 
 
-           {% for task in tasks %}
-               (function() {
-                   let itemData = [];
-                   {% for item in task.items.all %}
-                       itemData.push({
-                           cat: "{{ item.sub_category|escapejs }}",
-                           qty: "{{ item.quantity|escapejs }}"
-                       });
-                   {% endfor %}
+  if (printExecuteBtn) {
+      printExecuteBtn.addEventListener("click", function() {
+          // 1. Gather all header configuration sets
+          const headersList = [
+              "Job ID", "Title", "Description",
+              "Sub Category-1", "Quantity-1",
+              "Sub Category-2", "Quantity-2",
+              "Assigned To", "Service Charge",
+              "Date Completed", "Complaints", "Location"
+          ];
 
 
-                   let subCat1 = itemData[0] ? cleanStr(itemData[0].cat) : "-";
-                   let qty1    = itemData[0] ? cleanStr(itemData[0].qty) : "-";
-                   let subCat2 = itemData[1] ? cleanStr(itemData[1].cat) : "-";
-                   let qty2    = itemData[1] ? cleanStr(itemData[1].qty) : "-";
 
 
-                   let complaintMsg = "No complaints";
-                   {% with task.complaint_set.last as comp %}
-                       {% if comp %} complaintMsg = "{{ comp.message|escapejs }}"; {% endif %}
-                   {% endwith %}
+          // 2. Fetch dataset rows using identical structure logic as your copy routing engine
+          let printRows = [];
+          const cleanStr = (val) => val ? val.replace(/[\t\n\r]/g, " ").trim() : "";
 
 
-                   printRows.push([
-                       "{{ task.job_id|escapejs }}",
-                       cleanStr("{{ task.title|escapejs }}"),
-                       cleanStr("{{ task.description|default:''|escapejs }}"),
-                       subCat1, qty1,
-                       subCat2, qty2,
-                       "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
-                       "{{ task.budget|default:'0.00'|escapejs }}",
-                       "{{ task.completed_at|date:'d/m/Y H:i' }}",
-                       cleanStr(complaintMsg),
-                       cleanStr("{{ task.location|escapejs }}")
-                   ]);
-               })();
-           {% endfor %}
 
 
-           if (printRows.length === 0) {
-               alert("No data available to print based on current criteria matching parameters.");
-               return;
-           }
+          {% for task in tasks %}
+              (function() {
+                  let itemData = [];
+                  {% for item in task.items.all %}
+                      itemData.push({
+                          cat: "{{ item.sub_category|escapejs }}",
+                          qty: "{{ item.quantity|escapejs }}"
+                      });
+                  {% endfor %}
 
 
-           // 3. Determine specific active column indices based on user choice selection inputs
-           let activeIndices = [];
-           if (radioAll.checked) {
-               activeIndices = headersList.map((_, idx) => idx);
-           } else {
-               const checkedBoxes = document.querySelectorAll(".print-col-check:checked");
-               checkedBoxes.forEach(cb => activeIndices.push(parseInt(cb.value)));
-           }
 
 
-           if (activeIndices.length === 0) {
-               alert("Please select at least one value column to populate the report matrix.");
-               return;
-           }
+                  let itemsStr = itemData.map(i => `${i.cat} (x${i.qty})`).join(" | ");
+if (itemsStr === "") itemsStr = "-";
 
 
-           // Hide configuration modal layout safely before generating system viewport windows
-           const modalEl = document.getElementById('printSetupModal');
-           const modalInstance = bootstrap.Modal.getInstance(modalEl);
-           if (modalInstance) modalInstance.hide();
 
 
-           // 4. Construct a sandboxed, standalone print HTML stream window layout
-           const printWindow = window.open("", "_blank");
+                  let complaintMsg = "No complaints";
+                  {% with task.complaint_set.last as comp %}
+                      {% if comp %} complaintMsg = "{{ comp.message|escapejs }}"; {% endif %}
+                  {% endwith %}
 
 
-           let htmlPayload = `
-               <html>
-               <head>
-                   <title>Maintenance System Report - ${cleanStr("{{ title|escapejs }}")}</title>
-                   <style>
-                       body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; color: #333; }
-                       .report-header { margin-bottom: 25px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-                       .report-header h2 { margin: 0 0 5px 0; font-size: 20px; }
-                       .report-header p { margin: 0; font-size: 13px; color: #666; font-weight: 500; }
-                       table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
-                       th { background-color: #1a1a1a; color: #ffffff; font-weight: 600; text-align: left; padding: 8px 6px; border: 1px solid #333; }
-                       td { padding: 7px 6px; border: 1px solid #e0e0e0; vertical-align: top; word-break: break-word; }
-                       tr:nth-child(even) td { background-color: #f9f9f9; }
-                       @media print {
-                           body { padding: 0; }
-                           button { display: none; }
-                       }
-                   </style>
-               </head>
-               <body>
-                   <div class="report-header">
-                       <h2>Maintenance Tracking System Summary Log</h2>
-                       <p>Report Parameter Context: ${cleanStr("{{ title|escapejs }}")} | Generated: ${new Date().toLocaleString('en-AE')}</p>
-                   </div>
-                   <table>
-                       <thead>
-                           <tr>
-                               ${activeIndices.map(idx => `<th>${headersList[idx]}</th>`).join("")}
-                           </tr>
-                       </thead>
-                       <tbody>
-                           ${printRows.map(row => `
-                               <tr>
-                                   ${activeIndices.map(idx => `<td>${row[idx]}</td>`).join("")}
-                               </tr>
-                           `).join("")}
-                       </tbody>
-                   </table>
-               </body>
-               </html>
-           `;
 
 
-           printWindow.document.write(htmlPayload);
-           printWindow.document.close();
+                  printRows.push([
+                      "{{ task.job_id|escapejs }}",
+                      cleanStr("{{ task.title|escapejs }}"),
+                      cleanStr("{{ task.description|default:''|escapejs }}"),
+                      subCat1, qty1,
+                      subCat2, qty2,
+                      "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
+                      "{{ task.budget|default:'0.00'|escapejs }}",
+                      "{{ task.completed_at|date:'d/m/Y H:i' }}",
+                      cleanStr(complaintMsg),
+                      cleanStr("{{ task.location|escapejs }}")
+                  ]);
+              })();
+          {% endfor %}
 
 
-           // Execute automated layout printing routine on document ready context loops
-           printWindow.onload = function() {
-               printWindow.print();
-           };
-       });
-   }
+
+
+          if (printRows.length === 0) {
+              alert("No data available to print based on current criteria matching parameters.");
+              return;
+          }
+
+
+
+
+          // 3. Determine specific active column indices based on user choice selection inputs
+          let activeIndices = [];
+          if (radioAll.checked) {
+              activeIndices = headersList.map((_, idx) => idx);
+          } else {
+              const checkedBoxes = document.querySelectorAll(".print-col-check:checked");
+              checkedBoxes.forEach(cb => activeIndices.push(parseInt(cb.value)));
+          }
+
+
+
+
+          if (activeIndices.length === 0) {
+              alert("Please select at least one value column to populate the report matrix.");
+              return;
+          }
+
+
+
+
+          // Hide configuration modal layout safely before generating system viewport windows
+          const modalEl = document.getElementById('printSetupModal');
+          const modalInstance = bootstrap.Modal.getInstance(modalEl);
+          if (modalInstance) modalInstance.hide();
+
+
+
+
+          // 4. Construct a sandboxed, standalone print HTML stream window layout
+          const printWindow = window.open("", "_blank");
+
+
+
+
+          let htmlPayload = `
+              <html>
+              <head>
+                  <title>Maintenance System Report - ${cleanStr("{{ title|escapejs }}")}</title>
+                  <style>
+                      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; color: #333; }
+                      .report-header { margin-bottom: 25px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                      .report-header h2 { margin: 0 0 5px 0; font-size: 20px; }
+                      .report-header p { margin: 0; font-size: 13px; color: #666; font-weight: 500; }
+                      table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
+                      th { background-color: #1a1a1a; color: #ffffff; font-weight: 600; text-align: left; padding: 8px 6px; border: 1px solid #333; }
+                      td { padding: 7px 6px; border: 1px solid #e0e0e0; vertical-align: top; word-break: break-word; }
+                      tr:nth-child(even) td { background-color: #f9f9f9; }
+                      @media print {
+                          body { padding: 0; }
+                          button { display: none; }
+                      }
+                  </style>
+              </head>
+              <body>
+                  <div class="report-header">
+                      <h2>Maintenance Tracking System Summary Log</h2>
+                      <p>Report Parameter Context: ${cleanStr("{{ title|escapejs }}")} | Generated: ${new Date().toLocaleString('en-AE')}</p>
+                  </div>
+                  <table>
+                      <thead>
+                          <tr>
+                              ${activeIndices.map(idx => `<th>${headersList[idx]}</th>`).join("")}
+                          </tr>
+                      </thead>
+                      <tbody>
+                          ${printRows.map(row => `
+                              <tr>
+                                  ${activeIndices.map(idx => `<td>${row[idx]}</td>`).join("")}
+                              </tr>
+                          `).join("")}
+                      </tbody>
+                  </table>
+              </body>
+              </html>
+          `;
+
+
+
+
+          printWindow.document.write(htmlPayload);
+          printWindow.document.close();
+
+
+
+
+          // Execute automated layout printing routine on document ready context loops
+          printWindow.onload = function() {
+              printWindow.print();
+          };
+      });
+  }
 });
+
+
 
 
 // AJAX Inline RP Update Execution
 const rpSaveButtons = document.querySelectorAll('.btn-save-rp');
 rpSaveButtons.forEach(button => {
-    button.addEventListener('click', function() {
-        const taskId = this.getAttribute('data-task-id');
-        const inputField = document.getElementById(`rp-input-${taskId}`);
-        const rpValue = inputField.value;
+   button.addEventListener('click', function() {
+       const taskId = this.getAttribute('data-task-id');
+       const inputField = document.getElementById(`rp-input-${taskId}`);
+       const rpValue = inputField.value;
 
-        // Visual Feedback
-        this.disabled = true;
-        const originalContent = this.innerHTML;
-        this.innerHTML = `<span class="spinner-border spinner-border-sm" style="width: 10px; height: 10px;"></span>`;
 
-        // Match the URL in your urls.py
-        fetch(`/tasks/award-reward-points-ajax/${taskId}/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: new URLSearchParams({ 'points_awarded': rpValue })
-        })
-        .then(response => response.json())
-        .then(data => {
-            this.disabled = false;
-            this.innerHTML = originalContent;
+       // Visual Feedback
+       this.disabled = true;
+       const originalContent = this.innerHTML;
+       this.innerHTML = `<span class="spinner-border spinner-border-sm" style="width: 10px; height: 10px;"></span>`;
 
-            if (data.status === 'success') {
-                inputField.classList.add('is-valid');
-                setTimeout(() => inputField.classList.remove('is-valid'), 1500);
-            } else {
-                alert("Error: " + data.message);
-            }
-        });
-    });
+
+       // Match the URL in your urls.py
+       fetch(`/tasks/award-reward-points-ajax/${taskId}/`, {
+           method: 'POST',
+           headers: {
+               'Content-Type': 'application/x-www-form-urlencoded',
+               'X-CSRFToken': '{{ csrf_token }}'
+           },
+           body: new URLSearchParams({ 'points_awarded': rpValue })
+       })
+       .then(response => response.json())
+       .then(data => {
+           this.disabled = false;
+           this.innerHTML = originalContent;
+
+
+           if (data.status === 'success') {
+               inputField.classList.add('is-valid');
+               setTimeout(() => inputField.classList.remove('is-valid'), 1500);
+           } else {
+               alert("Error: " + data.message);
+           }
+       });
+   });
 });
+
+
+
+
+
+
+
+
+
 
 
 
@@ -740,198 +911,232 @@ rpSaveButtons.forEach(button => {
 
 //CSV
 
+
 document.getElementById('btnExportCSV').addEventListener('click', function() {
-    // 1. The FULL master list of headers (12 items total)
-    const masterHeaders = [
-        "Job ID", "Title", "Description",
-        "Sub Cat 1", "Qty 1", "Sub Cat 2", "Qty 2",
-        "Assigned To", "Service Charge", "Date Ended", "Complaints", "Location"
-    ];
+   // 1. The FULL master list of headers (12 items total)
+   const masterHeaders = [
+       "Job ID", "Title", "Description",
+       "Sub Cat 1", "Qty 1", "Sub Cat 2", "Qty 2",
+       "Assigned To", "Service Charge", "Date Ended", "Complaints", "Location"
+   ];
 
-    // 2. Identify which columns the user checked
-    let activeIndices = [];
-    document.querySelectorAll(".export-col-check:checked").forEach(cb => {
-        activeIndices.push(parseInt(cb.value));
-    });
 
-    if (activeIndices.length === 0) {
-        alert("Please select at least one column to export.");
-        return;
-    }
+   // 2. Identify which columns the user checked
+   let activeIndices = [];
+   document.querySelectorAll(".export-col-check:checked").forEach(cb => {
+       activeIndices.push(parseInt(cb.value));
+   });
 
-    // 3. Prepare the CSV content with UTF-8 BOM for Arabic support
-    let csvRows = [];
-    csvRows.push(activeIndices.map(idx => `"${masterHeaders[idx]}"`).join(","));
 
-    // Helper to escape commas/quotes and clean strings
-    const cleanStr = (val) => val ? val.replace(/"/g, '""').replace(/[\t\n\r]/g, " ").trim() : "";
+   if (activeIndices.length === 0) {
+       alert("Please select at least one column to export.");
+       return;
+   }
 
-    // 4. Build Rows
-    {% for task in tasks %}
-        (function() {
-            // Get Tech List safely
-            let techNames = [];
-            {% for tech in task.assigned_technicians.all %}
-                techNames.push("{{ tech.username|escapejs }}");
-            {% endfor %}
-            let techString = techNames.length > 0 ? techNames.join(", ") : "Unassigned";
 
-            // Get Items
-            let itemData = [];
-            {% for item in task.items.all %}
-                itemData.push({ cat: "{{ item.sub_category|escapejs }}", qty: "{{ item.quantity|escapejs }}" });
-            {% endfor %}
+   // 3. Prepare the CSV content with UTF-8 BOM for Arabic support
+   let csvRows = [];
+   csvRows.push(activeIndices.map(idx => `"${masterHeaders[idx]}"`).join(","));
 
-            // Build the full 12-column record array
-            let fullDataRecord = [
-                "{{ task.job_id|escapejs }}",
-                cleanStr("{{ task.title|escapejs }}"),
-                cleanStr("{{ task.description|default:''|escapejs }}"),
-                itemData[0] ? cleanStr(itemData[0].cat) : "-",
-                itemData[0] ? itemData[0].qty : "0",
-                itemData[1] ? cleanStr(itemData[1].cat) : "-",
-                itemData[1] ? itemData[1].qty : "0",
-                techString, // This is a single string now
-                "{{ task.budget|default:'0.00'|escapejs }}",
-                "{{ task.completed_at|date:'d/m/Y H:i' }}",
-                "{{ task.complaint_set.last.message|default:'No complaints'|escapejs }}",
-                cleanStr("{{ task.location|escapejs }}")
-            ];
 
-            // Filter this record by the activeIndices
-            let filteredRow = activeIndices.map(idx => `"${fullDataRecord[idx]}"`);
-            csvRows.push(filteredRow.join(","));
-        })();
-    {% endfor %}
+   // Helper to escape commas/quotes and clean strings
+   const cleanStr = (val) => val ? val.replace(/"/g, '""').replace(/[\t\n\r]/g, " ").trim() : "";
 
-    // 5. Trigger Download with UTF-8 BOM
-    const csvString = "\uFEFF" + csvRows.join("\n");
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", "tasks_export.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+   // 4. Build Rows
+   {% for task in tasks %}
+       (function() {
+           // Get Tech List safely
+           let techNames = [];
+           {% for tech in task.assigned_technicians.all %}
+               techNames.push("{{ tech.username|escapejs }}");
+           {% endfor %}
+           let techString = techNames.length > 0 ? techNames.join(", ") : "Unassigned";
+
+
+           // Get Items
+           let itemData = [];
+           {% for item in task.items.all %}
+               itemData.push({ cat: "{{ item.sub_category|escapejs }}", qty: "{{ item.quantity|escapejs }}" });
+           {% endfor %}
+
+
+           // Build the full 12-column record array
+           let fullDataRecord = [
+               "{{ task.job_id|escapejs }}",
+               cleanStr("{{ task.title|escapejs }}"),
+               cleanStr("{{ task.description|default:''|escapejs }}"),
+               itemData[0] ? cleanStr(itemData[0].cat) : "-",
+               itemData[0] ? itemData[0].qty : "0",
+               itemData[1] ? cleanStr(itemData[1].cat) : "-",
+               itemData[1] ? itemData[1].qty : "0",
+               techString, // This is a single string now
+               "{{ task.budget|default:'0.00'|escapejs }}",
+               "{{ task.completed_at|date:'d/m/Y H:i' }}",
+               "{{ task.complaint_set.last.message|default:'No complaints'|escapejs }}",
+               cleanStr("{{ task.location|escapejs }}")
+           ];
+
+
+           // Filter this record by the activeIndices
+           let filteredRow = activeIndices.map(idx => `"${fullDataRecord[idx]}"`);
+           csvRows.push(filteredRow.join(","));
+       })();
+   {% endfor %}
+
+
+   // 5. Trigger Download with UTF-8 BOM
+   const csvString = "\uFEFF" + csvRows.join("\n");
+   const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+   const link = document.createElement("a");
+   link.href = URL.createObjectURL(blob);
+   link.setAttribute("download", "tasks_export.csv");
+   document.body.appendChild(link);
+   link.click();
+   document.body.removeChild(link);
 });
 </script>
 
 
+
+
 <style>
-   .flatpickr-input { background-color: #fff !important; }
-   .custom-excel-cell:focus {
-       border-color: #198754 !important;
-       box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25) !important;
-       background-color: #f8fff9;
-   }
-   .btn-xs {
-       padding: .125rem .25rem;
-       font-size: .75rem;
-       border-radius: .2rem;
-   }
-
-
-   /* Desktop View Interface Rule Sets */
-   @media (min-width: 768px) {
-       .task-row { border-bottom: 1px solid #e0e0e0 !important; }
-       .header-col { border-right: 1px solid #495057; }
-       .task-col {
-           border-right: 1px solid #eaeaea;
-           align-self: stretch;
-           display: flex;
-           flex-direction: column;
-           justify-content: center;
-       }
-       .task-row { border-left: 6px solid #dee2e6 !important; position: relative; }
-       .task-row.status-pending { border-left-color: #ffc107 !important; }
-       .task-row.status-active { border-left-color: #0d6efd !important; }
-       .task-row.status-completed { border-left-color: #198754 !important; }
-       .task-row.status-overdue { border-left-color: #dc3545 !important; }
-   }
-
-
-   /* Global Dynamic Focus/Hover States animations */
-   .task-row { transition: background-color 0.15s ease-in-out; }
-   .task-row:hover { background-color: #fcfcfc !important; }
-   .hover-primary-link:hover { color: #0d6efd !important; text-decoration: underline !important; }
-   .small-badge { font-size: 0.75rem !important; font-weight: 600; }
-
-
-   /* Mobile Device Responsiveness Architecture Rules */
-   @media (max-width: 767.98px) {
-       .container-fluid { border: none !important; box-shadow: none !important; }
-       .task-row {
-           margin-bottom: 12px;
-           border: 1px solid #dee2e6 !important;
-           border-left: 5px solid #dee2e6 !important;
-           border-radius: 0.5rem;
-           padding: 14px !important;
-           background-color: #ffffff;
-           box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-       }
-       .task-row.status-pending { border-left-color: #ffc107 !important; }
-       .task-row.status-active { border-left-color: #0d6efd !important; }
-       .task-row.status-completed { border-left-color: #198754 !important; }
-       .task-row.status-overdue { border-left-color: #dc3545 !important; }
-       .block-label { font-size: 0.75rem; font-weight: 600; }
-       .w-100-mobile { width: 100% !important; display: block; margin-top: 8px; padding: 6px; }
-   }
+  .flatpickr-input { background-color: #fff !important; }
+  .custom-excel-cell:focus {
+      border-color: #198754 !important;
+      box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25) !important;
+      background-color: #f8fff9;
+  }
+  .btn-xs {
+      padding: .125rem .25rem;
+      font-size: .75rem;
+      border-radius: .2rem;
+  }
 
 
 
 
+  /* Desktop View Interface Rule Sets */
+  @media (min-width: 768px) {
+      .task-row { border-bottom: 1px solid #e0e0e0 !important; }
+      .header-col { border-right: 1px solid #495057; }
+      .task-col {
+          border-right: 1px solid #eaeaea;
+          align-self: stretch;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+      }
+      .task-row { border-left: 6px solid #dee2e6 !important; position: relative; }
+      .task-row.status-pending { border-left-color: #ffc107 !important; }
+      .task-row.status-active { border-left-color: #0d6efd !important; }
+      .task-row.status-completed { border-left-color: #198754 !important; }
+      .task-row.status-overdue { border-left-color: #dc3545 !important; }
+  }
 
 
 
 
-   /* Custom Floating Toast Styling Rule-Matrix */
+  /* Global Dynamic Focus/Hover States animations */
+  .task-row { transition: background-color 0.15s ease-in-out; }
+  .task-row:hover { background-color: #fcfcfc !important; }
+  .hover-primary-link:hover { color: #0d6efd !important; text-decoration: underline !important; }
+  .small-badge { font-size: 0.75rem !important; font-weight: 600; }
+
+
+
+
+  /* Mobile Device Responsiveness Architecture Rules */
+  @media (max-width: 767.98px) {
+      .container-fluid { border: none !important; box-shadow: none !important; }
+      .task-row {
+          margin-bottom: 12px;
+          border: 1px solid #dee2e6 !important;
+          border-left: 5px solid #dee2e6 !important;
+          border-radius: 0.5rem;
+          padding: 14px !important;
+          background-color: #ffffff;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      }
+      .task-row.status-pending { border-left-color: #ffc107 !important; }
+      .task-row.status-active { border-left-color: #0d6efd !important; }
+      .task-row.status-completed { border-left-color: #198754 !important; }
+      .task-row.status-overdue { border-left-color: #dc3545 !important; }
+      .block-label { font-size: 0.75rem; font-weight: 600; }
+      .w-100-mobile { width: 100% !important; display: block; margin-top: 8px; padding: 6px; }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  /* Custom Floating Toast Styling Rule-Matrix */
 .custom-toast {
-   position: fixed;
-   z-index: 2050;
-   background-color: #ffffff;
-   padding: 12px 20px;
-   border-radius: 8px;
-   max-width: 350px;
-   border-left: 5px solid #198754 !important; /* Bold Green Left Accent line */
+  position: fixed;
+  z-index: 2050;
+  background-color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  max-width: 350px;
+  border-left: 5px solid #198754 !important; /* Bold Green Left Accent line */
 }
+
+
 
 
 /* PC Placement Setup: Bottom Left Corner */
 @media (min-width: 768px) {
-   .custom-toast {
-       left: 24px;
-       bottom: 24px;
-   }
+  .custom-toast {
+      left: 24px;
+      bottom: 24px;
+  }
 }
+
+
 
 
 /* Mobile Screen Placement Setup: Bottom Center fixed layout */
 @media (max-width: 767.98px) {
-   .custom-toast {
-       left: 50%;
-       transform: translateX(-50%);
-       bottom: 16px;
-       width: 90%;
-       max-width: 100%;
-   }
+  .custom-toast {
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 16px;
+      width: 90%;
+      max-width: 100%;
+  }
 }
+
+
 
 
 /* Smooth entry animation fade */
 .animate-fade-in {
-   animation: fadeInUp 0.25s ease-out;
+  animation: fadeInUp 0.25s ease-out;
 }
 
 
+
+
 @keyframes fadeInUp {
-   from {
-       opacity: 0;
-       transform: translateY(10px) translateX(var(--tw-translate-x, 0));
-   }
-   to {
-       opacity: 1;
-       transform: translateY(0) translateX(var(--tw-translate-x, 0));
-   }
+  from {
+      opacity: 0;
+      transform: translateY(10px) translateX(var(--tw-translate-x, 0));
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0) translateX(var(--tw-translate-x, 0));
+  }
 }
 </style>
 
@@ -942,57 +1147,70 @@ document.getElementById('btnExportCSV').addEventListener('click', function() {
 
 
 
+
+
+
+
+
+
+
+
 <div class="modal fade" id="printSetupModal" tabindex="-1" aria-labelledby="printSetupModalLabel" aria-hidden="true">
-   <div class="modal-dialog modal-dialog-centered">
-       <div class="modal-content border-0 shadow">
-           <div class="modal-header bg-dark text-white p-3">
-               <h6 class="modal-title fw-bold" id="printSetupModalLabel">
-                   <i class="bi bi-printer-fill me-2"></i> Print Configuration Report
-               </h6>
-               <button type="button" class="btn-close btn-close-white small" data-bs-dismiss="modal" aria-label="Close"></button>
-           </div>
-           <div class="modal-body p-3">
-               <p class="text-muted small fw-semibold mb-3">What parameters do you want to include in your printed worksheet report?</p>
+  <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-dark text-white p-3">
+              <h6 class="modal-title fw-bold" id="printSetupModalLabel">
+                  <i class="bi bi-printer-fill me-2"></i> Print Configuration Report
+              </h6>
+              <button type="button" class="btn-close btn-close-white small" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-3">
+              <p class="text-muted small fw-semibold mb-3">What parameters do you want to include in your printed worksheet report?</p>
 
 
-               <div class="form-check mb-2">
-                   <input class="form-check-input" type="radio" name="printTypeOption" id="printTypeAll" value="all" checked>
-                   <label class="form-check-label fw-bold small text-dark" for="printTypeAll">
-                       Print All Values (Full Spreadsheet Column Dataset Matrix)
-                   </label>
-               </div>
-               <div class="form-check mb-3">
-                   <input class="form-check-input" type="radio" name="printTypeOption" id="printTypeCustom" value="custom">
-                   <label class="form-check-label fw-bold small text-dark" for="printTypeCustom">
-                       Select Custom Individual Values...
-                   </label>
-               </div>
 
 
-               <div id="printCustomColumnPanel" class="border rounded p-3 bg-light d-none" style="max-height: 220px; overflow-y: auto;">
-                   <div class="row g-2">
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="0" checked id="pCol0"><label class="form-check-label" for="pCol0">Job ID</label></div></div>
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="1" checked id="pCol1"><label class="form-check-label" for="pCol1">Title</label></div></div>
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="2" checked id="pCol2"><label class="form-check-label" for="pCol2">Description</label></div></div>
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="3" checked id="pCol3"><label class="form-check-label" for="pCol3">Sub Cat 1</label></div></div>
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="4" checked id="pCol4"><label class="form-check-label" for="pCol4">Qty 1</label></div></div>
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="5" checked id="pCol5"><label class="form-check-label" for="pCol5">Sub Cat 2</label></div></div>
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="6" checked id="pCol6"><label class="form-check-label" for="pCol6">Qty 2</label></div></div>
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="7" checked id="pCol7"><label class="form-check-label" for="pCol7">Assigned To</label></div></div>
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="8" checked id="pCol8"><label class="form-check-label" for="pCol8">Service Charge</label></div></div>
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="9" checked id="pCol9"><label class="form-check-label" for="pCol9">Date Ended</label></div></div>
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="10" checked id="pCol10"><label class="form-check-label" for="pCol10">Complaints</label></div></div>
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="11" checked id="pCol11"><label class="form-check-label" for="pCol11">Location</label></div></div>
-                   </div>
-               </div>
-           </div>
-           <div class="modal-footer p-2 bg-light">
-               <button type="button" class="btn btn-outline-secondary btn-sm fw-bold px-3" data-bs-dismiss="modal">Cancel</button>
-               <button type="button" id="btnExecutePrintReport" class="btn btn-dark btn-sm fw-bold px-4">
-                   <i class="bi bi-printer me-1"></i> Print Now
-               </button>
-           </div>
-       </div>
-   </div>
+              <div class="form-check mb-2">
+                  <input class="form-check-input" type="radio" name="printTypeOption" id="printTypeAll" value="all" checked>
+                  <label class="form-check-label fw-bold small text-dark" for="printTypeAll">
+                      Print All Values (Full Spreadsheet Column Dataset Matrix)
+                  </label>
+              </div>
+              <div class="form-check mb-3">
+                  <input class="form-check-input" type="radio" name="printTypeOption" id="printTypeCustom" value="custom">
+                  <label class="form-check-label fw-bold small text-dark" for="printTypeCustom">
+                      Select Custom Individual Values...
+                  </label>
+              </div>
+
+
+
+
+              <div id="printCustomColumnPanel" class="border rounded p-3 bg-light d-none" style="max-height: 220px; overflow-y: auto;">
+                  <div class="row g-2">
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="0" checked id="pCol0"><label class="form-check-label" for="pCol0">Job ID</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="1" checked id="pCol1"><label class="form-check-label" for="pCol1">Title</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="2" checked id="pCol2"><label class="form-check-label" for="pCol2">Description</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="3" checked id="pCol3"><label class="form-check-label" for="pCol3">Sub Cat 1</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="4" checked id="pCol4"><label class="form-check-label" for="pCol4">Qty 1</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="5" checked id="pCol5"><label class="form-check-label" for="pCol5">Sub Cat 2</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="6" checked id="pCol6"><label class="form-check-label" for="pCol6">Qty 2</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="7" checked id="pCol7"><label class="form-check-label" for="pCol7">Assigned To</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="8" checked id="pCol8"><label class="form-check-label" for="pCol8">Service Charge</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="9" checked id="pCol9"><label class="form-check-label" for="pCol9">Date Ended</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="10" checked id="pCol10"><label class="form-check-label" for="pCol10">Complaints</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="11" checked id="pCol11"><label class="form-check-label" for="pCol11">Location</label></div></div>
+                  </div>
+              </div>
+          </div>
+          <div class="modal-footer p-2 bg-light">
+              <button type="button" class="btn btn-outline-secondary btn-sm fw-bold px-3" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" id="btnExecutePrintReport" class="btn btn-dark btn-sm fw-bold px-4">
+                  <i class="bi bi-printer me-1"></i> Print Now
+              </button>
+          </div>
+      </div>
+  </div>
 </div>
 {% endblock %}
+

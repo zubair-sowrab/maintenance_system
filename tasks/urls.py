@@ -74,6 +74,7 @@ path(
     views.api_tasks,
     name='api_tasks'
 ),
+path('add-maintenance-item/', views.add_maintenance_item, name='add_maintenance_item'),
 
 path('tasks/completed/all/', views.all_completed_tasks, name='all_completed_tasks'),
 path('tasks/pending/all/', views.all_pending_tasks, name='all_pending_tasks')
