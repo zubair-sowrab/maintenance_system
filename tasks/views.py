@@ -44,7 +44,7 @@ from .serializers import TaskSerializer
 from django.db.models import Sum
 from .models import Task, Complaint, SubTask, Notification, Profile, TaskItem
 from deep_translator import GoogleTranslator
-
+from .notifications import send_telegram_msg
 
 def translate_to_english(text):
    if not text or not text.strip():
@@ -297,6 +297,11 @@ def create_task(request):
            task.save()
            task.assigned_technicians.set(tech_ids)  # Correctly save ManyToMany
 
+           for tech in task.assigned_technicians.all():
+               if tech.profile.telegram_chat_id:
+                   msg = f"New Task: {task.title}\nBuilding: {task.building}\nCheck your dashboard."
+                   send_telegram_msg(tech.profile.telegram_chat_id, msg)
+
 
            # Save items
            for sub, qty in zip(translated_subs, quantities):
@@ -413,10 +418,7 @@ def start_task(request, task_id):
    task = get_object_or_404(Task, id=task_id)
 
 
-   if not task.assigned_technicians.filter(id=request.user.id).exists():
-       # Update this message to trigger your existing JavaScript modal
-       messages.error(request, "unauthorized-task-action")
-       return redirect('dashboard') # Redirect back to the dashboard
+
 
 
    task.status = 'In Progress'
@@ -429,12 +431,21 @@ def start_task(request, task_id):
 def end_task(request, task_id):
    task = get_object_or_404(Task, id=task_id)
 
+   if request.method == 'POST':
+       # Get the budget from the modal input
+       final_budget = request.POST.get('final_budget')
+       if final_budget:
+           task.budget = final_budget
 
-   if not task.assigned_technicians.filter(id=request.user.id).exists():
-       # Update this message to trigger your existing JavaScript modal
-       messages.error(request, "unauthorized-task-action")
-       return redirect('dashboard')
-
+           # 2. Save Image if uploaded
+           image = request.FILES.get('task_image')
+           if image:
+               # Assuming you have a TaskAttachment model like the one in your detail page
+               TaskAttachment.objects.create(
+                   task=task,
+                   image=image,
+                   uploaded_by=request.user
+               )
 
    task.status = 'Completed'
    task.completed_at = timezone.now()

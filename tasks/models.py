@@ -552,6 +552,9 @@ class Profile(models.Model):
       null=True
   )
   reward_points = models.IntegerField(default=0)
+  reward_points = models.IntegerField(default=0)
+
+  telegram_chat_id = models.CharField(max_length=50, blank=True, null=True)
   def __str__(self):
 
 
