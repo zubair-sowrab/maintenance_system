@@ -58,7 +58,7 @@ class Task(models.Model):
 
 
 
-  description = models.TextField()
+  description = models.TextField(null=True, blank=True)
   final_delay_duration = models.DurationField(null=True, blank=True)
 
 

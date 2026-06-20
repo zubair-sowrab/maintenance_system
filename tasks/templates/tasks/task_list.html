@@ -271,9 +271,13 @@
                             {% endwith %}
                         </td>
                         <td>
-<button type="button" class="btn btn-primary btn-sm fw-bold" onclick="openEndTaskModal('{{ task.id }}')">
+<button type="button"
+        class="btn btn-primary btn-sm fw-bold"
+        data-bs-toggle="modal"
+        data-bs-target="#endTaskModal"
+        onclick="setTaskUrl('{{ task.id }}')">
     End (إنهاء)
-</button>                        </td>
+</button>                       </td>
                     </tr>
                     {% endif %}
                     {% endfor %}
@@ -323,9 +327,13 @@
                             </p>
                         </div>
 
-                        <a href="{% url 'end_task' task.id %}" class="btn btn-primary btn-sm w-100 fw-bold mt-auto shadow-sm" onclick="return confirm('Are you sure you completed this task?')">
-                            End Task (إنهاء المهمة)
-                        </a>
+                        <button type="button"
+        class="btn btn-primary btn-sm w-100 fw-bold mt-auto shadow-sm"
+        data-bs-toggle="modal"
+        data-bs-target="#endTaskModal"
+        onclick="setTaskUrl('{{ task.id }}')">
+    End Task (إنهاء المهمة)
+</button>
                     </div>
                 </div>
             </div>
@@ -637,7 +645,15 @@
     </div>
 </div>
 
+
 <script>
+    // 1. URL Handler for the End Task Form
+    function setTaskUrl(taskId) {
+        const form = document.getElementById('endTaskForm');
+        form.action = '/end-task/' + taskId + '/';
+    }
+
+    // 2. Image Preview Logic
     function previewImage(event) {
         const reader = new FileReader();
         const container = document.getElementById('previewContainer');
@@ -652,19 +668,10 @@
     function clearImage() {
         document.getElementById('imageInput').value = "";
         document.getElementById('previewContainer').style.display = 'none';
+        document.getElementById('imagePreview').src = "#";
     }
-</script>
 
-
-
-
-
-
-
-
-
-
-<script>
+    // 3. Initialization for Unauthorized Action Modal
     document.addEventListener("DOMContentLoaded", function() {
         {% for message in messages %}
             {% if message.message == "unauthorized-task-action" %}
@@ -674,44 +681,89 @@
         {% endfor %}
     });
 
-
+    // 4. Maintenance Item Submission
     function submitNewWorkItem() {
-    const data = {
-        project_type: document.getElementById('new-item-type').value,
-        name_english: document.getElementById('new-item-english').value,
-        name_arabic: document.getElementById('new-item-arabic').value
-    };
+        const data = {
+            project_type: document.getElementById('new-item-type').value,
+            name_english: document.getElementById('new-item-english').value,
+            name_arabic: document.getElementById('new-item-arabic').value
+        };
 
-    fetch("{% url 'add_sub_category' %}", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if(result.success) {
-            alert('Item added successfully!');
-            location.reload();
-        } else {
-            alert('Error: ' + result.error);
-        }
-    });
-}
-</script>
-
-
-<script>
-    function openEndTaskModal(taskId) {
-        // 1. Update the form action URL
-        const form = document.getElementById('endTaskForm');
-        form.action = `/end-task/${taskId}/`;
-
-        // 2. Show the modal
-        var myModal = new bootstrap.Modal(document.getElementById('endTaskModal'));
-        myModal.show();
+        fetch("{% url 'add_sub_category' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if(result.success) {
+                alert('Item added successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + result.error);
+            }
+        });
     }
 </script>
+
+<style>
+    /* Ensure the modal is always on top of other elements */
+    .modal {
+        z-index: 1055 !important;
+    }
+    .modal-backdrop {
+        z-index: 1050 !important;
+    }
+</style>
+
+<script>
+    // Define the function globally so the button can always find it
+    window.openEndTaskModal = function(taskId) {
+        console.log("Opening modal for Task ID:", taskId);
+
+        // 1. Get the form and the modal
+        const form = document.getElementById('endTaskForm');
+        const modalEl = document.getElementById('endTaskModal');
+
+        // 2. Dynamically set the URL
+        // Ensure this URL path matches your urls.py exactly
+        form.action = '/end-task/' + taskId + '/';
+
+        // 3. Initialize and show the Bootstrap modal
+        // We use Bootstrap 5's constructor
+        var myModal = new bootstrap.Modal(modalEl);
+        myModal.show();
+    };
+
+    function previewImage(event) {
+        const reader = new FileReader();
+        const container = document.getElementById('previewContainer');
+        const img = document.getElementById('imagePreview');
+        reader.onload = function(){
+            img.src = reader.result;
+            container.style.display = 'block';
+        }
+        reader.readAsDataURL(event.target.files[0]);
+    }
+
+    function clearImage() {
+        document.getElementById('imageInput').value = "";
+        document.getElementById('previewContainer').style.display = 'none';
+        document.getElementById('imagePreview').src = "#";
+    }
+</script>
+
+
+<style>
+    /* Ensure the modal is always on top */
+    .modal {
+        z-index: 1055 !important;
+    }
+    .modal-backdrop {
+        z-index: 1050 !important;
+    }
+</style>
 {% endblock %}
