@@ -361,6 +361,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // [ملاحظة: تم الاحتفاظ بنفس كود buildGlobalUnitsList والـ flatpickr الموجود لديك]
     const buildGlobalUnitsList = () => {
         let list = [];
+        list.push("None (لا ينطبق)");
         for (let i = 1; i <= 7; i++) { let num = String(i).padStart(2, '0'); list.push(`Shop S${num} (محل S${num})`); }
         for (let i = 1; i <= 20; i++) { let num = String(i).padStart(2, '0'); list.push(`Unit G${num} (شقة G${num})`); }
         for (let i = 1; i <= 10; i++) { let num = String(i).padStart(2, '0'); list.push(`Unit M${num} (شقة M${num})`); }

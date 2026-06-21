@@ -436,7 +436,7 @@
 
                    <div class="mb-3">
                        <label>Task Completion Proof (Image):</label>
-                       <input type="file" name="task_image" class="form-control" accept="image/*" id="imageInput" onchange="previewImage(event)">
+                       <input type="file" name="task_image" class="form-control" accept="image/*" id="imageInput" multiple onchange="previewImage(event)">
                        <div id="previewContainer" class="mt-2 position-relative" style="display:none;">
                            <img id="imagePreview" src="#" alt="Preview" style="max-height: 150px; width: auto; border-radius: 8px;">
                            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0" onclick="clearImage()">×</button>
@@ -590,6 +590,3 @@
    }
 </style>
 {% endblock %}
-
-
-
