@@ -336,6 +336,7 @@ def create_task(request):
 
 
    # Pass the technicians list to the template for the dropdown
+   all_maintenance_items = MaintenanceWorkItem.objects.all()
    technicians = User.objects.filter(profile__role='Technician')
    if request.method == 'POST':
        # Create a mutable copy of the POST data
@@ -366,7 +367,8 @@ def create_task(request):
    return render(request, 'tasks/create_task.html', {
        'form': form,
        'technicians': technicians,
-       'project_types': MaintenanceWorkItem.PROJECT_TYPE_CHOICES
+       'project_types': MaintenanceWorkItem.PROJECT_TYPE_CHOICES,
+       'all_maintenance_items': all_maintenance_items,
    })
 # Update your view logic to this:
 @login_required

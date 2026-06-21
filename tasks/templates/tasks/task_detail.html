@@ -92,7 +92,7 @@
                                     <thead class="table-secondary">
                                         <tr>
                                             <th>Maintenance Item Details</th>
-                                            <th>Quantity / Specifications</th>
+                                            <th>Details</th>
                                         </tr>
 
                                     </thead>
@@ -115,8 +115,8 @@
                         </div>
                     </div>
 
-                    {% if task.status != 'Completed' and 'مكتمل' not in task.status %}
-                   <div class="card border-0 bg-light p-3 mt-2 shadow-sm rounded">
+
+<div class="card border-0 bg-light p-3 mt-2 shadow-sm rounded">
     <h6 class="fw-bold text-secondary mb-3 small">
         <i class="bi bi-plus-circle-fill text-primary me-1"></i> Add Missed Maintenance Item (إضافة بند صيانة فاتك)
     </h6>
@@ -125,20 +125,30 @@
           data-ajax-url="{% url 'get_sub_categories_ajax' %}"
           data-project-type="{{ task.project_type }}">
         {% csrf_token %}
-        <div class="col-md-7 col-sm-12">
-            <select id="dynamic_sub_category" name="sub_category" class="form-select form-select-sm" required>
-                <option value="">-- Select Work Item --</option>
-            </select>
+
+        <div class="col-md-7 col-sm-12 position-relative">
+            <input type="text"
+                   id="dynamic_sub_category"
+                   name="sub_category"
+                   class="form-control form-control-sm custom-work-input"
+                   placeholder="-- Search/Select Work Item --"
+                   autocomplete="off" required>
+
+            <ul class="list-group position-absolute w-100 custom-work-dropdown"
+                style="display: none; z-index: 9999; max-height: 250px; overflow-y: auto; top: 100%; box-shadow: 0px 8px 16px rgba(0,0,0,0.15);">
+            </ul>
         </div>
+
         <div class="col-md-3 col-sm-12">
             <input type="text" name="quantity" class="form-control form-control-sm" placeholder="Details / Quantity" required>
         </div>
+
         <div class="col-md-2 col-sm-12">
             <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">Add Item</button>
         </div>
     </form>
 </div>
-                    {% endif %}
+
 
                     {% if task.status == 'Completed' or 'مكتمل' in task.status %}
                     <div class="card border-success bg-light mt-4">
@@ -382,38 +392,80 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // 1. PROJECT CATEGORY FETCH LOGIC
+
+    // 1. PROJECT CATEGORY FETCH LOGIC (Mobile-Friendly Custom Dropdown)
     const currentProjectType = "{{ task.project_type }}";
-    const selectElement = document.getElementById("dynamic_sub_category");
     const ajaxUrl = "{% url 'get_sub_categories_ajax' %}";
+    let currentMaintenanceItems = []; // Array to hold the items
 
+    // Fetch items immediately on load
     function fetchSubCategories() {
-        if (!currentProjectType || !selectElement) return;
-
-        selectElement.innerHTML = '<option value="" selected disabled>-- Loading Items... --</option>';
+        if (!currentProjectType) return;
 
         fetch(`${ajaxUrl}?project_type=${encodeURIComponent(currentProjectType)}`)
             .then(response => response.json())
             .then(data => {
-                selectElement.innerHTML = '<option value="" selected disabled>-- Select Work Item --</option>';
                 if (data.items && data.items.length > 0) {
-                    data.items.forEach(item => {
-                        const option = document.createElement("option");
-                        option.value = item;
-                        option.textContent = item;
-                        selectElement.appendChild(option);
-                    });
+                    currentMaintenanceItems = data.items;
                 } else {
-                    const option = document.createElement("option");
-                    option.value = "General Work (أعمال عامة)";
-                    option.textContent = "General Work (أعمال عامة)";
-                    selectElement.appendChild(option);
+                    currentMaintenanceItems = ["General Work (أعمال عامة)"];
                 }
             })
             .catch(error => console.error('Error fetching subcategories:', error));
     }
+
     fetchSubCategories();
 
+    // Logic to show/filter the custom dropdown
+    function showCustomDropdown(inputEl) {
+        const dropdown = inputEl.nextElementSibling; // Grabs the <ul> below
+        if (!dropdown || !dropdown.classList.contains('custom-work-dropdown')) return;
+
+        const filterText = inputEl.value.toLowerCase();
+        dropdown.innerHTML = '';
+
+        const filteredItems = currentMaintenanceItems.filter(item =>
+            item.toLowerCase().includes(filterText)
+        );
+
+        if (filteredItems.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        filteredItems.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item list-group-item-action py-2'; // py-2 since this form uses -sm inputs
+            li.style.cursor = 'pointer';
+            li.textContent = item;
+
+            li.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                inputEl.value = item;
+                dropdown.style.display = 'none';
+            });
+
+            dropdown.appendChild(li);
+        });
+
+        dropdown.style.display = 'block';
+    }
+
+    // Attach listeners to our specific input field
+    const itemInput = document.getElementById('dynamic_sub_category');
+    if (itemInput) {
+        itemInput.addEventListener('focusin', function() { showCustomDropdown(this); });
+        itemInput.addEventListener('input', function() { showCustomDropdown(this); });
+    }
+
+    // Hide dropdown if clicked outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.classList.contains('custom-work-input')) {
+            document.querySelectorAll('.custom-work-dropdown').forEach(ul => {
+                ul.style.display = 'none';
+            });
+        }
+    });
     // 2. REWARD POINTS AJAX LOGIC
     const rewardForm = document.getElementById('rewardPointsForm');
     if (rewardForm) {

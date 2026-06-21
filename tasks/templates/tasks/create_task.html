@@ -183,12 +183,18 @@
                             <div id="dynamic-work-items-container">
                                <div class="row g-2 align-items-center mb-2 work-item-row">
     <div class="col-7">
-        <select name="sub_category[]" class="form-select work-select">
-            <option value="">-- Search Work Item --</option>
-            {% for item in all_maintenance_items %}
-                <option value="{{ item.id }}">{{ item.name_english }} ({{ item.name_arabic }})</option>
-            {% endfor %}
-        </select>
+        <input type="text"
+       name="sub_category[]"
+       list="maintenance-list"
+       class="form-select"
+       placeholder="-- Search/Select Work Item --"
+       autocomplete="off">
+
+<datalist id="maintenance-list">
+    {% for item in all_maintenance_items %}
+        <option value="{{ item.name_english }} ({{ item.name_arabic }})">
+    {% endfor %}
+</datalist>
     </div>
     </div>
                                     <div class="col-3">
@@ -222,30 +228,35 @@
     <h5 class="fw-bold text-secondary mb-3 fs-6">
         <i class="bi bi-list-nested me-1"></i> Specific Maintenance Work Breakdown
     </h5>
+
     <div id="dynamic-work-items-container">
         <div class="row g-2 align-items-center mb-2 work-item-row">
-            <div class="col-7">
-                <select name="sub_category[]" class="form-select sub-category-dropdown">
-    <option value="">-- Search/Select Work Item --</option>
-    {% for item in all_maintenance_items %}
-        <option value="{{ item.id }}">{{ item.name_english }} ({{ item.name_arabic }})</option>
-    {% endfor %}
-</select>
+
+            <div class="col-7 position-relative">
+                <input type="text"
+                       name="sub_category[]"
+                       class="form-control custom-work-input"
+                       placeholder="-- Search/Select Work Item --"
+                       autocomplete="off" required>
+
+                <ul class="list-group position-absolute w-100 custom-work-dropdown"
+                    style="display: none; z-index: 9999; max-height: 250px; overflow-y: auto; top: 100%; box-shadow: 0px 8px 16px rgba(0,0,0,0.15);">
+                </ul>
             </div>
+
             <div class="col-3">
                 <input type="text" name="quantity[]" class="form-control" placeholder="Material Details">
             </div>
+
             <div class="col-2 text-end">
                 <button type="button" class="btn btn-success w-100 add-work-row-btn">
                     <i class="bi bi-plus-lg"></i>
                 </button>
             </div>
+
         </div>
     </div>
 </div>
-
-
-
 
 
 
@@ -414,75 +425,139 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     // --- تحديث منطق الـ Subcategories المعتمد على الـ Backend فقط ---
+    // --- AJAX Logic for Datalist Mobile Dropdown ---
+    let currentMaintenanceItems = []; // Store AJAX results globally
     const projectTypeSelect = document.querySelector('select[name="project_type"]');
     const container = document.getElementById('dynamic-work-items-container');
-    const ajaxUrl = document.getElementById('taskForm').dataset.ajaxUrl;
+    const ajaxUrl = document.getElementById('taskForm') ? document.getElementById('taskForm').dataset.ajaxUrl : '';
 
-    function fetchAndPopulateDropdown(dropdown, projectType) {
-        if (!projectType) {
-            dropdown.innerHTML = '<option value="">-- Select Project Type First --</option>';
-            return;
-        }
-
-        dropdown.innerHTML = '<option>Loading...</option>';
+    // 1. Fetch data and save to our array
+    function fetchProjectItems(projectType) {
+        currentMaintenanceItems = []; // Clear old items
+        if (!projectType || !ajaxUrl) return;
 
         fetch(`${ajaxUrl}?project_type=${encodeURIComponent(projectType)}`)
             .then(response => response.json())
             .then(data => {
-                dropdown.innerHTML = '<option value="">-- Select Work Item (حدد عنصر العمل) --</option>';
                 if (data.items && data.items.length > 0) {
-                    data.items.forEach(item => {
-                        const opt = document.createElement('option');
-                        opt.value = item;
-                        opt.textContent = item;
-                        dropdown.appendChild(opt);
-                    });
-                } else {
-                    dropdown.innerHTML = '<option value="">No items found</option>';
+                    currentMaintenanceItems = data.items;
                 }
             })
-            .catch(err => {
-                console.error("Error:", err);
-                dropdown.innerHTML = '<option value="">Error loading items</option>';
-            });
+            .catch(err => console.error("AJAX Error:", err));
     }
 
-    // الاستماع لتغيير نوع المشروع
+    // 2. Listen for Project Type Changes
     if (projectTypeSelect) {
         projectTypeSelect.addEventListener('change', function() {
-            document.querySelectorAll('.sub-category-dropdown').forEach(dropdown => {
-                fetchAndPopulateDropdown(dropdown, this.value);
+            fetchProjectItems(this.value);
+
+            // Clear existing inputs when project type changes
+            document.querySelectorAll('.custom-work-input').forEach(input => {
+                input.value = '';
             });
         });
     }
 
-    // منطق إضافة وحذف الصفوف
-    container.addEventListener('click', function(e) {
-        if (e.target.closest('.add-work-row-btn')) {
-            const currentRow = e.target.closest('.work-item-row');
-            const clone = currentRow.cloneNode(true);
-            clone.querySelector('input').value = '';
-            const newSelect = clone.querySelector('select');
+    // 3. Show and filter the custom dropdown when typing or clicking
+    function showCustomDropdown(inputEl) {
+        const dropdown = inputEl.nextElementSibling; // Grabs the <ul> right below the input
+        if (!dropdown || !dropdown.classList.contains('custom-work-dropdown')) return;
 
-            const btn = clone.querySelector('.add-work-row-btn');
-            btn.classList.remove('btn-success', 'add-work-row-btn');
-            btn.classList.add('btn-danger', 'remove-work-row-btn');
-            btn.innerHTML = '<i class="bi bi-trash"></i>';
+        const filterText = inputEl.value.toLowerCase();
+        dropdown.innerHTML = ''; // Clear current list
 
-            container.appendChild(clone);
-            // جلب البيانات للصف الجديد بناءً على نوع المشروع المختار حالياً
-            fetchAndPopulateDropdown(newSelect, projectTypeSelect ? projectTypeSelect.value : "");
-        } else if (e.target.closest('.remove-work-row-btn')) {
-            e.target.closest('.work-item-row').remove();
+        // Filter items based on what they typed
+        const filteredItems = currentMaintenanceItems.filter(item =>
+            item.toLowerCase().includes(filterText)
+        );
+
+        if (filteredItems.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        // Build the list
+        filteredItems.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item list-group-item-action py-3'; // py-3 for easier mobile tapping
+            li.style.cursor = 'pointer';
+            li.textContent = item;
+
+            // Use 'mousedown' instead of click to prevent keyboard collapse issues
+            li.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                inputEl.value = item; // Put text in box
+                dropdown.style.display = 'none'; // Hide list
+            });
+
+            dropdown.appendChild(li);
+        });
+
+        dropdown.style.display = 'block';
+    }
+
+    // 4. Global Event Listeners for the inputs (Handles cloned rows automatically!)
+    document.addEventListener('focusin', function(e) {
+        if (e.target.classList.contains('custom-work-input')) {
+            showCustomDropdown(e.target);
         }
     });
 
-    // --- التحقق من صحة النموذج (Validation) ---
-    const form = document.getElementById('taskForm');
-    form.addEventListener('submit', function(event) {
-        // [كود التحقق الخاص بك كما هو]
-        // (تم اختصاره هنا لعدم التكرار ولكنه يجب أن يبقى كما كان في كودك)
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('custom-work-input')) {
+            showCustomDropdown(e.target);
+        }
     });
+
+    // 5. Hide the dropdown if they click anywhere else on the screen
+    document.addEventListener('click', function(e) {
+        if (!e.target.classList.contains('custom-work-input')) {
+            document.querySelectorAll('.custom-work-dropdown').forEach(ul => {
+                ul.style.display = 'none';
+            });
+        }
+    });
+
+    // 6. Logic for Adding / Removing Rows
+    if (container) {
+        container.addEventListener('click', function(e) {
+            if (e.target.closest('.add-work-row-btn')) {
+                const currentRow = e.target.closest('.work-item-row');
+                const clone = currentRow.cloneNode(true);
+
+                // Clear the inputs in the cloned row
+                clone.querySelectorAll('input').forEach(input => input.value = '');
+
+                // Reset the dropdown state in the cloned row
+                const clonedDropdown = clone.querySelector('.custom-work-dropdown');
+                if (clonedDropdown) {
+                    clonedDropdown.style.display = 'none';
+                    clonedDropdown.innerHTML = '';
+                }
+
+                // Change button from Add (Green) to Trash (Red)
+                const btn = clone.querySelector('.add-work-row-btn');
+                if (btn) {
+                    btn.classList.remove('btn-success', 'add-work-row-btn');
+                    btn.classList.add('btn-danger', 'remove-work-row-btn');
+                    btn.innerHTML = '<i class="bi bi-trash"></i>';
+                }
+
+                container.appendChild(clone);
+
+            } else if (e.target.closest('.remove-work-row-btn')) {
+                e.target.closest('.work-item-row').remove();
+            }
+        });
+    }
+
+    // --- Form Validation ---
+    const form = document.getElementById('taskForm');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            // [Your existing validation code here]
+        });
+    }
 });
 
 
