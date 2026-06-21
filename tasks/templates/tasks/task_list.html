@@ -305,6 +305,8 @@
                    <strong><a href="{% url 'task_detail' task.id %}">{{ task.title }}</a></strong><br>
                    ID: {{ task.job_id }} | Status: {{ task.status }}<br>
                    Fee: {{ task.budget }} | Duration: {{ task.time_taken }}
+                                          <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
+
                </div>
            </div>
            {% endfor %}
@@ -332,7 +334,7 @@
            <table class="table table-bordered table-dark-bordered table-hover bg-white mb-0">
                <thead class="table-light">
                    <tr>
-                       <th>Job ID</th><th>Title</th><th>Status</th><th>Delay</th><th>Action</th>
+                       <th>Job ID</th><th>Title</th><th>Status</th><th>Concerned</th></th><th>Delay</th><th>Action</th>
                    </tr>
                </thead>
                <tbody>
@@ -341,6 +343,7 @@
                        <td>{{ task.job_id }}</td>
                        <td>{{ task.title }}</td>
                        <td><span class="badge bg-danger">{{ task.status }}</span></td>
+                       <td>{{task.assigned_to_display}}</td>
                        <td class="text-danger fw-bold">{{ task.work_delay }}</td>
                        <td><a href="{% url 'end_task' task.id %}" class="btn btn-success btn-sm">End</a></td>
                    </tr>
@@ -353,6 +356,8 @@
            {% for task in overdue_tasks %} <div class="card mb-2 shadow-sm border-danger">
                <div class="card-body p-2" style="font-size: 0.8rem;">
                   <strong> <a href="{% url 'task_detail' task.id %}">{{ task.title }}</a></strong><br>
+                                                             <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
+
                    Delay: <span class="text-danger fw-bold">{{ task.work_delay }}</span><br>
                    <a href="{% url 'end_task' task.id %}" class="btn btn-success btn-sm mt-1 w-100">End Task</a>
                </div>
