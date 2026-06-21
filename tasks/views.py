@@ -1426,3 +1426,45 @@ def add_maintenance_item(request):
         )
         return JsonResponse({'success': True})
     return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+
+
+
+def update_description_ajax(request, task_id):
+
+    if request.method != "POST":
+        return JsonResponse(
+            {
+                "status":"error",
+                "message":"Invalid request"
+            },
+            status=400
+        )
+
+    try:
+
+        data = json.loads(request.body)
+
+        description = data.get("description","").strip()
+
+        task = get_object_or_404(Task,id=task_id)
+
+        task.description = description
+
+        task.save()
+
+        return JsonResponse(
+            {
+                "status":"success"
+            }
+        )
+
+    except Exception as e:
+
+        return JsonResponse(
+            {
+                "status":"error",
+                "message":str(e)
+            },
+            status=500
+        )

@@ -320,7 +320,7 @@
 
           <div class="small mb-1" style="font-size: 0.8rem;">
               <i class="bi bi-cash-stack me-1 text-success"></i>Service Charge:
-              {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
+              {% if request.user.is_superuser or request.user.profile.role == 'Admin' or request.user.profile.role == 'Technician' %}
                   <div class="d-inline-flex align-items-center gap-1 mt-1 mt-sm-0 budget-edit-container">
                       <input type="text"
                              id="budget-input-{{ task.id }}"

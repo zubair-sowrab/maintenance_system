@@ -82,4 +82,9 @@ path('tasks/pending/all/', views.all_pending_tasks, name='all_pending_tasks')
 ,path('tasks/active/all/', views.all_active_tasks, name='all_active_tasks'),
 path('attachments/<int:attachment_id>/delete/', views.delete_task_attachment, name='delete_task_attachment'),
 path('tasks/update-budget-ajax/<int:task_id>/', views.update_budget_ajax, name='update_budget_ajax'),
+path(
+    'tasks/update-description-ajax/<int:task_id>/',
+    views.update_description_ajax,
+    name='update_description_ajax'
+),
 path('ajax/add-sub-category/', add_sub_category_ajax, name='add_sub_category'),]

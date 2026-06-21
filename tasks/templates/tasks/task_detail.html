@@ -34,7 +34,29 @@
                         </div>
                         <div class="col-12">
                             <p class="mb-1 text-muted small">Description (الوصف)</p>
-                            <p class="bg-light p-3 rounded border">{{ task.description }}</p>
+                           <div class="small mb-2">
+    <i class="bi bi-card-text me-1 text-primary"></i>Description:
+
+    <div class="d-flex align-items-start gap-2 mt-1">
+        <textarea
+            id="description-input-{{ task.id }}"
+            class="form-control form-control-sm"
+            rows="3">{{ task.description }}</textarea>
+
+      <button
+    type="button"
+    class="btn btn-success btn-sm btn-save-description"
+    data-task-id="{{ task.id }}"
+    title="Save Description">
+    Save
+</button>
+    </div>
+</div>
+
+
+
+
+
                         </div>
                         <div class="col-md-4 col-lg-4">
                             <p class="mb-1 text-muted small">Start Date (تاريخ البدء)</p>
@@ -429,7 +451,62 @@ document.addEventListener("DOMContentLoaded", function() {
             .catch(error => console.error('Fetch Error:', error));
         });
     }
+
+
+
+
+const descriptionButtons = document.querySelectorAll('.btn-save-description');
+
+descriptionButtons.forEach(button => {
+
+    button.addEventListener('click', function() {
+
+        const taskId = this.dataset.taskId;
+
+        const input = document.getElementById(`description-input-${taskId}`);
+
+        fetch(`/tasks/update-description-ajax/${taskId}/`, {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json",
+    "X-CSRFToken": "{{ csrf_token }}"
+            },
+
+            body: JSON.stringify({
+                description: input.value
+            })
+
+        })
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            if(data.status=="success"){
+                alert("Description updated successfully!");
+            }
+            else{
+                alert(data.message);
+            }
+
+        });
+
+    });
+
 });
+});
+
+
+
+
+
+
+
+
+
+
 </script>
 
 <style>
