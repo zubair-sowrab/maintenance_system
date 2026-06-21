@@ -127,17 +127,21 @@
           <button type="button" class="btn btn-success btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
               <span class="visually-hidden">Toggle Options</span>
           </button>
-          <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 200px; max-height: 300px; overflow-y: auto; font-size: 0.82rem;">
-              <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns to Copy</li>
-              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="0" checked id="cCol0"><label class="form-check-label text-dark" for="cCol0">Job ID</label></div></li>
-              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="1" checked id="cCol1"><label class="form-check-label text-dark" for="cCol1">Title</label></div></li>
-              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="2" checked id="cCol2"><label class="form-check-label text-dark" for="cCol2">Description</label></div></li><li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="eCol3"><label class="form-check-label text-dark" for="eCol3">Items & Quantities</label></div></li>
-              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="7" checked id="cCol7"><label class="form-check-label text-dark" for="cCol7">Assigned To</label></div></li>
-              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="8" checked id="cCol8"><label class="form-check-label text-dark" for="cCol8">Service Charge</label></div></li>
-              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="9" checked id="cCol9"><label class="form-check-label text-dark" for="cCol9">Date Ended</label></div></li>
-              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="10" checked id="cCol10"><label class="form-check-label text-dark" for="cCol10">Complaints</label></div></li>
-              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="11" checked id="cCol11"><label class="form-check-label text-dark" for="cCol11">Location</label></div></li>
-          </ul>
+          <ul class="dropdown-menu dropdown-menu-end p-2" ...>
+    <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns</li>
+
+    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="0" checked id="cCol0"><label class="form-check-label" for="cCol0">Job ID</label></div></li>
+    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="1" checked id="cCol1"><label class="form-check-label" for="cCol1">Title</label></div></li>
+    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="2" checked id="cCol2"><label class="form-check-label" for="cCol2">Description</label></div></li>
+
+    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="3" checked id="cCol3"><label class="form-check-label" for="cCol3">Items & Quantities</label></div></li>
+
+    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="4" checked id="cCol4"><label class="form-check-label" for="cCol4">Assigned To</label></div></li>
+    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="5" checked id="cCol5"><label class="form-check-label" for="cCol5">Service Charge</label></div></li>
+    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="6" checked id="cCol6"><label class="form-check-label" for="cCol6">Date Completed</label></div></li>
+    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="7" checked id="cCol7"><label class="form-check-label" for="cCol7">Complaints</label></div></li>
+    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="8" checked id="cCol8"><label class="form-check-label" for="cCol8">Location</label></div></li>
+</ul>
 
 
 
@@ -172,15 +176,12 @@
        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="0" checked id="eCol0"><label class="form-check-label text-dark" for="eCol0">Job ID</label></div></li>
        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="1" checked id="eCol1"><label class="form-check-label text-dark" for="eCol1">Title</label></div></li>
        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="2" checked id="eCol2"><label class="form-check-label text-dark" for="eCol2">Description</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="eCol3"><label class="form-check-label text-dark" for="eCol3">Sub Cat 1</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="4" checked id="eCol4"><label class="form-check-label text-dark" for="eCol4">Qty 1</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="5" checked id="eCol5"><label class="form-check-label text-dark" for="eCol5">Sub Cat 2</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="6" checked id="eCol6"><label class="form-check-label text-dark" for="eCol6">Qty 2</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="7" checked id="eCol7"><label class="form-check-label text-dark" for="eCol7">Assigned To</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="8" checked id="eCol8"><label class="form-check-label text-dark" for="eCol8">Service Charge</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="9" checked id="eCol9"><label class="form-check-label text-dark" for="eCol9">Date Ended</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="10" checked id="eCol10"><label class="form-check-label text-dark" for="eCol10">Complaints</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="11" checked id="eCol11"><label class="form-check-label text-dark" for="eCol11">Location</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="eCol3"><label class="form-check-label text-dark" for="eCol3">Items and Quantities</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="4" checked id="eCol4"><label class="form-check-label text-dark" for="eCol4">Assigned To</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="5" checked id="eCol5"><label class="form-check-label text-dark" for="eCol5">Service Charge</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="6" checked id="eCol6"><label class="form-check-label text-dark" for="eCol6">Date Ended</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="7" checked id="eCol7"><label class="form-check-label text-dark" for="eCol7">Complaints</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="8" checked id="eCol8"><label class="form-check-label text-dark" for="eCol8">Location</label></div></li>
    </ul>
 </div>
 
@@ -521,14 +522,17 @@ document.addEventListener("DOMContentLoaded", function() {
 
   if (quickCopyBtn) {
       quickCopyBtn.addEventListener("click", function() {
-          // 1. Compile total baseline array structures
           const headersList = [
-              "Job ID", "Title", "Description",
-              "Sub Category-1", "Quantity-1",
-              "Sub Category-2", "Quantity-2",
-              "Assigned To", "Service Charge (Budget)",
-              "Date Completed", "Complaints", "Location"
-          ];
+    "Job ID",
+    "Title",
+    "Description",
+    "Items & Quantities",
+    "Assigned To",
+    "Service Charge (Budget)",
+    "Date Completed",
+    "Complaints",
+    "Location" // <-- Ensure this has a closing quote
+];
 
 
 
@@ -563,54 +567,41 @@ document.addEventListener("DOMContentLoaded", function() {
 
           // 3. Loop through current context filtered records dataset
           {% for task in tasks %}
-              (function() {
-                  let itemData = [];
-                  {% for item in task.items.all %}
-                      itemData.push({
-                          cat: "{{ item.sub_category|escapejs }}",
-                          qty: "{{ item.quantity|escapejs }}"
-                      });
-                  {% endfor %}
+        (function() {
+            // Build the string: cat1(qty-1), cat2(qty-2)
+            let itemData = [];
+            {% for item in task.items.all %}
+                itemData.push("{{ item.sub_category|escapejs }}(qty-{{ item.quantity|escapejs }})");
+            {% endfor %}
+            let itemsStr = itemData.join(", ");
+            if (itemsStr === "") itemsStr = "-";
 
+            let complaintMsg = "No complaints";
+            {% with task.complaint_set.last as comp %}
+                {% if comp %} complaintMsg = "{{ comp.message|escapejs }}"; {% endif %}
+            {% endwith %}
 
-
-
-                 let itemsStr = itemData.map(i => `${i.cat} (x${i.qty})`).join(" | ");
-if (itemsStr === "") itemsStr = "-";
-
-
-
-
-                  let complaintMsg = "No complaints";
-                  {% with task.complaint_set.last as comp %}
-                      {% if comp %} complaintMsg = "{{ comp.message|escapejs }}"; {% endif %}
-                  {% endwith %}
 
 
 
 
                   // Full source index matching dataset scheme arrays
-                  let fullDataRecord = [
-                      "{{ task.job_id|escapejs }}",
-                      cleanStr("{{ task.title|escapejs }}"),
-                      cleanStr("{{ task.description|default:''|escapejs }}"),
-                      subCat1, qty1,
-                      subCat2, qty2,
-                      "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
-                      "{{ task.budget|default:'0.00'|escapejs }}",
-                      "{{ task.completed_at|date:'d/m/Y H:i' }}",
-                      cleanStr(complaintMsg),
-                      cleanStr("{{ task.location|escapejs }}")
-                  ];
+                let fullDataRecord = [
+                "{{ task.job_id|escapejs }}",
+                cleanStr("{{ task.title|escapejs }}"),
+                cleanStr("{{ task.description|default:''|escapejs }}"),
+                itemsStr, // This is the new combined column
+                "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
+                "{{ task.budget|default:'0.00'|escapejs }}",
+                "{{ task.completed_at|date:'d/m/Y H:i' }}",
+                cleanStr(complaintMsg),
+                cleanStr("{{ task.location|escapejs }}")
+            ];
 
-
-
-
-                  // Extrapolate values chosen explicitly by checked matrixes
-                  let filteredRecord = activeIndices.map(idx => fullDataRecord[idx]);
-                  rows.push(filteredRecord);
-              })();
-          {% endfor %}
+            let filteredRecord = activeIndices.map(idx => fullDataRecord[idx]);
+            rows.push(filteredRecord);
+        })();
+    {% endfor %}
 
 
 
@@ -682,70 +673,56 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
-  if (printExecuteBtn) {
-      printExecuteBtn.addEventListener("click", function() {
-          // 1. Gather all header configuration sets
-          const headersList = [
-              "Job ID", "Title", "Description",
-              "Sub Category-1", "Quantity-1",
-              "Sub Category-2", "Quantity-2",
-              "Assigned To", "Service Charge",
-              "Date Completed", "Complaints", "Location"
-          ];
+ if (printExecuteBtn) {
+    printExecuteBtn.addEventListener("click", function() {
+        // 1. Updated Headers List (9 items total)
+        const headersList = [
+            "Job ID", "Title", "Description",
+            "Items & Quantities",
+            "Assigned To", "Service Charge",
+            "Date Completed", "Complaints", "Location"
+        ];
 
+        let printRows = [];
+        const cleanStr = (val) => val ? val.replace(/[\t\n\r]/g, " ").trim() : "";
 
+        {% for task in tasks %}
+            (function() {
+                // Formatting: subcat(qty-N), subcat(qty-N)
+                let itemData = [];
+                {% for item in task.items.all %}
+                    itemData.push("{{ item.sub_category|escapejs }}(qty-{{ item.quantity|escapejs }})");
+                {% endfor %}
 
+                // Logic: Join with comma/space, then inject break if long
+                let joinedItems = itemData.join(", ");
+                let itemsStr = joinedItems;
+                if (itemsStr.length > 40) {
+                    itemsStr = joinedItems.replace(/, /g, "<br>");
+                }
+                if (itemsStr === "") itemsStr = "-";
 
-          // 2. Fetch dataset rows using identical structure logic as your copy routing engine
-          let printRows = [];
-          const cleanStr = (val) => val ? val.replace(/[\t\n\r]/g, " ").trim() : "";
+                let complaintMsg = "No complaints";
+                {% with task.complaint_set.last as comp %}
+                    {% if comp %} complaintMsg = "{{ comp.message|escapejs }}"; {% endif %}
+                {% endwith %}
 
+                // 2. Full Record Array (matches new headersList)
+                printRows.push([
+                    "{{ task.job_id|escapejs }}",
+                    cleanStr("{{ task.title|escapejs }}"),
+                    cleanStr("{{ task.description|default:''|escapejs }}"),
+                    itemsStr,
+                    "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
+                    "{{ task.budget|default:'0.00'|escapejs }}",
+                    "{{ task.completed_at|date:'d/m/Y H:i' }}",
+                    cleanStr(complaintMsg),
+                    cleanStr("{{ task.location|escapejs }}")
+                ]);
+            })();
+        {% endfor %}
 
-
-
-          {% for task in tasks %}
-              (function() {
-                  let itemData = [];
-                  {% for item in task.items.all %}
-                      itemData.push({
-                          cat: "{{ item.sub_category|escapejs }}",
-                          qty: "{{ item.quantity|escapejs }}"
-                      });
-                  {% endfor %}
-
-
-
-
-                  let itemsStr = itemData.map(i => `${i.cat} (x${i.qty})`).join(" | ");
-if (itemsStr === "") itemsStr = "-";
-
-
-
-
-                  let complaintMsg = "No complaints";
-                  {% with task.complaint_set.last as comp %}
-                      {% if comp %} complaintMsg = "{{ comp.message|escapejs }}"; {% endif %}
-                  {% endwith %}
-
-
-
-
-                  printRows.push([
-                      "{{ task.job_id|escapejs }}",
-                      cleanStr("{{ task.title|escapejs }}"),
-                      cleanStr("{{ task.description|default:''|escapejs }}"),
-                      subCat1, qty1,
-                      subCat2, qty2,
-                      "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
-                      "{{ task.budget|default:'0.00'|escapejs }}",
-                      "{{ task.completed_at|date:'d/m/Y H:i' }}",
-                      cleanStr(complaintMsg),
-                      cleanStr("{{ task.location|escapejs }}")
-                  ]);
-              })();
-          {% endfor %}
-
-
+        // ... existing radio/activeIndices logic ...
 
 
           if (printRows.length === 0) {
@@ -803,6 +780,13 @@ if (itemsStr === "") itemsStr = "-";
                       th { background-color: #1a1a1a; color: #ffffff; font-weight: 600; text-align: left; padding: 8px 6px; border: 1px solid #333; }
                       td { padding: 7px 6px; border: 1px solid #e0e0e0; vertical-align: top; word-break: break-word; }
                       tr:nth-child(even) td { background-color: #f9f9f9; }
+                      td {
+    padding: 7px 6px;
+    border: 1px solid #e0e0e0;
+    vertical-align: top;
+    word-break: break-word;
+    white-space: pre-wrap; /* This ensures <br> tags actually create new lines */
+}
                       @media print {
                           body { padding: 0; }
                           button { display: none; }
@@ -913,79 +897,89 @@ rpSaveButtons.forEach(button => {
 
 
 document.getElementById('btnExportCSV').addEventListener('click', function() {
-   // 1. The FULL master list of headers (12 items total)
+   // 1. Updated master headers (9 total)
    const masterHeaders = [
        "Job ID", "Title", "Description",
-       "Sub Cat 1", "Qty 1", "Sub Cat 2", "Qty 2",
-       "Assigned To", "Service Charge", "Date Ended", "Complaints", "Location"
+       "Items & Quantities",
+       "Assigned To", "Service Charge",
+       "Date Ended", "Complaints", "Location"
    ];
 
-
-   // 2. Identify which columns the user checked
    let activeIndices = [];
    document.querySelectorAll(".export-col-check:checked").forEach(cb => {
        activeIndices.push(parseInt(cb.value));
    });
-
 
    if (activeIndices.length === 0) {
        alert("Please select at least one column to export.");
        return;
    }
 
-
-   // 3. Prepare the CSV content with UTF-8 BOM for Arabic support
+   // 2. Prepare CSV rows
    let csvRows = [];
    csvRows.push(activeIndices.map(idx => `"${masterHeaders[idx]}"`).join(","));
 
-
-   // Helper to escape commas/quotes and clean strings
    const cleanStr = (val) => val ? val.replace(/"/g, '""').replace(/[\t\n\r]/g, " ").trim() : "";
 
-
-   // 4. Build Rows
    {% for task in tasks %}
-       (function() {
-           // Get Tech List safely
+    (function() {
+        // Collect ALL items for this task
+        let itemData = [];
+
+
+        // DEBUG: Check how many items are in the loop
+        {% for item in task.items.all %}
+            console.log("DEBUG: Processing item: {{ item.sub_category }}");
+            itemData.push("{{ item.sub_category|escapejs }}(qty-{{ item.quantity|escapejs }})");
+        {% endfor %}
+
+        if (itemData.length === 0) {
+            console.warn("DEBUG: No items found for Task ID: {{ task.job_id }}");
+        }
+
+
+        {% for item in task.items.all %}
+            // Verify we have access to item properties
+            itemData.push("{{ item.sub_category|escapejs }}(qty-{{ item.quantity|escapejs }})");
+        {% endfor %}
+
+        console.log("Task ID {{ task.job_id }}: Found " + itemData.length + " items.");
+
+        // Join all collected items
+        let joinedItems = itemData.join(", ");
+
+     // Simply join all items with a comma and space
+let itemsStr = itemData.join(", ");
+
+// If there are no items, show a dash
+if (itemsStr === "") itemsStr = "-";
+
            let techNames = [];
            {% for tech in task.assigned_technicians.all %}
                techNames.push("{{ tech.username|escapejs }}");
            {% endfor %}
            let techString = techNames.length > 0 ? techNames.join(", ") : "Unassigned";
 
-
-           // Get Items
-           let itemData = [];
-           {% for item in task.items.all %}
-               itemData.push({ cat: "{{ item.sub_category|escapejs }}", qty: "{{ item.quantity|escapejs }}" });
-           {% endfor %}
-
-
-           // Build the full 12-column record array
+           // 3. Build the 9-column record array
            let fullDataRecord = [
                "{{ task.job_id|escapejs }}",
                cleanStr("{{ task.title|escapejs }}"),
                cleanStr("{{ task.description|default:''|escapejs }}"),
-               itemData[0] ? cleanStr(itemData[0].cat) : "-",
-               itemData[0] ? itemData[0].qty : "0",
-               itemData[1] ? cleanStr(itemData[1].cat) : "-",
-               itemData[1] ? itemData[1].qty : "0",
-               techString, // This is a single string now
+               itemsStr, // Combined Column
+               techString,
                "{{ task.budget|default:'0.00'|escapejs }}",
                "{{ task.completed_at|date:'d/m/Y H:i' }}",
                "{{ task.complaint_set.last.message|default:'No complaints'|escapejs }}",
                cleanStr("{{ task.location|escapejs }}")
            ];
 
-
-           // Filter this record by the activeIndices
+           // Filter and wrap in quotes for CSV compliance
            let filteredRow = activeIndices.map(idx => `"${fullDataRecord[idx]}"`);
            csvRows.push(filteredRow.join(","));
        })();
    {% endfor %}
 
-
-   // 5. Trigger Download with UTF-8 BOM
+   // 4. Trigger Download
    const csvString = "\uFEFF" + csvRows.join("\n");
    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
    const link = document.createElement("a");
@@ -1191,15 +1185,12 @@ document.getElementById('btnExportCSV').addEventListener('click', function() {
                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="0" checked id="pCol0"><label class="form-check-label" for="pCol0">Job ID</label></div></div>
                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="1" checked id="pCol1"><label class="form-check-label" for="pCol1">Title</label></div></div>
                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="2" checked id="pCol2"><label class="form-check-label" for="pCol2">Description</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="3" checked id="pCol3"><label class="form-check-label" for="pCol3">Sub Cat 1</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="4" checked id="pCol4"><label class="form-check-label" for="pCol4">Qty 1</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="5" checked id="pCol5"><label class="form-check-label" for="pCol5">Sub Cat 2</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="6" checked id="pCol6"><label class="form-check-label" for="pCol6">Qty 2</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="7" checked id="pCol7"><label class="form-check-label" for="pCol7">Assigned To</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="8" checked id="pCol8"><label class="form-check-label" for="pCol8">Service Charge</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="9" checked id="pCol9"><label class="form-check-label" for="pCol9">Date Ended</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="10" checked id="pCol10"><label class="form-check-label" for="pCol10">Complaints</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="11" checked id="pCol11"><label class="form-check-label" for="pCol11">Location</label></div></div>
+                                            <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="3" checked id="pCol3"><label class="form-check-label" for="pCol3">Description</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="4" checked id="pCol4"><label class="form-check-label" for="pCol4">Assigned To</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="5" checked id="pCol5"><label class="form-check-label" for="pCol5">Service Charge</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="6" checked id="pCol6"><label class="form-check-label" for="pCol6">Date Ended</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="7" checked id="pCol7"><label class="form-check-label" for="pCol7">Complaints</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="8" checked id="pCol8"><label class="form-check-label" for="pCol8">Location</label></div></div>
                   </div>
               </div>
           </div>
