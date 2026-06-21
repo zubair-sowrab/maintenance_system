@@ -140,7 +140,7 @@
         </div>
 
         <div class="col-md-3 col-sm-12">
-            <input type="text" name="quantity" class="form-control form-control-sm" placeholder="Details / Quantity" required>
+            <input type="text" name="quantity" class="form-control form-control-sm" placeholder="Details / Quantity">
         </div>
 
         <div class="col-md-2 col-sm-12">
@@ -466,6 +466,48 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         }
     });
+
+
+
+
+
+    // ==========================================
+    // --- Add Missed Item Form Validation ---
+    // ==========================================
+    const addWorkItemForm = document.getElementById('addWorkItemForm');
+
+    if (addWorkItemForm) {
+        addWorkItemForm.addEventListener('submit', function(event) {
+            const inputEl = document.getElementById('dynamic_sub_category');
+            const val = inputEl.value.trim();
+
+            // Check if the typed value exists in our AJAX array
+            if (val !== '' && typeof currentMaintenanceItems !== 'undefined' && !currentMaintenanceItems.includes(val)) {
+                // 1. Stop the form from submitting to Django
+                event.preventDefault();
+
+                // 2. Highlight the box in red
+                inputEl.classList.add('is-invalid');
+
+                // 3. Throw the error popup
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Work Item (عنصر غير صالح)',
+                    text: 'Please select a valid maintenance item from the dropdown list. You cannot type custom text here. (يرجى تحديد عنصر صحيح من القائمة المنسدلة)',
+                    confirmButtonColor: '#dc3545'
+                });
+            } else {
+                // If it passes, remove any red borders and let it submit natively!
+                inputEl.classList.remove('is-invalid');
+            }
+        });
+    }
+
+
+
+
+
+
     // 2. REWARD POINTS AJAX LOGIC
     const rewardForm = document.getElementById('rewardPointsForm');
     if (rewardForm) {
@@ -549,7 +591,6 @@ descriptionButtons.forEach(button => {
 
 });
 });
-
 
 
 

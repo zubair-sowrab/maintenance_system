@@ -551,91 +551,121 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // --- Form Validation ---
+  // ==========================================
+    // --- Form Validation & Submission ---
+    // (Make sure this stays INSIDE the DOMContentLoaded block!)
+    // ==========================================
     const form = document.getElementById('taskForm');
+
     if (form) {
         form.addEventListener('submit', function(event) {
-            // [Your existing validation code here]
+            event.preventDefault(); // Stop raw standard submission routing path
+
+            // 1. Existing Check: Missing Required Fields
+            let missingFields = [];
+            const formGroups = form.querySelectorAll('.mb-3, .card');
+
+            formGroups.forEach(group => {
+                const label = group.querySelector('.form-label');
+                const hasRequiredDot = group.querySelector('.required-dot') || (label && label.innerText.includes('*'));
+
+                if (hasRequiredDot && label && group.style.display !== 'none') {
+                    const input = group.querySelector('input, select, textarea');
+                    if (input && (!input.value || input.value.trim() === '')) {
+                        let fieldName = label.innerText.replace('*', '').trim();
+                        missingFields.push(fieldName);
+                        const wrapper = group.querySelector('.django-field-wrapper');
+                        if(wrapper) wrapper.classList.add('has-error');
+                    } else if (input) {
+                        const wrapper = group.querySelector('.django-field-wrapper');
+                        if(wrapper) wrapper.classList.remove('has-error');
+                    }
+                }
+            });
+
+            if (missingFields.length > 0) {
+                const listContainer = document.getElementById('missingFieldsList');
+                if (listContainer) {
+                    listContainer.innerHTML = '<strong>Required fields missing (الحقول المطلوبة مفقودة):</strong><ul class="mb-0 mt-1 pl-3">' +
+                        missingFields.map(name => `<li>${name}</li>`).join('') + '</ul>';
+                }
+
+                var warningModal = new bootstrap.Modal(document.getElementById('validationWarningModal'));
+                warningModal.show();
+                return; // Stop execution
+            }
+
+            // 2. NEW CHECK: Validate typed items against the allowed dropdown list
+            let invalidItemFound = false;
+            const workItemInputs = form.querySelectorAll('input[name="sub_category[]"]');
+
+            workItemInputs.forEach(input => {
+                const val = input.value.trim();
+
+                // Check against the currentMaintenanceItems array we made earlier
+                if (val !== '' && typeof currentMaintenanceItems !== 'undefined' && !currentMaintenanceItems.includes(val)) {
+                    invalidItemFound = true;
+                    input.classList.add('is-invalid'); // Add red border to the input
+                } else {
+                    input.classList.remove('is-invalid'); // Remove red border if correct
+                }
+            });
+
+            if (invalidItemFound) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Work Item (عنصر غير صالح)',
+                    text: 'Please select a valid maintenance item from the dropdown list. You cannot type custom text here. (يرجى تحديد عنصر صحيح من القائمة المنسدلة)',
+                    confirmButtonColor: '#dc3545'
+                });
+                return; // Stop the form submission completely!
+            }
+
+            // 3. If all checks pass, submit the form via AJAX
+            const formData = new FormData(form);
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    Swal.fire({
+                        title: 'Your Task is Created! (تم إنشاء المهمة بنجاح)',
+                        text: 'Choose your next step below (اختر خطوتك التالية أدناه):',
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonColor: '#198754',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Create More (إنشاء المزيد)',
+                        cancelButtonText: 'Go to Dashboard (الذهاب للوحة التحكم)',
+                        allowOutsideClick: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.reset();
+                            // Safely grab the building select so it doesn't crash
+                            const buildingSelect = document.querySelector('select[name="building"]');
+                            if(buildingSelect) buildingSelect.dispatchEvent(new Event('change'));
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        } else {
+                            window.location.href = "{% url 'dashboard' %}"; // Make sure this URL tag resolves correctly
+                        }
+                    });
+                } else {
+                    form.submit(); // Fallback
+                }
+            })
+            .catch(error => {
+                console.error("Submission Error:", error);
+                form.submit(); // Fallback
+            });
         });
     }
+
+// THIS is where your entire script should finally end!
 });
-
-
-
-
-const form = document.getElementById('taskForm');
-    form.addEventListener('submit', function(event) {
-        event.preventDefault(); // Stop raw standard submission routing path
-
-        let missingFields = [];
-        const formGroups = form.querySelectorAll('.mb-3, .card');
-
-        formGroups.forEach(group => {
-            const label = group.querySelector('.form-label');
-            const hasRequiredDot = group.querySelector('.required-dot') || (label && label.innerText.includes('*'));
-
-            if (hasRequiredDot && label && group.style.display !== 'none') {
-                const input = group.querySelector('input, select, textarea');
-                if (input && (!input.value || input.value.trim() === '')) {
-                    let fieldName = label.innerText.replace('*', '').trim();
-                    missingFields.push(fieldName);
-                    const wrapper = group.querySelector('.django-field-wrapper');
-                    if(wrapper) wrapper.classList.add('has-error');
-                } else if (input) {
-                    const wrapper = group.querySelector('.django-field-wrapper');
-                    if(wrapper) wrapper.classList.remove('has-error');
-                }
-            }
-        });
-
-        if (missingFields.length > 0) {
-            const listContainer = document.getElementById('missingFieldsList');
-            listContainer.innerHTML = '<strong>Required fields missing (الحقول المطلوبة مفقودة):</strong><ul class="mb-0 mt-1 pl-3">' +
-                missingFields.map(name => `<li>${name}</li>`).join('') + '</ul>';
-
-            var warningModal = new bootstrap.Modal(document.getElementById('validationWarningModal'));
-            warningModal.show();
-            return;
-        }
-
-        const formData = new FormData(form);
-        fetch(window.location.href, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                Swal.fire({
-                    title: 'Your Task is Created! (تم إنشاء المهمة بنجاح)',
-                    text: 'Choose your next step below (اختر خطوتك التالية أدناه):',
-                    icon: 'success',
-                    showCancelButton: true,
-                    confirmButtonColor: '#198754',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Create More (إنشاء المزيد)',
-                    cancelButtonText: 'Go to Dashboard (الذهاب للوحة التحكم)',
-                    allowOutsideClick: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.reset();
-                        if(buildingSelect) buildingSelect.dispatchEvent(new Event('change'));
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    } else {
-                        window.location.href = "{% url 'dashboard' %}";
-                    }
-                });
-            } else {
-                form.submit();
-            }
-        })
-        .catch(error => {
-            form.submit();
-        });
-    });
-
 
 
 

@@ -20,6 +20,21 @@ class TaskForm(forms.ModelForm):
         widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
         required=False,
         label="Assigned Technicians (المسؤولون)")
+
+    def clean_maintenance_work(self):
+        value = self.cleaned_data.get("maintenance_work")
+
+        if value:
+            exists = MaintenanceWorkItem.objects.filter(
+                name__iexact=value.strip()
+            ).exists()
+
+            if not exists:
+                raise forms.ValidationError(
+                    "Please select a maintenance work from the list."
+                )
+
+        return value
     class Meta:
         model = Task
         exclude = [
