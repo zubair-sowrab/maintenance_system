@@ -141,7 +141,7 @@
            <table class="table table-bordered table-dark-bordered table-hover bg-white mb-0">
                <thead class="table-light sticky-top">
                    <tr>
-                       <th>Job ID</th><th>Title</th><th>Status</th><th>Concerned</th>
+                       <th>Job ID</th><th>Title</th><th>Type</th><th>Status</th><th>Concerned</th>
                        <th>Location</th><th>Charge</th><th>Message</th><th>Action</th>
                    </tr>
                </thead>
@@ -150,6 +150,8 @@
                    <tr>
                        <td>{{ task.job_id }}</td>
                        <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-warning-emphasis">{{ task.title }}</a></td>
+                                              <td>{{ task.project_type }}</td>
+
                        <td><span class="badge bg-warning text-dark">{{ task.status }}</span></td>
                        <td>{{ task.assigned_to_display }}</td>
                        <td>{{ task.location }}</td>
@@ -174,6 +176,8 @@
                        <div class="col-6"><strong>Fee:</strong> {{ task.budget }}</div>
                        <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
                        <div class="col-12"><strong>Loc:</strong> {{ task.location }}</div>
+                       <div class="col-12"><strong>Type:</strong> {{ task.project_type }}</div>
+
                    </div>
                    <a href="{% url 'start_task' task.id %}" class="btn btn-warning btn-sm w-100 fw-bold text-dark mt-3" onclick="return confirm('Start task?')">
                        Start Task
@@ -207,7 +211,7 @@
            <table class="table table-bordered table-dark-bordered table-hover bg-white mb-0">
                <thead class="table-light sticky-top">
                    <tr>
-                       <th>Job ID</th><th>Title</th><th>Status</th><th>Concerned</th>
+                       <th>Job ID</th><th>Title</th><th>Status</th><th>Type</th><th>Concerned</th>
                        <th>Location</th><th>Charge</th><th>Message</th><th>Action</th>
                    </tr>
                </thead>
@@ -217,6 +221,7 @@
                        <td>{{ task.job_id }}</td>
                        <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-primary">{{ task.title }}</a></td>
                        <td><span class="badge bg-primary">{{ task.status }}</span></td>
+                       <td>{{ task.project_type}}</td>
                        <td>{{ task.assigned_to_display }}</td>
                        <td>{{ task.location }}</td>
                        <td>{{ task.budget }}</td>
@@ -243,6 +248,7 @@
                        <div class="col-6"><strong>Fee:</strong> {{ task.budget }}</div>
                        <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
                        <div class="col-12"><strong>Loc:</strong> {{ task.location }}</div>
+                       <div class="col-12"><strong>Type:</strong> {{ task.project_type }}</div>
                    </div>
                    <button type="button" class="btn btn-primary btn-sm w-100 fw-bold mt-3" data-bs-toggle="modal" data-bs-target="#endTaskModal" onclick="setTaskUrl('{{ task.id }}')">
                        End Task
@@ -276,7 +282,7 @@
            <table class="table table-bordered table-dark-bordered table-hover bg-white mb-0">
                <thead class="table-light">
                    <tr>
-                       <th>Job ID</th><th>Title</th><th>Status</th><th>Concerned</th>
+                       <th>Job ID</th><th>Title</th><th>Status</th><th>Type</th><th>Concerned</th>
                        <th>Date</th><th>Location</th><th>Charge</th><th>Message</th><th>Duration</th>
                    </tr>
                </thead>
@@ -286,6 +292,7 @@
                        <td>{{ task.job_id }}</td>
                        <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-success">{{ task.title }}</a></td>
                        <td><span class="badge bg-success">{{ task.status }}</span></td>
+                       <td>{{ task.project_type }}</td>
                        <td>{{ task.assigned_to_display }}</td>
                        <td>{{ task.completed_at|date:"Y-m-d H:i" }}</td>
                        <td>{{ task.location }}</td>
@@ -303,7 +310,7 @@
            <div class="card mb-2 shadow-sm border-success">
                <div class="card-body p-2" style="font-size: 0.8rem;">
                    <strong><a href="{% url 'task_detail' task.id %}">{{ task.title }}</a></strong><br>
-                   ID: {{ task.job_id }} | Status: {{ task.status }}<br>
+                   ID: {{ task.job_id }} | Status: {{ task.status }} | Type: {{ task.project_type }}<br>
                    Fee: {{ task.budget }} | Duration: {{ task.time_taken }}
                                           <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
 
@@ -334,7 +341,7 @@
            <table class="table table-bordered table-dark-bordered table-hover bg-white mb-0">
                <thead class="table-light">
                    <tr>
-                       <th>Job ID</th><th>Title</th><th>Status</th><th>Concerned</th></th><th>Delay</th><th>Action</th>
+                       <th>Job ID</th><th>Title</th><th>Status</th><th>Type<th>Concerned</th></th><th>Delay</th><th>Action</th>
                    </tr>
                </thead>
                <tbody>
@@ -343,6 +350,7 @@
                        <td>{{ task.job_id }}</td>
                        <td>{{ task.title }}</td>
                        <td><span class="badge bg-danger">{{ task.status }}</span></td>
+                       <td>{{task.project_type}}</td>
                        <td>{{task.assigned_to_display}}</td>
                        <td class="text-danger fw-bold">{{ task.work_delay }}</td>
                        <td><a href="{% url 'end_task' task.id %}" class="btn btn-success btn-sm">End</a></td>
@@ -357,6 +365,7 @@
                <div class="card-body p-2" style="font-size: 0.8rem;">
                   <strong> <a href="{% url 'task_detail' task.id %}">{{ task.title }}</a></strong><br>
                                                              <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
+                   <div class="col-12"><strong>Type:</strong> {{ task.project_type }}</div>
 
                    Delay: <span class="text-danger fw-bold">{{ task.work_delay }}</span><br>
                    <a href="{% url 'end_task' task.id %}" class="btn btn-success btn-sm mt-1 w-100">End Task</a>
