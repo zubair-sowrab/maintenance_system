@@ -163,11 +163,11 @@ def task_list(request):
   if project_type:
       tasks = tasks.filter(project_type=project_type)
 
-
-  pending_tasks = tasks.filter(Q(status='Pending') | Q(status='Pending(قيد الانتظار)'))
-  active_tasks = tasks.filter(Q(status='In Progress') | Q(status='قيد التنفيذ'))
-  completed_tasks = tasks.filter(Q(status='Completed') | Q(status='مكتمل'))
-  overdue_tasks = tasks.filter(status='Overdue')
+  pending_tasks = tasks.filter(Q(status='Pending') | Q(status='Pending(قيد الانتظار)')).order_by('-created_at')
+  active_tasks = tasks.filter(Q(status='In Progress') | Q(status='قيد التنفيذ')).order_by('-created_at')
+  completed_tasks = tasks.filter(Q(status='Completed') | Q(status='مكتمل')).order_by('-completed_at')
+  overdue_tasks = tasks.filter(status='Overdue').order_by(
+      '-deadline')  # Assuming you want the closest deadline or oldest overdue
 
 
 
@@ -247,16 +247,38 @@ def create_task(request):
 
            # 1. AUTO-TITLE GENERATION (Updated to use first tech instead of old assigned_to)
            project_type = request.GET.get('project_type')
+           # 1. EXTRACT ARRAYS
            sub_categories = request.POST.getlist('sub_category[]')
            quantities = request.POST.getlist('quantity[]')
 
-
            translated_subs = []
-           for sub in sub_categories:
+           translated_qtys = []
+
+           # 2. SAFELY LOOP AND TRANSLATE BOTH ARRAYS
+           for i, sub in enumerate(sub_categories):
+               # Safely get the corresponding quantity, default to "0" if missing
+               raw_qty = quantities[i] if i < len(quantities) else "0"
+
+               # --- Translate Sub-Category ---
                if sub and sub.strip():
-                   translated_subs.append(translator.translate(sub))
+                   try:
+                       translated_subs.append(translator.translate(sub.strip()))
+                   except Exception:
+                       translated_subs.append(sub.strip())  # Fallback to original if translation fails
                else:
                    translated_subs.append("General")
+
+               # --- Translate Quantity / Details ---
+               clean_qty = str(raw_qty).strip()
+               if clean_qty and not clean_qty.isdigit():
+                   # Only translate if it contains text (e.g., "مترين" or "2 doors")
+                   try:
+                       translated_qtys.append(translator.translate(clean_qty))
+                   except Exception:
+                       translated_qtys.append(clean_qty)
+               else:
+                   # If it's just a number like "2" or empty, skip the translator to prevent API errors
+                   translated_qtys.append(clean_qty if clean_qty else "0")
 
 
 
@@ -310,7 +332,7 @@ def create_task(request):
 
 
            # Save items
-           for sub, qty in zip(translated_subs, quantities):
+           for sub, qty in zip(translated_subs, translated_qtys):
                if sub:
                    TaskItem.objects.create(task=task, sub_category=sub, quantity=qty)
 
@@ -1432,9 +1454,7 @@ def add_maintenance_item(request):
 
 
 
-
 def update_description_ajax(request, task_id):
-
     if request.method != "POST":
         return JsonResponse(
             {
@@ -1445,25 +1465,33 @@ def update_description_ajax(request, task_id):
         )
 
     try:
-
         data = json.loads(request.body)
-
         description = data.get("description","").strip()
-
         task = get_object_or_404(Task,id=task_id)
 
-        task.description = description
+        # --- TRANSLATION INTEGRATION ---
+        if description:
+            try:
+                translator = GoogleTranslator(source='auto', target='en')
+                task.description = translator.translate(description)
+            except Exception as e:
+                # Fallback to the original text if the translation API experiences an outage
+                print(f"Translation failed: {e}")
+                task.description = description
+        else:
+            task.description = description
 
         task.save()
 
+        # Return the saved description text so the frontend can display the newly translated string
         return JsonResponse(
             {
-                "status":"success"
+                "status":"success",
+                "description": task.description
             }
         )
 
     except Exception as e:
-
         return JsonResponse(
             {
                 "status":"error",
@@ -1480,3 +1508,46 @@ def delete_task_item_ajax(request, item_id):
     item.delete()
 
     return JsonResponse({'status': 'success', 'message': 'Item deleted successfully.'})
+
+
+def add_task_item_detail(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+
+    if request.method == 'POST':
+        # Grab raw form values
+        sub = request.POST.get('sub_category', '').strip()
+        qty = request.POST.get('quantity', '').strip()
+
+        translator = GoogleTranslator(source='auto', target='en')
+
+        # --- 1. Translate Sub-Category ---
+        if sub:
+            try:
+                translated_sub = translator.translate(sub)
+            except Exception:
+                translated_sub = sub  # Fallback to original if API drops out
+        else:
+            translated_sub = "General"
+
+        # --- 2. Translate Quantity / Details ---
+        if qty:
+            if qty.isdigit():
+                translated_qty = qty  # Skip translator entirely for pure numbers
+            else:
+                try:
+                    translated_qty = translator.translate(qty)
+                except Exception:
+                    translated_qty = qty  # Fallback
+        else:
+            translated_qty = "0"
+
+        # --- 3. Save to Database ---
+        TaskItem.objects.create(
+            task=task,
+            sub_category=translated_sub,
+            quantity=translated_qty
+        )
+
+        messages.success(request, "Missed maintenance item added successfully in English!")
+
+    return redirect('task_detail', task_id=task.id)  # Change to your actual detail view name
