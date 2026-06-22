@@ -595,31 +595,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 return; // Stop execution
             }
 
-            // 2. NEW CHECK: Validate typed items against the allowed dropdown list
-            let invalidItemFound = false;
-            const workItemInputs = form.querySelectorAll('input[name="sub_category[]"]');
-
-            workItemInputs.forEach(input => {
-                const val = input.value.trim();
-
-                // Check against the currentMaintenanceItems array we made earlier
-                if (val !== '' && typeof currentMaintenanceItems !== 'undefined' && !currentMaintenanceItems.includes(val)) {
-                    invalidItemFound = true;
-                    input.classList.add('is-invalid'); // Add red border to the input
-                } else {
-                    input.classList.remove('is-invalid'); // Remove red border if correct
-                }
-            });
-
-            if (invalidItemFound) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid Work Item (عنصر غير صالح)',
-                    text: 'Please select a valid maintenance item from the dropdown list. You cannot type custom text here. (يرجى تحديد عنصر صحيح من القائمة المنسدلة)',
-                    confirmButtonColor: '#dc3545'
-                });
-                return; // Stop the form submission completely!
-            }
 
             // 3. If all checks pass, submit the form via AJAX
             const formData = new FormData(form);
