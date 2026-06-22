@@ -77,6 +77,15 @@
     Save
 </button>
     </div>
+                               <div class="mt-2">
+        <p class="mb-1 text-muted xs text-secondary">Saved Description:</p>
+        <div id="description-display-{{ task.id }}"
+             class="p-3 border rounded bg-light text-dark shadow-sm"
+             style="white-space: pre-line; min-height: 50px; font-size: 0.9rem; border-color: #dee2e6 !important;">
+            {{ task.description|default:"No description provided." }}
+        </div>
+    </div>
+</div>
 </div>
 
 
