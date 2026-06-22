@@ -132,6 +132,7 @@
 
     <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="0" checked id="cCol0"><label class="form-check-label" for="cCol0">Job ID</label></div></li>
     <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="1" checked id="cCol1"><label class="form-check-label" for="cCol1">Title</label></div></li>
+    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="10" checked id="cCol10"><label class="form-check-label" for="cCol10">Project Type</label></div></li>
     <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="2" checked id="cCol2"><label class="form-check-label" for="cCol2">Description</label></div></li>
 
     <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="3" checked id="cCol3"><label class="form-check-label" for="cCol3">Items & Quantities</label></div></li>
@@ -177,6 +178,8 @@
        <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns to Export</li>
        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="0" checked id="eCol0"><label class="form-check-label text-dark" for="eCol0">Job ID</label></div></li>
        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="1" checked id="eCol1"><label class="form-check-label text-dark" for="eCol1">Title</label></div></li>
+
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="10" checked id="eCol10"><label class="form-check-label text-dark" for="eCol10">Type</label></div></li>
        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="2" checked id="eCol2"><label class="form-check-label text-dark" for="eCol2">Description</label></div></li>
               <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="eCol3"><label class="form-check-label text-dark" for="eCol3">Items and Quantities</label></div></li>
        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="4" checked id="eCol4"><label class="form-check-label text-dark" for="eCol4">Assigned To</label></div></li>
@@ -528,6 +531,7 @@ document.addEventListener("DOMContentLoaded", function() {
           const headersList = [
     "Job ID",
     "Title",
+    "Type",
     "Description",
     "Items & Quantities",
     "Assigned To",
@@ -593,6 +597,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 let fullDataRecord = [
                 "{{ task.job_id|escapejs }}",
                 cleanStr("{{ task.title|escapejs }}"),
+                "{{ task.project_type|escapejs }}",
                 cleanStr("{{ task.description|default:''|escapejs }}"),
                 itemsStr, // This is the new combined column
                 "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
@@ -717,7 +722,7 @@ document.addEventListener("DOMContentLoaded", function() {
     printExecuteBtn.addEventListener("click", function() {
         // 1. Updated Headers List (9 items total)
         const headersList = [
-            "Job ID", "Title", "Description",
+            "Job ID", "Title","Type", "Description",
             "Items & Quantities",
             "Assigned To", "Service Charge",
             "Date Completed", "Complaints", "Location","Duration"
@@ -751,6 +756,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 printRows.push([
                     "{{ task.job_id|escapejs }}",
                     cleanStr("{{ task.title|escapejs }}"),
+                    cleanStr("{{ task.project_type|escapejs }}"),
                     cleanStr("{{ task.description|default:''|escapejs }}"),
                     itemsStr,
                     "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
@@ -940,7 +946,7 @@ rpSaveButtons.forEach(button => {
 document.getElementById('btnExportCSV').addEventListener('click', function() {
    // 1. Updated master headers (9 total)
    const masterHeaders = [
-       "Job ID", "Title", "Description",
+       "Job ID", "Title","Type", "Description",
        "Items & Quantities",
        "Assigned To", "Service Charge",
        "Date Ended", "Complaints", "Location","Duration"
@@ -1005,6 +1011,7 @@ if (itemsStr === "") itemsStr = "-";
            let fullDataRecord = [
                "{{ task.job_id|escapejs }}",
                cleanStr("{{ task.title|escapejs }}"),
+               cleanStr("{{ task.project_type|escapejs }}"),
                cleanStr("{{ task.description|default:''|escapejs }}"),
                itemsStr, // Combined Column
                techString,
@@ -1226,6 +1233,7 @@ if (itemsStr === "") itemsStr = "-";
                   <div class="row g-2">
                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="0" checked id="pCol0"><label class="form-check-label" for="pCol0">Job ID</label></div></div>
                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="1" checked id="pCol1"><label class="form-check-label" for="pCol1">Title</label></div></div>
+                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="10" checked id="pCol10"><label class="form-check-label" for="pCol10">Type</label></div></div>
                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="2" checked id="pCol2"><label class="form-check-label" for="pCol2">Description</label></div></div>
                                             <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="3" checked id="pCol3"><label class="form-check-label" for="pCol3">Items and Quantities</label></div></div>
                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="4" checked id="pCol4"><label class="form-check-label" for="pCol4">Assigned To</label></div></div>
