@@ -1504,3 +1504,44 @@ def add_task_item_detail(request, task_id):
         messages.success(request, "Missed maintenance item added successfully in English!")
 
     return redirect('task_detail', task_id=task.id)  # Change to your actual detail view name
+
+
+def update_start_date_ajax(request, task_id):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        date_str = data.get('started_at', '').strip()
+        task = get_object_or_404(Task, id=task_id)
+
+        if date_str:
+            # datetime-local format is YYYY-MM-DDTHH:MM, parse to aware timezone
+            task.started_at = timezone.make_aware(timezone.datetime.fromisoformat(date_str))
+        else:
+            task.started_at = None
+
+        task.save()
+        return JsonResponse({'status': 'success', 'message': 'Start date updated successfully'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def update_completed_date_ajax(request, task_id):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        date_str = data.get('completed_at', '').strip()
+        task = get_object_or_404(Task, id=task_id)
+
+        if date_str:
+            task.completed_at = timezone.make_aware(timezone.datetime.fromisoformat(date_str))
+        else:
+            task.completed_at = None
+
+        task.save()
+        return JsonResponse({'status': 'success', 'message': 'End date updated successfully'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

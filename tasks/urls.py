@@ -89,4 +89,8 @@ path(
 ),
 path('ajax/add-sub-category/', add_sub_category_ajax, name='add_sub_category'),
 path('delete-task-item/<int:item_id>/', views.delete_task_item_ajax, name='delete_task_item_ajax'),
-path('tasks/update-budget-ajax/<int:task_id>/', views.update_budget_ajax, name='update_budget_ajax'),]
+path('tasks/update-budget-ajax/<int:task_id>/', views.update_budget_ajax, name='update_budget_ajax'),
+    path('tasks/update-start-date-ajax/<int:task_id>/', views.update_start_date_ajax, name='update_start_date_ajax'),
+    path('tasks/update-completed-date-ajax/<int:task_id>/', views.update_completed_date_ajax,
+         name='update_completed_date_ajax'),
+]
