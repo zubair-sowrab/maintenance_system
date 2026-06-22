@@ -103,7 +103,8 @@ class Task(models.Model):
       User,
       on_delete=models.SET_NULL,
       null=True,
-      related_name='supervised_tasks'
+      related_name='supervised_tasks',
+  blank = True
   )
 
 
