@@ -223,7 +223,7 @@ def create_task(request):
            # Set the dates directly on the object
            now = timezone.now()
            task.start_date = now
-           task.deadline = now + timedelta(days=60)
+           task.deadline = now + timedelta(days=730)
 
 
            translator = GoogleTranslator(source='auto', target='en')
@@ -348,7 +348,7 @@ def create_task(request):
        now_dubai = timezone.now().astimezone(dubai_tz)
 
        # 2. Add 60 days to the UAE time
-       deadline_dubai = now_dubai + timedelta(days=60)
+       deadline_dubai = now_dubai + timedelta(days=730)
 
        # 3. Format it for the HTML input
        initial_data = {
