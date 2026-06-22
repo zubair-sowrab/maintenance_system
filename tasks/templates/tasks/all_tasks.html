@@ -141,7 +141,9 @@
     <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="6" checked id="cCol6"><label class="form-check-label" for="cCol6">Date Completed</label></div></li>
     <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="7" checked id="cCol7"><label class="form-check-label" for="cCol7">Complaints</label></div></li>
     <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="8" checked id="cCol8"><label class="form-check-label" for="cCol8">Location</label></div></li>
-</ul>
+    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="9" checked id="cCol9"><label class="form-check-label" for="cCol9">Duration</label></div></li>
+
+          </ul>
 
 
 
@@ -182,6 +184,7 @@
        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="6" checked id="eCol6"><label class="form-check-label text-dark" for="eCol6">Date Ended</label></div></li>
        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="7" checked id="eCol7"><label class="form-check-label text-dark" for="eCol7">Complaints</label></div></li>
        <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="8" checked id="eCol8"><label class="form-check-label text-dark" for="eCol8">Location</label></div></li>
+       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="9" checked id="eCol9"><label class="form-check-label text-dark" for="eCol9">Duration</label></div></li>
    </ul>
 </div>
 
@@ -531,7 +534,8 @@ document.addEventListener("DOMContentLoaded", function() {
     "Service Charge (Budget)",
     "Date Completed",
     "Complaints",
-    "Location" // <-- Ensure this has a closing quote
+    "Location", // <-- Ensure this has a closing quote
+    "Duration"
 ];
 
 
@@ -595,7 +599,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 "{{ task.budget|default:'0.00'|escapejs }}",
                 "{{ task.completed_at|date:'d/m/Y H:i' }}",
                 cleanStr(complaintMsg),
-                cleanStr("{{ task.location|escapejs }}")
+                cleanStr("{{ task.location|escapejs }}"),
+                "{{ task.time_taken }}"
             ];
 
             let filteredRecord = activeIndices.map(idx => fullDataRecord[idx]);
@@ -715,7 +720,7 @@ document.addEventListener("DOMContentLoaded", function() {
             "Job ID", "Title", "Description",
             "Items & Quantities",
             "Assigned To", "Service Charge",
-            "Date Completed", "Complaints", "Location"
+            "Date Completed", "Complaints", "Location","Duration"
         ];
 
         let printRows = [];
@@ -752,7 +757,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     "{{ task.budget|default:'0.00'|escapejs }}",
                     "{{ task.completed_at|date:'d/m/Y H:i' }}",
                     cleanStr(complaintMsg),
-                    cleanStr("{{ task.location|escapejs }}")
+                    cleanStr("{{ task.location|escapejs }}"),
+                    "{{ task.time_taken}}",
                 ]);
             })();
         {% endfor %}
@@ -937,7 +943,7 @@ document.getElementById('btnExportCSV').addEventListener('click', function() {
        "Job ID", "Title", "Description",
        "Items & Quantities",
        "Assigned To", "Service Charge",
-       "Date Ended", "Complaints", "Location"
+       "Date Ended", "Complaints", "Location","Duration"
    ];
 
    let activeIndices = [];
@@ -1005,7 +1011,8 @@ if (itemsStr === "") itemsStr = "-";
                "{{ task.budget|default:'0.00'|escapejs }}",
                "{{ task.completed_at|date:'d/m/Y H:i' }}",
                "{{ task.complaint_set.last.message|default:'No complaints'|escapejs }}",
-               cleanStr("{{ task.location|escapejs }}")
+               cleanStr("{{ task.location|escapejs }}"),
+               "{{ task.time_taken}}",
            ];
 
            // Filter and wrap in quotes for CSV compliance
@@ -1226,6 +1233,7 @@ if (itemsStr === "") itemsStr = "-";
                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="6" checked id="pCol6"><label class="form-check-label" for="pCol6">Date Ended</label></div></div>
                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="7" checked id="pCol7"><label class="form-check-label" for="pCol7">Complaints</label></div></div>
                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="8" checked id="pCol8"><label class="form-check-label" for="pCol8">Location</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="9" checked id="pCol9"><label class="form-check-label" for="pCol9">Duration</label></div></div>
                   </div>
               </div>
           </div>
