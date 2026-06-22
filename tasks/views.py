@@ -1294,72 +1294,25 @@ def delete_task_attachment(request, attachment_id):
   return redirect('task_detail', task_id=task_id)
 
 
-
-
-
-
+logger = logging.getLogger(__name__)
 
 
 def update_budget_ajax(request, task_id):
-  # Ensure request method parameter is a POST structure
-  if request.method != 'POST':
-      return JsonResponse({'status': 'error', 'message': 'Invalid request action method'}, status=400)
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
+    try:
+        data = json.loads(request.body)
+        new_budget = data.get('budget', '').strip()
 
+        task = get_object_or_404(Task, id=task_id)
+        task.budget = new_budget
+        task.save()
 
-
-  user = request.user
-  user_role = getattr(user, "role", None)
-  if not user_role and hasattr(user, "profile"):
-      user_role = getattr(user.profile, "role", None)
-
-
-
-
-  # STRICT ACCESS CHECK: Only Superusers or users assigned an 'Admin' status role can write updates
-  is_admin = (
-          user.is_superuser
-          or user.is_staff
-          or user_role == "Admin"
-          or user.groups.filter(name="Admin").exists()
-  )
-
-
-
-
-  if not is_admin:
-      return JsonResponse({'status': 'error', 'message': 'Access Denied. Administrative check failed.'}, status=403)
-
-
-
-
-  try:
-      data = json.loads(request.body)
-      new_budget = data.get('budget', '').strip()
-
-
-
-
-      task = get_object_or_404(Task, id=task_id)
-      task.budget = new_budget  # Saved into task database instance
-      task.save()
-
-
-
-
-      return JsonResponse({'status': 'success', 'message': 'Service charge budget updated successfully'})
-  except Exception as e:
-      return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
-
-
-
-
-
-
-
-logger = logging.getLogger(__name__)
-
+        return JsonResponse({'status': 'success', 'message': 'Budget updated successfully'})
+    except Exception as e:
+        logger.error(f"Error updating budget for task {task_id}: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
 

@@ -44,9 +44,16 @@
                             <h6 class="fw-bold">{{ task.priority }}</h6>
                         </div>
                         <div class="col-md-6 col-lg-3">
-                            <p class="mb-1 text-muted small">Service Charge (الميزانية / الرسوم)</p>
-                            <h6 class="fw-bold text-success">{{ task.budget }}</h6>
-                        </div>
+    <p class="mb-1 text-muted small">Service Charge (الميزانية / الرسوم)</p>
+    <form id="updateBudgetForm" action="{% url 'update_budget_ajax' task.id %}" class="input-group input-group-sm">
+        <input type="text" name="budget" value="{{ task.budget }}" class="form-control fw-bold text-success">
+       <button type="submit"
+        class="btn btn-save-budget d-flex align-items-center justify-content-center fw-bold"
+        style="width: 65px; height: 31px; background-color: #28a745; color: white; border: none; border-radius: 0 4px 4px 0; transition: background-color 0.2s ease; font-size: 0.85rem;">
+    Save
+</button>
+    </form>
+</div>
                         <div class="col-md-6 col-lg-3">
                             <p class="mb-1 text-muted small">Location (الموقع)</p>
                             <h6><i class="bi bi-geo-alt-fill text-secondary me-1"></i>{{ task.location }}</h6>
@@ -897,6 +904,48 @@ descriptionButtons.forEach(button => {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        });
+    }
+
+
+
+
+
+
+
+    const budgetForm = document.getElementById('updateBudgetForm');
+
+    if (budgetForm) {
+        budgetForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const budgetValue = this.querySelector('input[name="budget"]').value;
+            const url = this.getAttribute('action');
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ budget: budgetValue })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const btn = this.querySelector('button');
+                    // Brief success animation
+                    btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+                    btn.classList.replace('btn-outline-success', 'btn-success');
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+                        btn.classList.replace('btn-success', 'btn-outline-success');
+                    }, 2000);
+                } else {
+                    alert('Update failed: ' + data.message);
+                }
+            })
+            .catch(err => console.error('Budget update error:', err));
         });
     }
 
