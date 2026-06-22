@@ -4,6 +4,7 @@ from .forms import TaskForm
 import json
 import logging
 from django.contrib.auth.views import LoginView
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.db import models
 from .models import MaintenanceWorkItem
@@ -1470,3 +1471,12 @@ def update_description_ajax(request, task_id):
             },
             status=500
         )
+
+
+@require_POST
+def delete_task_item_ajax(request, item_id):
+    # Replace 'TaskItem' with your actual model name for the sub-items
+    item = get_object_or_404(TaskItem, id=item_id)
+    item.delete()
+
+    return JsonResponse({'status': 'success', 'message': 'Item deleted successfully.'})

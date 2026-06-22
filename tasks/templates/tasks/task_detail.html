@@ -13,6 +13,25 @@
                             {{ task.status }}
                         </span>
                     </div>
+
+
+
+                    <!-- Action Control Toolbar for single task -->
+    <div class="d-flex gap-2 btn-group-sm">
+        <button type="button" class="btn btn-outline-secondary px-3 d-flex align-items-center gap-1 shadow-none" id="btnSingleCopy">
+            <span style="font-weight: 700;">Copy Details</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary px-3 d-flex align-items-center gap-1 shadow-none" id="btnSinglePrint">
+            <span style="font-weight: 700;">Print Card</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary px-3 d-flex align-items-center gap-1 shadow-none" id="btnSingleExport">
+            <span style="font-weight: 700;">Export CSV</span>
+        </button>
+    </div>
+</div>
+
+
+
                     <hr class="text-muted">
 
                     <div class="row g-3">
@@ -83,37 +102,48 @@
                     </div>
 
                     <div class="row mt-4">
-                        <div class="col-12">
-                            <h5 class="fw-bold text-dark border-bottom pb-2">
-                                <i class="bi bi-tools text-success me-1"></i> Performed Sub-Items Breakdown (تفاصيل بنود الصيانة)
-                            </h5>
-                            <div class="table-responsive">
-                                <table class="table table-bordered align-middle bg-light">
-                                    <thead class="table-secondary">
-                                        <tr>
-                                            <th>Maintenance Item Details</th>
-                                            <th>Details</th>
-                                        </tr>
-
-                                    </thead>
-                                    <tbody>
-                                        {% for item in task.items.all %}
-                                            <tr>
-                                                <td class="fw-semibold text-secondary">{{ item.sub_category }}</td>
-                                                <td>
-                                                    <span class="text-dark fw-bold" style="white-space: pre-line;">{{ item.quantity }}</span>
-                                                </td>
-                                            </tr>
-                                        {% empty %}
-                                            <tr>
-                                                <td colspan="2" class="text-muted text-center py-3 small">No structured sub-items logged for this job.</td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+    <div class="col-12">
+        <h5 class="fw-bold text-dark border-bottom pb-2">
+            <i class="bi bi-tools text-success me-1"></i> Performed Sub-Items Breakdown (تفاصيل بنود الصيانة)
+        </h5>
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle bg-light" id="subItemsTable">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Maintenance Item Details</th>
+                        <th>Details</th>
+                        <th class="text-center" style="width: 60px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in task.items.all %}
+                        <tr id="item-row-{{ item.id }}">
+                            <td class="fw-semibold text-secondary">{{ item.sub_category }}</td>
+                            <td>
+                                <span class="text-dark fw-bold" style="white-space: pre-line;">{{ item.quantity }}</span>
+                            </td>
+    <td class="text-center align-middle" style="width: 60px;">
+    <button type="button"
+            class="btn btn-sm btn-delete-item d-inline-flex align-items-center justify-content-center rounded-2 p-0 shadow-none"
+            data-item-id="{{ item.id }}"
+            title="Delete Item (حذف)"
+            style="width: 34px; height: 34px; color: #dc3545; background-color: transparent; border: 2px solid #dc3545; font-weight: 900; font-family: sans-serif; font-size: 16px; transition: all 0.2s ease-in-out;"
+            onmouseover="this.style.backgroundColor='#dc3545'; this.style.color='#ffffff';"
+            onmouseout="this.style.backgroundColor='transparent'; this.style.color='#dc3545';">
+        X
+    </button>
+</td>
+                        </tr>
+                    {% empty %}
+                        <tr id="empty-items-row">
+                            <td colspan="3" class="text-muted text-center py-3 small">No structured sub-items logged for this job.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 
 <div class="card border-0 bg-light p-3 mt-2 shadow-sm rounded">
@@ -390,6 +420,11 @@
     </div>
 </div>
 
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
 
@@ -467,6 +502,89 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
+
+
+
+
+
+
+
+    // ==========================================
+    // --- Delete Sub-Item AJAX Logic (Event Delegation) ---
+    // ==========================================
+
+    // We listen to the whole document to catch newly added items
+    document.addEventListener('click', function(e) {
+
+        // Check if the user clicked the delete button OR the icon inside it
+        const deleteBtn = e.target.closest('.btn-delete-item');
+
+        if (deleteBtn) {
+            e.preventDefault();
+            const itemId = deleteBtn.dataset.itemId;
+            const row = document.getElementById(`item-row-${itemId}`);
+
+            if (!itemId || !row) {
+                console.error("Could not find item ID or row element.");
+                return;
+            }
+
+            // SweetAlert Confirmation
+            Swal.fire({
+                title: 'Delete this item? (حذف هذا البند؟)',
+                text: "You cannot undo this action!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+
+                    // Send request to Django URL
+                    fetch(`/delete-task-item/${itemId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Fade out and remove the row
+                            row.style.transition = "opacity 0.3s ease";
+                            row.style.opacity = 0;
+                            setTimeout(() => {
+                                row.remove();
+
+                                // Optional: If table is empty, show the empty message
+                                const tbody = document.querySelector('#subItemsTable tbody');
+                                if (tbody && tbody.querySelectorAll('tr:not(#empty-items-row)').length === 0) {
+                                    tbody.innerHTML = `<tr id="empty-items-row"><td colspan="3" class="text-muted text-center py-3 small">No structured sub-items logged for this job.</td></tr>`;
+                                }
+                            }, 300);
+
+                            Swal.fire({
+                                title: 'Deleted!',
+                                text: 'The item has been removed.',
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            Swal.fire('Error', data.message || 'Could not delete item.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fetch Error:', error);
+                        Swal.fire('Error', 'A network error occurred.', 'error');
+                    });
+                }
+            });
+        }
+    });
 
 
 
@@ -568,6 +686,220 @@ descriptionButtons.forEach(button => {
 
 
 
+
+
+
+
+
+// ==========================================
+    // --- Single Task Actions Logics ---
+    // ==========================================
+
+    // Helper: Collects sub-items and parses them into a single string flat row format
+    function getCleanedTaskData() {
+        let itemsArray = [];
+        const rows = document.querySelectorAll('#subItemsTable tbody tr:not(#empty-items-row)');
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 2) {
+                const itemName = cells[0].textContent.trim();
+                const qtyDetails = cells[1].textContent.trim();
+                itemsArray.push(`${itemName}(${qtyDetails})`);
+            }
+        });
+        let itemsStr = itemsArray.length > 0 ? itemsArray.join(", ") : "-";
+
+        const cleanStr = (val) => val ? val.replace(/[\t\n\r]/g, " ").trim() : "";
+
+        const complaintLogBox = document.querySelector('.pe-1 .border p');
+        let complaintMsg = complaintLogBox ? complaintLogBox.textContent : "No complaints";
+
+        // Structured Headers & Matching Row Fields Array Data maps
+        return {
+            headers: ["Job ID", "Title", "Description", "Items & Quantities", "Assigned To", "Service Ch", "Date Comp", "Complaint", "Location"],
+            data: [
+                "{{ task.job_id }}",
+                cleanStr("{{ task.title }}"),
+                cleanStr(`{{ task.description|default:'' }}`),
+                cleanStr(itemsStr),
+                "{{ task.assigned_to_display|default:'Unassigned' }}",
+                "{{ task.budget|default:'0.00' }}",
+                "{{ task.completed_at|date:'d/m/Y H:i'|default:'--' }}",
+                cleanStr(complaintMsg),
+                cleanStr("{{ task.location }}")
+            ]
+        };
+    }
+
+    // 1. COPY VALUES FOR SPREADSHEET (Tab-Separated Data Stream)
+    const btnCopy = document.getElementById('btnSingleCopy');
+    if (btnCopy) {
+        btnCopy.addEventListener('click', function(e) {
+            e.preventDefault();
+            const taskContent = getCleanedTaskData();
+
+            // Combining arrays via tabs (\t) causes spreadsheets to paste them horizontally
+            const matrixString = [
+                taskContent.headers.join("\t"),
+                taskContent.data.join("\t")
+            ].join("\n");
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(matrixString).then(() => {
+                    Swal.fire({ title: 'Copied!', text: 'Details Copied! Ready to Paste Directly into Excel or Spreadsheet', icon: 'success', timer: 2000, showConfirmButton: false });
+                }).catch(err => { console.error(err); });
+            } else {
+                try {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = matrixString;
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-999999px";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+
+                    Swal.fire({ title: 'Copied!', text: 'Row structure copied (Fallback). Ready to paste.', icon: 'success', timer: 1500, showConfirmButton: false });
+                } catch (err) {
+                    Swal.fire('Error', 'Fallback copy sequence failed.', 'error');
+                }
+            }
+        });
+    }
+
+    // 2. PRINT INDIVIDUAL TASK AS SPREADSHEET ROW (A4 Landscape Grid)
+    const btnPrint = document.getElementById('btnSinglePrint');
+    if (btnPrint) {
+        btnPrint.addEventListener('click', function(e) {
+            e.preventDefault();
+            const taskContent = getCleanedTaskData();
+
+            // Create a clean, hidden printer iframe container element context
+            const printFrame = document.createElement('iframe');
+            printFrame.style.position = 'fixed';
+            printFrame.style.right = '0';
+            printFrame.style.bottom = '0';
+            printFrame.style.width = '0';
+            printFrame.style.height = '0';
+            printFrame.style.border = 'none';
+            document.body.appendChild(printFrame);
+
+            const doc = printFrame.contentWindow.document;
+
+            // Write a tailored Excel-style HTML sheet document layout
+            doc.write(`
+                <html>
+                <head>
+                    <title>Print Job Record Grid</title>
+                    <style>
+                        @page { size: A4 landscape; margin: 15mm; }
+                        body { font-family: Calibri, Arial, sans-serif; font-size: 11px; margin: 0; padding: 0; color: #000; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
+                        th, td { border: 1px solid #c0c0c0; padding: 6px 8px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: normal; word-wrap: break-word; }
+                        th { background-color: #f2f2f2; font-weight: bold; font-size: 11px; }
+                        .sheet-title { font-size: 16px; font-weight: bold; font-family: sans-serif; margin-bottom: 5px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="sheet-title">Maintenance Record Summary - Task Sheet</div>
+                    <table>
+                        <thead>
+                            <tr>${taskContent.headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                        </thead>
+                        <tbody>
+                            <tr>${taskContent.data.map(d => `<td>${d}</td>`).join('')}</tr>
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `);
+            doc.close();
+
+            // Run direct isolated print prompt frame engine execution pipeline context
+            printFrame.contentWindow.focus();
+            setTimeout(() => {
+                printFrame.contentWindow.print();
+                document.body.removeChild(printFrame); // Clean up pipeline context layout node
+            }, 150);
+        });
+    }
+// 3. EXPORT SINGLE TASK TO CSV (Horizontal Sheet Matrix)
+    const btnExport = document.getElementById('btnSingleExport');
+    if (btnExport) {
+        btnExport.addEventListener('click', function() {
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // Fixes Arabic rendering in Excel
+
+            // 1. Gather Sub-Items into a single combined string: Item(qty), Item(qty)
+            let itemsArray = [];
+            const rows = document.querySelectorAll('#subItemsTable tbody tr:not(#empty-items-row)');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 2) {
+                    const itemName = cells[0].textContent.trim();
+                    const qtyDetails = cells[1].textContent.trim();
+                    itemsArray.push(`${itemName}(${qtyDetails})`);
+                }
+            });
+            let itemsStr = itemsArray.join(", ");
+            if (itemsStr === "") itemsStr = "-";
+
+            // 2. Helper to escape quotes and clean line breaks for CSV safety
+            const cleanCSVStr = (val) => {
+                if (!val) return "";
+                // Replace tabs/newlines with single spaces, and escape internal quotes
+                return val.replace(/[\t\n\r]/g, " ").replace(/"/g, '""').trim();
+            };
+
+            // 3. Define Headers (Row 1)
+            const headers = [
+                "Job ID",
+                "Title",
+                "Description",
+                "Items & Quantities",
+                "Assigned To",
+                "Service Charge",
+                "Date Completed",
+                "Complaints",
+                "Location"
+            ];
+
+            // 4. Compile Data Fields (Row 2)
+            // Fetch any complaints text if present, otherwise default
+            const complaintLogBox = document.querySelector('.pe-1 .border p');
+            let complaintMsg = complaintLogBox ? complaintLogBox.textContent : "No complaints";
+
+            const dataRecord = [
+                "{{ task.job_id }}",
+                cleanCSVStr("{{ task.title }}"),
+                cleanCSVStr(`{{ task.description|default:'' }}`),
+                cleanCSVStr(itemsStr),
+                "{{ task.assigned_to_display|default:'Unassigned' }}",
+                "{{ task.budget|default:'0.00' }}",
+                "{{ task.completed_at|date:'d/m/Y H:i'|default:'--' }}",
+                cleanCSVStr(complaintMsg),
+                cleanCSVStr("{{ task.location }}")
+            ];
+
+            // 5. Join with commas and wrap fields in quotes to prevent column splitting breakage
+            const csvRows = [
+                headers.join(","),
+                dataRecord.map(field => `"${field}"`).join(",")
+            ];
+
+            csvContent += csvRows.join("\n");
+
+            // 6. Trigger File Pipeline Stream Download
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Task_Report_{{ task.job_id }}.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
 </script>
 
 <style>
@@ -625,5 +957,29 @@ descriptionButtons.forEach(button => {
             margin-top: 5px;
         }
     }
+
+
+
+
+
+
+
+    @media print {
+    /* Hide menus, footers, forms, complaints controls, and buttons from the print layout */
+    nav, footer, .card-header, form, .btn, button, .subtasks-list, textarea {
+        display: none !important;
+    }
+    /* Expand content space cleanly across page */
+    .container, .card, .card-body {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+    }
+    body {
+        background-color: #fff !important;
+    }
+}
 </style>
 {% endblock %}

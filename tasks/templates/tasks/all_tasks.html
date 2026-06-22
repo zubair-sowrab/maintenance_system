@@ -571,7 +571,7 @@ document.addEventListener("DOMContentLoaded", function() {
             // Build the string: cat1(qty-1), cat2(qty-2)
             let itemData = [];
             {% for item in task.items.all %}
-                itemData.push("{{ item.sub_category|escapejs }}(qty-{{ item.quantity|escapejs }})");
+                itemData.push("{{ item.sub_category|escapejs }}({{ item.quantity|escapejs }})");
             {% endfor %}
             let itemsStr = itemData.join(", ");
             if (itemsStr === "") itemsStr = "-";
@@ -620,18 +620,53 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
-          // 5. Transfer into system hardware pipeline clipboard context
-          navigator.clipboard.writeText(matrixString).then(() => {
+         // Helper function to show the success toast
+          const showToast = () => {
               if (toastNode) {
                   toastNode.classList.remove('d-none');
                   setTimeout(() => {
                       toastNode.classList.add('d-none');
                   }, 4500);
               }
-          }).catch(err => {
-              console.error("Clipboard access rejected: ", err);
-              alert("Failed to write to clipboard. Please check application runtime browser permissions.");
-          });
+          };
+
+          // CHECK: Is the modern clipboard API available and allowed?
+          if (navigator.clipboard && window.isSecureContext) {
+              // Modern HTTPS / Localhost method
+              navigator.clipboard.writeText(matrixString).then(() => {
+                  showToast();
+              }).catch(err => {
+                  console.error("Clipboard access rejected: ", err);
+                  alert("Failed to write to clipboard. Please check application runtime browser permissions.");
+              });
+          } else {
+              // Fallback method for HTTP live servers
+              try {
+                  const textArea = document.createElement("textarea");
+                  textArea.value = matrixString;
+
+                  // Move text area out of viewport so it doesn't flash on screen
+                  textArea.style.position = "fixed";
+                  textArea.style.left = "-999999px";
+                  textArea.style.top = "-999999px";
+
+                  document.body.appendChild(textArea);
+                  textArea.focus();
+                  textArea.select();
+
+                  const successful = document.execCommand('copy');
+                  document.body.removeChild(textArea);
+
+                  if (successful) {
+                      showToast();
+                  } else {
+                      alert("Fallback clipboard copy failed. Your browser may be blocking it.");
+                  }
+              } catch (err) {
+                  console.error("Fallback clipboard error: ", err);
+                  alert("Failed to copy to clipboard.");
+              }
+          }
       });
   }
 });
@@ -691,7 +726,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Formatting: subcat(qty-N), subcat(qty-N)
                 let itemData = [];
                 {% for item in task.items.all %}
-                    itemData.push("{{ item.sub_category|escapejs }}(qty-{{ item.quantity|escapejs }})");
+                    itemData.push("{{ item.sub_category|escapejs }}({{ item.quantity|escapejs }})");
                 {% endfor %}
 
                 // Logic: Join with comma/space, then inject break if long
@@ -930,7 +965,7 @@ document.getElementById('btnExportCSV').addEventListener('click', function() {
         // DEBUG: Check how many items are in the loop
         {% for item in task.items.all %}
             console.log("DEBUG: Processing item: {{ item.sub_category }}");
-            itemData.push("{{ item.sub_category|escapejs }}(qty-{{ item.quantity|escapejs }})");
+            itemData.push("{{ item.sub_category|escapejs }}({{ item.quantity|escapejs }})");
         {% endfor %}
 
         if (itemData.length === 0) {
@@ -940,7 +975,7 @@ document.getElementById('btnExportCSV').addEventListener('click', function() {
 
         {% for item in task.items.all %}
             // Verify we have access to item properties
-            itemData.push("{{ item.sub_category|escapejs }}(qty-{{ item.quantity|escapejs }})");
+            itemData.push("{{ item.sub_category|escapejs }}({{ item.quantity|escapejs }})");
         {% endfor %}
 
         console.log("Task ID {{ task.job_id }}: Found " + itemData.length + " items.");

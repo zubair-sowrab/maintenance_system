@@ -87,4 +87,5 @@ path(
     views.update_description_ajax,
     name='update_description_ajax'
 ),
-path('ajax/add-sub-category/', add_sub_category_ajax, name='add_sub_category'),]
+path('ajax/add-sub-category/', add_sub_category_ajax, name='add_sub_category'),
+path('delete-task-item/<int:item_id>/', views.delete_task_item_ajax, name='delete_task_item_ajax'),]
