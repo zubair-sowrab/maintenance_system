@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">🛠️ Data Standardization Audit</h2>
+            <p class="text-muted">Use Gemini AI to clean up unstructured technician text descriptions into uniform groups.</p>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="auditTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 15%;">Job ID</th>
+                        <th style="width: 20%;">Trade Category</th>
+                        <th style="width: 35%;">Raw Sub-Items (Technician)</th>
+                        <th style="width: 30%;">AI Standardized Labels</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                    <tr id="task-row-{{ task.id }}">
+                        <td class="fw-bold text-secondary">{{ task.job_id }}</td>
+                        <td>
+                            <span class="badge bg-opacity-10 {% if task.project_type == 'Plumbing' %}bg-primary text-primary{% else %}bg-warning text-warning{% endif %} px-2 py-1">
+                                {{ task.project_type }}
+                            </span>
+                        </td>
+                        <td>
+                            <code class="text-muted">
+                                {% for item in task.items.all %}
+                                    {{ item.sub_category }}({{ item.quantity }}){% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    No items logged
+                                {% endfor %}
+                            </code>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-primary btn-standardize py-1 px-3 rounded-2"
+                                        data-task-id="{{ task.id }}">
+                                    <i class="bi bi-cpu-fill"></i> Clean Data
+                                </button>
+                                <span class="ai-output-target text-success fw-semibold d-none"></span>
+                                <div class="spinner-border spinner-border-sm text-primary d-none" role="status"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">No completed jobs available for data auditing.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('click', function(e) {
+    const cleanBtn = e.target.closest('.btn-standardize');
+    if (cleanBtn) {
+        const taskId = cleanBtn.dataset.taskId;
+        const rowContainer = cleanBtn.parentElement;
+        const spinner = rowContainer.querySelector('.spinner-border');
+        const outputSpan = rowContainer.querySelector('.ai-output-target');
+
+        // Show loading state
+        cleanBtn.classList.add('d-none');
+        spinner.classList.remove('d-none');
+
+        // Fetch AI analysis from local Django view
+        fetch(`/api/standardize-item/${taskId}/`)
+            .then(response => response.json())
+            .then(data => {
+                spinner.classList.add('d-none');
+                outputSpan.innerText = data.standardized;
+                outputSpan.classList.remove('d-none');
+            })
+            .catch(err => {
+                console.error(err);
+                spinner.classList.add('d-none');
+                cleanBtn.classList.remove('d-none');
+            });
+    }
+});
+</script>
+{% endblock %}

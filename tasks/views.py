@@ -303,17 +303,46 @@ def create_task(request):
 
            #task.title = f"{location}-{first_sub}({first_qty})"[:200]
 
+           # 1. AUTO-TITLE GENERATION (Updated to location-project_type)
+           # Ensure we grab the selected project_type from POST (or fallback to form/GET if empty)
+           project_type_val = request.POST.get('project_type') or request.GET.get('project_type') or getattr(task,
+                                                                                                             'project_type',
+                                                                                                             'General')
 
-
-
-
-
-           # To something that handles the case explicitly:
-           if not tech_ids:
-               task.title = f"{location}-{first_sub}({first_qty}) - [UNASSIGNED]"[:200]
+           # If project_type is a tuple choice or object, ensure it's converted cleanly to its string name
+           if project_type_val:
+               project_type_str = str(project_type_val).strip()
            else:
-               task.title = f"{location}-{first_sub}({first_qty})"[:200]
+               project_type_str = "General"
 
+           loc_parts = [str(task.building), str(task.unit)]
+           location = "-".join([p for p in loc_parts if p]) or "No Location"
+
+           # Use the first assigned technician's username for the title check
+           tech_ids = request.POST.getlist('technicians')
+
+           project_type_val = request.POST.get('project_type') or request.GET.get('project_type') or getattr(task,
+                                                                                                             'project_type',
+                                                                                                             'General')
+
+           # If project_type is a tuple choice or object, ensure it's converted cleanly to its string name
+           if project_type_val:
+               project_type_str = str(project_type_val).strip()
+           else:
+               project_type_str = "General"
+
+           loc_parts = [str(task.building), str(task.unit)]
+           location = "-".join([p for p in loc_parts if p]) or "No Location"
+
+           # Use the first assigned technician's username for the title check
+           tech_ids = request.POST.getlist('technicians')
+
+           # í´„ Update title format to: location-project_type
+           if not tech_ids:
+               task.title = f"{location}-{project_type_str} - [UNASSIGNED]"[:200]
+           else:
+               task.title = f"{location}-{project_type_str}"[:200]
+  
 
            first_sub = translated_subs[0] if translated_subs else "General"
            tech_ids = request.POST.getlist('technicians')
