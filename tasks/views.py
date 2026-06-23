@@ -3,6 +3,8 @@ from .models import Task, Complaint, SubTask, Notification
 from .forms import TaskForm
 import json
 import logging
+import requests
+import json
 from django.contrib.auth.views import LoginView
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
@@ -457,6 +459,57 @@ def start_task(request, task_id):
    return redirect('dashboard')
 
 
+def send_task_to_google_sheet(task):
+    GOOGLE_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyh__GAWU2yeDBLsSFT2dIvP-CZpCASVCvPptaZm1RQ8fQD7z8lV-gx4LXdolh3d6Fn/exec"
+
+    # --- 1. Generate itemsStr just like your JS loop does ---
+    item_data = []
+    for item in task.items.all():
+        item_data.append(f"{item.sub_category}({item.quantity})")
+    items_str = ", ".join(item_data) if item_data else "-"
+
+    # --- 2. Generate techString matching your JS logic ---
+    tech_names = [tech.username for tech in task.assigned_technicians.all()]
+    tech_string = ", ".join(tech_names) if tech_names else "Unassigned"
+
+    # --- 3. Extract the last complaint message entry ---
+    last_complaint = task.complaint_set.last()
+    complaint_msg = last_complaint.message if last_complaint else "No complaints"
+
+    # --- 4. Map the payload to perfectly match your data logging sequence ---
+    payload = {
+        "job_id": str(task.job_id),
+        "title": str(task.title or ""),
+        "project_type": str(task.project_type or ""),
+        "description": str(task.description or ""),
+        "items": items_str,  # Populated text instead of the Manager object!
+        "assigned_to": tech_string,  # Populated text instead of the Manager object!
+        "budget": str(task.budget or "0.00"),
+        "completed_at": task.completed_at.strftime('%d/%m/%Y %H:%M') if task.completed_at else "",
+        "complaints": str(complaint_msg),
+        "location": str(task.location or ""),
+        "time_taken": str(task.time_taken or "")
+    }
+
+    try:
+        response = requests.post(
+            GOOGLE_SCRIPT_WEBAPP_URL,
+            data=json.dumps(payload),
+            headers={'Content-Type': 'application/json'},
+            timeout=5
+        )
+    except requests.exceptions.RequestException as e:
+        print(f"Google Sheet Sync Error: {e}")
+
+
+
+
+
+
+
+
+
+
 @login_required
 def end_task(request, task_id):
    task = get_object_or_404(Task, id=task_id)
@@ -480,7 +533,19 @@ def end_task(request, task_id):
    task.status = 'Completed'
    task.completed_at = timezone.now()
    task.save()
+
+   # Trigger the Free Google Sheet Sync webhook routine stream asynchronously
+   send_task_to_google_sheet(task)
    return redirect('dashboard')
+
+
+
+
+
+
+
+
+
 @login_required
 def dashboard(request):
    user = request.user
@@ -653,6 +718,8 @@ def submit_complaint(request, task_id):
                pass
            complaint.technician = request.user
            complaint.save()
+           if task.status == "Completed":
+               send_task_to_google_sheet(task)
            messages.success(request, "Complaint submitted.")
            return redirect('task_detail', task_id=task.id)
 
@@ -1309,6 +1376,9 @@ def update_budget_ajax(request, task_id):
         task.budget = new_budget
         task.save()
 
+        if task.status == "Completed":
+            send_task_to_google_sheet(task)
+
         return JsonResponse({'status': 'success', 'message': 'Budget updated successfully'})
     except Exception as e:
         logger.error(f"Error updating budget for task {task_id}: {str(e)}")
@@ -1387,6 +1457,9 @@ def complete_overdue_task(request, task_id):
    task.status = 'Completed'
    task.completed_at = timezone.now()
    task.save()
+   # This automatically pushes any admin corrections straight to the spreadsheet.
+   if task.status == "Completed":
+       send_task_to_google_sheet(task)
    return JsonResponse({'status': 'success'})
 
 
@@ -1435,6 +1508,8 @@ def update_description_ajax(request, task_id):
             task.description = description
 
         task.save()
+        if task.status == "Completed":
+            send_task_to_google_sheet(task)
 
         # Return the saved description text so the frontend can display the newly translated string
         return JsonResponse(
@@ -1456,9 +1531,15 @@ def update_description_ajax(request, task_id):
 
 @require_POST
 def delete_task_item_ajax(request, item_id):
+    item = get_object_or_404(TaskItem, id=item_id)
+    task = item.task
+
     # Replace 'TaskItem' with your actual model name for the sub-items
     item = get_object_or_404(TaskItem, id=item_id)
     item.delete()
+
+    if task.status == "Completed":
+        send_task_to_google_sheet(task)
 
     return JsonResponse({'status': 'success', 'message': 'Item deleted successfully.'})
 
@@ -1503,6 +1584,13 @@ def add_task_item_detail(request, task_id):
 
         messages.success(request, "Missed maintenance item added successfully in English!")
 
+
+
+            # Check if the updated task is currently marked completed.
+            # This automatically pushes any admin corrections straight to the spreadsheet.
+        if task.status == "Completed":
+            send_task_to_google_sheet(task)
+
     return redirect('task_detail', task_id=task.id)  # Change to your actual detail view name
 
 
@@ -1522,6 +1610,8 @@ def update_start_date_ajax(request, task_id):
             task.started_at = None
 
         task.save()
+        if task.status == "Completed":
+            send_task_to_google_sheet(task)
         return JsonResponse({'status': 'success', 'message': 'Start date updated successfully'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -1542,6 +1632,8 @@ def update_completed_date_ajax(request, task_id):
             task.completed_at = None
 
         task.save()
+        if task.status == "Completed":
+            send_task_to_google_sheet(task)
         return JsonResponse({'status': 'success', 'message': 'End date updated successfully'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
