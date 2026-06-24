@@ -3,6 +3,8 @@ from .models import Task, Complaint, SubTask, Notification
 from .forms import TaskForm
 import json
 import logging
+from groq import Groq
+from dotenv import load_dotenv
 import requests
 import json
 from django.contrib.auth.views import LoginView
@@ -337,7 +339,7 @@ def create_task(request):
            # Use the first assigned technician's username for the title check
            tech_ids = request.POST.getlist('technicians')
 
-           # í´„ Update title format to: location-project_type
+           # ï¿½ Update title format to: location-project_type
            if not tech_ids:
                task.title = f"{location}-{project_type_str} - [UNASSIGNED]"[:200]
            else:
@@ -1666,3 +1668,80 @@ def update_completed_date_ajax(request, task_id):
         return JsonResponse({'status': 'success', 'message': 'End date updated successfully'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+load_dotenv()
+
+
+@csrf_exempt
+def process_audio_file(request):
+    if request.method == 'POST' and request.FILES.get('audio'):
+        audio_file = request.FILES['audio']
+
+        # Initialize Groq client
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+        try:
+            # ---------------------------------------------------------
+            # STEP 1: Transcribe the Audio
+            # Whisper-large-v3 automatically detects the language!
+            # ---------------------------------------------------------
+            transcription = client.audio.transcriptions.create(
+
+                file=("audio.webm", audio_file.read()),
+
+                model="whisper-large-v3",
+
+                prompt="Maintenance, plumbing, electric, carpentry, Al Raihan Plaza, Al Naser Plaza, G01, unit, technician, repair, install, faucet, socket, fused."
+
+            )
+            transcript_text = transcription.text
+            print(f"Heard: {transcript_text}")  # For your debugging
+
+            # ---------------------------------------------------------
+            # STEP 2: Parse, Translate, and Format with Llama 3
+            # ---------------------------------------------------------
+            prompt = f"""
+                        You are an expert maintenance dispatcher in the UAE.
+                        Analyze the following voice transcript and extract the information into a strict JSON format.
+
+                        CRITICAL MAPPING RULES - YOU MUST CHOOSE FROM THESE LISTS:
+                        - ALLOWED BUILDINGS: "Aliya Villa", "Al Farah Plaza", "Al Huda Building", "Al Ithihad Building", "Al Khaleej Building", "Al Maktab Building", "Al Maass Building", "Al Naser Plaza", "Al Raihan Plaza", "Al Salam Building", "Arbab House (YBN)", "Bader Building", "Fatma YBN Villa", "Farm Helio", "Mohammed Yousef Nasser Villa", "Muhammed Yousuf Building", "Rashidiya Building", "Sanahiya Building", "Souk Building", "Villa Sanahiya", "Other"
+                        - ALLOWED PROJECT TYPES: "Paint", "Electric", "Plumbing", "Cleaning", "Carpenter", "AC", "Mason", "Ceiling"
+                        - "CRITICAL CORRECTIONS": If the transcript mentions 'shutter' in the context of a bathroom, toilet, or plumbing, ALWAYS map it to 'Shattaf'.
+
+                        JSON Keys & Rules:
+                        1. "description": A clear English summary of the task.
+                        2. "building": MUST be exactly one of the ALLOWED BUILDINGS. Intelligently map misspellings (e.g., "al mas bldg" MUST output "Al Maass Building").
+                        3. "unit": The unit number. Extract the unit number specifically as a string of digits. If the transcript contains phonetic Bengali for numbers (like 'one-zero-four'), convert these to digits ('104'). If no unit is mentioned in the transcript, MUST output exactly "None".
+                        4. "technicians": A strict JSON list of individual first names ONLY. Example: ["Mumtaz", "Subair"]. Return [] if none mentioned.
+                        5. "project_type": MUST be exactly one of the ALLOWED PROJECT TYPES. (e.g., "ac repairing" MUST output "AC", "electric work" MUST output "Electric").
+                        6. "sub_category": List the specific work performed. If a problem was reported (like "light fused") and a solution was applied (like "LED installed"), include both components in the list to ensure full documentation.
+                    
+
+                        Transcript: "{transcript_text}"
+                        """
+
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system",
+                     "content": "You are an API that outputs ONLY valid JSON. No markdown, no conversational text."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.1,  # Keep it low for consistent, factual outputs
+                response_format={"type": "json_object"}  # Forces Llama to return perfect JSON
+            )
+
+            # Convert string response to actual Python dictionary
+            json_response = json.loads(completion.choices[0].message.content)
+            print(f"Parsed Data: {json_response}")  # For your debugging
+
+            # Send the data back to your frontend!
+            return JsonResponse(json_response)
+
+        except Exception as e:
+            print(f"Groq API Error: {e}")
+            return JsonResponse({'error': 'Failed to process audio with AI.'}, status=500)
+
+    return JsonResponse({'error': 'No file uploaded'}, status=400)

@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
 
-
+{%comment%}
 <div class="card my-3 shadow-sm ">
    <div class="card-body text-center bg-light">
        <h5 class="card-title">Maintenance Settings</h5>
@@ -19,7 +19,19 @@
    </div>
 </div>
 
+{%endcomment%}
 
+
+
+      <button type="button" id="recordBtn" class="btn btn-outline-primary">
+    <i class="bi bi-mic"></i> Record Voice
+</button>
+<div id="status" class="text-muted mt-2"></div>
+
+    <ul class="list-group position-absolute w-100 custom-work-dropdown"
+        style="display: none; z-index: 9999; max-height: 250px; overflow-y: auto; top: 100%; box-shadow: 0px 8px 16px rgba(0,0,0,0.15);">
+    </ul>
+</div>
 
 <div class="modal fade " id="addSubCategoryModal" tabindex="-1" aria-hidden="true">
    <div class="modal-dialog">
@@ -988,5 +1000,224 @@ document.querySelector('#dynamic-work-items-container').addEventListener('click'
         initSearchableSelect(newSelect);
     }
 });
+</script>
+
+
+
+
+
+<script>
+let mediaRecorder;
+let audioChunks = [];
+
+document.getElementById('recordBtn').onclick = async function() {
+    if (this.classList.contains('btn-danger')) {
+        // STOP RECORDING
+        mediaRecorder.stop();
+        this.classList.replace('btn-danger', 'btn-outline-primary');
+        this.innerHTML = '<i class="bi bi-mic"></i> Record Voice';
+    } else {
+        // START RECORDING
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = uploadAudio; // Triggers when recording stops
+            mediaRecorder.start();
+
+            this.classList.replace('btn-outline-primary', 'btn-danger');
+            this.innerHTML = 'Stop & Process';
+
+            const statusDiv = document.getElementById('status');
+            if (statusDiv) statusDiv.innerText = "Listening... Speak now.";
+        } catch (err) {
+            console.error("Mic access denied or error:", err);
+            const statusDiv = document.getElementById('status');
+            if (statusDiv) statusDiv.innerText = "Microphone error: Check permissions.";
+        }
+    }
+};
+
+async function uploadAudio() {
+    const statusDiv = document.getElementById('status');
+    if (statusDiv) {
+        statusDiv.innerText = "Processing voice...";
+    }
+
+    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+
+    if (audioBlob.size < 1000) {
+        if (statusDiv) statusDiv.innerText = "Recording too short! Please speak clearly.";
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.webm');
+
+    try {
+        const response = await fetch("{% url 'process_audio_file' %}", {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+
+        if (!response.ok) throw new Error('Server error: ' + response.status);
+
+        const data = await response.json();
+        console.log("AI Output:", data); // Check your F12 console to see exactly what Groq returned
+
+       // --- THE UPGRADED MAGIC HELPER FUNCTION ---
+ function selectDropdownByText(selectElement, aiText) {
+    if (!selectElement || !aiText) return false;
+
+    // Aggressive normalization: remove all non-alphanumeric chars
+    const normalize = (str) => str.toString().toLowerCase().replace(/[^a-z0-9]/gi, '');
+
+    const target = normalize(aiText);
+    let bestMatchIndex = -1;
+    let highestSimilarity = 0;
+
+    // Levenshtein helper
+    function getSimilarity(s1, s2) {
+        if (s1 === s2) return 1.0;
+        if (s1.length === 0 || s2.length === 0) return 0;
+        let costs = new Array(s2.length + 1);
+        for (let i = 0; i <= s2.length; i++) costs[i] = i;
+        for (let i = 1; i <= s1.length; i++) {
+            let lastValue = i;
+            for (let j = 1; j <= s2.length; j++) {
+                let newValue = costs[j - 1];
+                if (s1.charAt(i - 1) != s2.charAt(j - 1))
+                    newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                costs[j - 1] = lastValue;
+                lastValue = newValue;
+            }
+            costs[s2.length] = lastValue;
+        }
+        return (s1.length - costs[s2.length]) / parseFloat(s1.length);
+    }
+
+    for (let i = 0; i < selectElement.options.length; i++) {
+        const option = selectElement.options[i];
+        if (!option.value) continue; // Skip "-- Select --"
+
+        const optText = normalize(option.text);
+
+        // 1. Check for perfect raw inclusion first (e.g. "Electric" is inside "Electric(كهرباء)")
+        if (optText.includes(target) || target.includes(optText)) {
+            bestMatchIndex = i;
+            highestSimilarity = 1.0;
+            break;
+        }
+
+        // 2. Fallback to similarity check
+        const sim = getSimilarity(target, optText);
+        if (sim > highestSimilarity) {
+            highestSimilarity = sim;
+            bestMatchIndex = i;
+        }
+    }
+
+    // Now, lower the requirement slightly to 50% since we normalized
+    if (bestMatchIndex > -1 && highestSimilarity > 0.5) {
+        console.log(`✅ Match Found: "${aiText}" -> "${selectElement.options[bestMatchIndex].text}"`);
+        selectElement.selectedIndex = bestMatchIndex;
+        selectElement.dispatchEvent(new Event('change'));
+        return true;
+    }
+
+    console.log(`❌ FAILED: Still no match for "${aiText}". Normalized target: "${target}"`);
+    return false;
+}
+
+        // 1. Description
+        if(data.description) {
+            const descField = document.getElementById('id_description');
+            if (descField) descField.value = data.description;
+        }
+
+        // 2. Project Type
+        if(data.project_type) {
+            const pt = document.getElementById('id_project_type');
+            selectDropdownByText(pt, data.project_type);
+        }
+
+        // 3. Building
+        if(data.building) {
+            // Target by ID if Django created it, or by name attribute
+            const build = document.getElementById('id_building') || document.querySelector('select[name="building"]');
+            selectDropdownByText(build, data.building);
+        }
+
+        // 4. Unit
+        if(data.unit) {
+            setTimeout(() => {
+                const unitSelect = document.getElementById('id_unit') || document.querySelector('select[name="unit"]');
+                selectDropdownByText(unitSelect, data.unit);
+            }, 400); // 400ms delay ensures the Building dropdown has time to rebuild the Unit list first
+        }
+
+        // 5. Technicians (Multiple dynamic rows support!)
+        if (data.technicians && Array.isArray(data.technicians) && data.technicians.length > 0) {
+            const container = document.getElementById('tech-container');
+
+            data.technicians.forEach((techName, index) => {
+                // Get the current list of dropdowns
+                let techSelects = container.querySelectorAll('.tech-row select');
+
+                // If the AI found more names than we have rows, click the "Add" button for us!
+                if (index >= techSelects.length) {
+                    addTechRow(); // This calls your existing function
+                    techSelects = container.querySelectorAll('.tech-row select'); // Refresh the list of dropdowns
+                }
+
+                // Grab the specific dropdown for this row and apply our fuzzy search
+                const currentSelect = techSelects[index];
+                selectDropdownByText(currentSelect, techName);
+            });
+        }
+
+        // 6. Sub Category
+
+
+
+        if(data.sub_category) {
+            const subCatInput = document.querySelector('.custom-work-input');
+            if (subCatInput) subCatInput.value = data.sub_category;
+        }
+
+        if (statusDiv) {
+            statusDiv.innerText = "Task Auto-Filled!";
+        }
+
+    } catch (err) {
+        console.error("Upload error:", err);
+        if (statusDiv) {
+            statusDiv.innerText = "Error: Could not process audio.";
+        }
+    }
+}
+
+
+
+
+
+
+
+
+// This creates a small window at the bottom of your phone screen to show logs
+//const debugLog = document.createElement('div');
+//debugLog.id = 'debug-log';
+//debugLog.style.cssText = 'position:fixed; bottom:0; left:0; width:100%; height:150px; background:black; color:lime; font-size:10px; overflow-y:scroll; z-index:9999;';
+//document.body.appendChild(debugLog);
+
+// Intercept all console logs and print them to the screen
+//console.log = function(message) {
+  //  const div = document.createElement('div');
+    //div.textContent = message;
+    //debugLog.appendChild(div);
+    //debugLog.scrollTop = debugLog.scrollHeight;
+//};
 </script>
 {% endblock %}
