@@ -138,6 +138,7 @@
            Pending Tasks (مهام قيد الانتظار)
        </h3>
 
+       <!-- PC / TABLET VIEW (Shows text in RED if Emergency) -->
        <div class="d-none d-md-block" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6;">
            <table class="table table-bordered table-dark-bordered table-hover bg-white mb-0">
                <thead class="table-light sticky-top">
@@ -148,11 +149,16 @@
                </thead>
                <tbody>
                    {% for task in pending_tasks %}
-                   <tr>
+                   <!-- If priority is Emergency, the entire row's text will turn RED -->
+                   <tr class="{% if task.priority == 'Emergency' %}text-danger{% endif %}">
                        <td>{{ task.job_id }}</td>
-                       <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-warning-emphasis">{{ task.title }}</a></td>
-                                              <td>{{ task.project_type }}</td>
-
+                       <td>
+                           <!-- Link color shifts to red if Emergency, otherwise remains warning gold -->
+                           <a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none {% if task.priority == 'Emergency' %}text-danger{% else %}text-warning-emphasis{% endif %}">
+                               {{ task.title }}
+                           </a>
+                       </td>
+                       <td>{{ task.project_type }}</td>
                        <td><span class="badge bg-warning text-dark">{{ task.status }}</span></td>
                        <td>{{ task.assigned_to_display }}</td>
                        <td>{{ task.location }}</td>
@@ -167,18 +173,25 @@
            </table>
        </div>
 
+       <!-- PHONE VIEW (Displays a RED badge with "EMERGENCY" if Emergency) -->
        <div class="d-md-none" style="max-height: 400px; overflow-y: auto;">
            {% for task in pending_tasks %}
            <div class="card mb-3 shadow-sm border-warning">
                <div class="card-body p-3">
-                   <h6 class="card-title fw-bold text-dark mb-2"><a href="{% url 'task_detail' task.id %}">{{ task.title }}</a></h6>
+                   <h6 class="card-title fw-bold text-dark mb-2">
+                       <a href="{% url 'task_detail' task.id %}" class="{% if task.priority == 'Emergency' %}text-danger{% endif %}">{{ task.title }}</a>
+
+                       <!-- RED EMERGENCY BADGE FOR MOBILE SCREENS -->
+                       {% if task.priority == 'Emergency' %}
+                           <span class="badge bg-danger text-white ms-1 align-middle" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px;">EMERGENCY</span>
+                       {% endif %}
+                   </h6>
                    <div class="row g-1" style="font-size: 0.8rem;">
                        <div class="col-6"><strong>ID:</strong> {{ task.job_id }}</div>
                        <div class="col-6"><strong>Fee:</strong> {{ task.budget }}</div>
                        <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
                        <div class="col-12"><strong>Loc:</strong> {{ task.location }}</div>
                        <div class="col-12"><strong>Type:</strong> {{ task.project_type }}</div>
-
                    </div>
                    <a href="{% url 'start_task' task.id %}" class="btn btn-warning btn-sm w-100 fw-bold text-dark mt-3" onclick="return confirm('Start task?')">
                        Start Task
@@ -200,6 +213,7 @@
 
 
 <!-- ACTIVE TASKS SECTION -->
+<!-- ACTIVE TASKS SECTION -->
 <div class="card shadow-sm border-primary mb-4" style="border-left: 5px solid #0d6efd; background-color: #f7faff; border-radius: 0.5rem;">
    <div class="card-body">
        <h3 class="text-primary mb-3 pb-2 border-bottom d-flex align-items-center">
@@ -218,9 +232,15 @@
                </thead>
                <tbody>
                    {% for task in active_tasks %}
-                   <tr>
+                   <!-- If priority is Emergency, the entire row's text will turn RED -->
+                   <tr class="{% if task.priority == 'Emergency' %}text-danger{% endif %}">
                        <td>{{ task.job_id }}</td>
-                       <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-primary">{{ task.title }}</a></td>
+                       <td>
+                           <!-- Link color shifts to red if Emergency, otherwise remains primary blue -->
+                           <a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none {% if task.priority == 'Emergency' %}text-danger{% else %}text-primary{% endif %}">
+                               {{ task.title }}
+                           </a>
+                       </td>
                        <td><span class="badge bg-primary">{{ task.status }}</span></td>
                        <td>{{ task.project_type}}</td>
                        <td>{{ task.assigned_to_display }}</td>
@@ -243,7 +263,14 @@
            {% for task in active_tasks %}
            <div class="card mb-3 shadow-sm border-primary">
                <div class="card-body p-3">
-                   <h6 class="card-title fw-bold text-dark mb-2"><a href="{% url 'task_detail' task.id %}">{{ task.title }}</a></h6>
+                   <h6 class="card-title fw-bold text-dark mb-2">
+                       <a href="{% url 'task_detail' task.id %}" class="{% if task.priority == 'Emergency' %}text-danger{% endif %}">{{ task.title }}</a>
+
+                       <!-- RED EMERGENCY BADGE FOR MOBILE SCREENS -->
+                       {% if task.priority == 'Emergency' %}
+                           <span class="badge bg-danger text-white ms-1 align-middle" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px;">EMERGENCY</span>
+                       {% endif %}
+                   </h6>
                    <div class="row g-1" style="font-size: 0.8rem;">
                        <div class="col-6"><strong>ID:</strong> {{ task.job_id }}</div>
                        <div class="col-6"><strong>Fee:</strong> {{ task.budget }}</div>
@@ -259,7 +286,7 @@
            {% endfor %}
        </div>
 
-       <!-- View All Button -->
+    <!-- View All Button -->
        {% if user.profile.role == 'Admin' %}
        <div class="d-flex justify-content-center mt-2">
            <a href="{% url 'all_active_tasks' %}" class="btn btn-dark btn-sm px-4 fw-bold shadow-sm">
@@ -269,6 +296,8 @@
        {% endif %}
    </div>
 </div>
+</div> </div>
+
 
 
 <!-- COMPLETED TASKS SECTION -->
@@ -425,9 +454,6 @@
 
 
 
-
-
-<!-- End Task Modal -->
 <div class="modal fade" id="endTaskModal" tabindex="-1" aria-hidden="true">
    <div class="modal-dialog">
        <form id="endTaskForm" method="POST" action="" enctype="multipart/form-data">
@@ -439,17 +465,27 @@
                </div>
                <div class="modal-body">
                    <div class="mb-3">
-                       <label>Final Service Charge:</label>
+                       <label class="form-label fw-bold">Final Service Charge:</label>
                        <input type="number" step="0.01" name="final_budget" class="form-control" required>
                    </div>
 
+                   <div class="mb-3">
+                       <label class="form-label fw-bold">Task Completion Proof (Image):</label>
+                       <input type="file" name="task_image" class="form-control" accept="image/*" id="imageInput" onchange="previewImage(event)">
+
+                       <div id="imagePreviewContainer" class="mt-2 position-relative text-center p-2 bg-light rounded" style="display:none; min-height: 50px;">
+                           <img id="imagePreview" src="#" alt="Image Preview" style="max-height: 150px; width: auto; border-radius: 8px;">
+                           <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 shadow-sm" onclick="clearImage()">×</button>
+                       </div>
+                   </div>
 
                    <div class="mb-3">
-                       <label>Task Completion Proof (Image):</label>
-                       <input type="file" name="task_image" class="form-control" accept="image/*" id="imageInput" multiple onchange="previewImage(event)">
-                       <div id="previewContainer" class="mt-2 position-relative" style="display:none;">
-                           <img id="imagePreview" src="#" alt="Preview" style="max-height: 150px; width: auto; border-radius: 8px;">
-                           <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0" onclick="clearImage()">×</button>
+                       <label class="form-label fw-bold">Task Completion Proof (Video):</label>
+                       <input type="file" name="task_video" class="form-control" accept="video/*" id="videoInput" onchange="previewVideo(event)">
+
+                       <div id="videoPreviewContainer" class="mt-2 position-relative text-center p-2 bg-light rounded" style="display:none; min-height: 50px;">
+                           <video id="videoPreview" controls style="max-height: 150px; width: 100%; border-radius: 8px;"></video>
+                           <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 shadow-sm" onclick="clearVideo()">×</button>
                        </div>
                    </div>
                </div>
@@ -462,7 +498,6 @@
    </div>
 </div>
 
-<h5>hello</h5>
 
 
 
@@ -476,23 +511,47 @@
 
 
    // 2. Image Preview Logic
-   function previewImage(event) {
-       const reader = new FileReader();
-       const container = document.getElementById('previewContainer');
-       const img = document.getElementById('imagePreview');
-       reader.onload = function(){
-           img.src = reader.result;
-           container.style.display = 'block';
-       }
-       reader.readAsDataURL(event.target.files[0]);
-   }
+  function previewImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
+    const reader = new FileReader();
+    const container = document.getElementById('imagePreviewContainer');
+    const img = document.getElementById('imagePreview');
 
-   function clearImage() {
-       document.getElementById('imageInput').value = "";
-       document.getElementById('previewContainer').style.display = 'none';
-       document.getElementById('imagePreview').src = "#";
-   }
+    reader.onload = function() {
+        img.src = reader.result;
+        container.style.display = 'block';
+    }
+    reader.readAsDataURL(file);
+}
+
+function clearImage() {
+    document.getElementById('imageInput').value = "";
+    document.getElementById('imagePreviewContainer').style.display = 'none';
+    document.getElementById('imagePreview').src = "#";
+}
+
+function previewVideo(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    const container = document.getElementById('videoPreviewContainer');
+    const video = document.getElementById('videoPreview');
+
+    reader.onload = function() {
+        video.src = reader.result;
+        container.style.display = 'block';
+    }
+    reader.readAsDataURL(file);
+}
+
+function clearVideo() {
+    document.getElementById('videoInput').value = "";
+    document.getElementById('videoPreviewContainer').style.display = 'none';
+    document.getElementById('videoPreview').src = "";
+}
 
 
    // 3. Initialization for Unauthorized Action Modal

@@ -39,10 +39,24 @@
                             <p class="mb-1 text-muted small">Job ID (رقم الوظيفة)</p>
                             <h6 class="fw-bold">{{ task.job_id }}</h6>
                         </div>
-                        <div class="col-md-6 col-lg-3">
-                            <p class="mb-1 text-muted small">Priority (الأولوية)</p>
-                            <h6 class="fw-bold">{{ task.priority }}</h6>
-                        </div>
+                     <div class="col-md-6 col-lg-3">
+    <p class="mb-1 text-muted small">Priority (الأولوية)</p>
+
+    {% if task.priority == 'Emergency' %}
+        <h6 class="fw-bold text-danger d-none d-md-block">
+            {{ task.priority }}
+        </h6>
+
+        <h6 class="fw-bold text-dark d-md-none">
+            {{ task.priority }}
+            <span class="badge bg-danger text-white ms-1 align-middle" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px;">EMERGENCY</span>
+        </h6>
+    {% else %}
+        <h6 class="fw-bold">
+            {{ task.priority }}
+        </h6>
+    {% endif %}
+</div>
                         <div class="col-md-6 col-lg-3">
     <p class="mb-1 text-muted small">Service Charge (الميزانية / الرسوم)</p>
     <form id="updateBudgetForm" action="{% url 'update_budget_ajax' task.id %}" class="input-group input-group-sm">
@@ -282,25 +296,30 @@
             <div class="card shadow-sm border-0 rounded-3 mb-2">
                 <div class="card-header bg-secondary p-3 rounded-top-3 border-0">
                     <h5 class="card-title text-white mb-0 fs-6 fw-bold">
-                        <i class="bi bi-camera-fill me-2"></i> Task Images & Verification Proofs (صور ومعاينة الموقع)
+                        <i class="bi bi-camera-fill me-2"></i> Task Media Log & Verification Proofs (صور وفيديوهات الموقع)
                     </h5>
                 </div>
                 <div class="card-body p-4 bg-white">
+
                     <form action="{% url 'upload_task_attachment' task.id %}" method="POST" enctype="multipart/form-data" class="mb-4">
                         {% csrf_token %}
-                        <div class="row g-2 align-items-center">
-                            <div class="col-12 col-md-8">
-                                <label class="form-label small text-secondary fw-semibold d-block d-md-none">Choose Picture (اختر صورة)</label>
-                                <input type="file" name="task_image" class="form-control" accept="image/*" required>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-5">
+                                <label class="form-label small text-secondary fw-semibold mb-1">Upload Picture (رفع صورة)</label>
+                                <input type="file" name="task_image" class="form-control" accept="image/*">
                             </div>
-                            <div class="col-12 col-md-4 text-end">
-                                <button type="submit" class="btn btn-success w-100 fw-bold d-flex align-items-center justify-content-center gap-2">
-                                    <i class="bi bi-cloud-upload-fill"></i> Upload Picture (رفع الصورة)
+                            <div class="col-12 col-md-5">
+                                <label class="form-label small text-secondary fw-semibold mb-1">Upload Video (رفع فيديو)</label>
+                                <input type="file" name="task_video" class="form-control" accept="video/*">
+                            </div>
+                            <div class="col-12 col-md-2">
+                                <button type="submit" class="btn btn-success w-100 fw-bold d-flex align-items-center justify-content-center gap-2" style="height: 38px;">
+                                    <i class="bi bi-cloud-upload-fill"></i> Upload
                                 </button>
                             </div>
                         </div>
-                        <div class="form-text text-muted fs-7 mt-1">
-                            Accepted Formats: PNG, JPG, JPEG, WEBP. Useful for tracking installation status and damaged areas.
+                        <div class="form-text text-muted fs-7 mt-2">
+                            Accepted Formats: Images (PNG, JPG, JPEG, WEBP) & Videos (MP4, WEBM, MOV). Useful for verification tracking.
                         </div>
                     </form>
 
@@ -315,18 +334,30 @@
                             {% for attachment in attachments %}
                                 <div class="col">
                                     <div class="card h-100 border border-light shadow-sm rounded-3 overflow-hidden position-relative image-card-hover">
+
                                         {% if request.user.is_superuser or request.user.profile.role == 'Admin' or attachment.uploaded_by == request.user %}
                                             <a href="{% url 'delete_task_attachment' attachment.id %}"
                                                class="btn btn-danger btn-sm rounded-circle position-absolute top-0 end-0 m-2 shadow-sm z-3 opacity-90"
-                                               onclick="return confirm('Are you sure you want to permanently delete this photo? (هل أنت متأكد من حذف الصورة؟)')"
-                                               title="Delete image">
+                                               onclick="return confirm('Are you sure you want to permanently delete this verification attachment? (هل أنت متأكد من الحذف؟)')"
+                                               title="Delete attachment">
                                                 <i class="bi bi-trash3-fill fs-7"></i>
                                             </a>
                                         {% endif %}
 
-                                        <a href="{{ attachment.image.url }}" target="_blank" title="Click to view full screen">
-                                            <img src="{{ attachment.image.url }}" class="card-img-top object-fit-cover" style="height: 140px; width: 100%;" alt="Task confirmation photo">
-                                        </a>
+                                        {% if attachment.video %}
+                                            <div class="bg-black d-flex align-items-center justify-content-center visual-container" style="height: 140px; width: 100%;">
+                                                <video src="{{ attachment.video.url }}" controls class="w-100 h-100 object-fit-contain" style="max-height: 140px; background: #000;"></video>
+                                            </div>
+                                        {% elif attachment.image %}
+                                            <a href="{{ attachment.image.url }}" target="_blank" title="Click to view full screen">
+                                                <img src="{{ attachment.image.url }}" class="card-img-top object-fit-cover" style="height: 140px; width: 100%;" alt="Task confirmation photo">
+                                            </a>
+                                        {% else %}
+                                            <div class="bg-light d-flex align-items-center justify-content-center text-muted fs-8" style="height: 140px;">
+                                                No Media Content
+                                            </div>
+                                        {% endif %}
+
                                         <div class="p-2 bg-light border-top">
                                             <div class="text-truncate small text-dark fw-medium fs-7" style="max-width: 100%;">
                                                 <i class="bi bi-person-fill text-secondary me-1"></i>{{ attachment.uploaded_by.username }}
@@ -342,13 +373,17 @@
                     {% else %}
                         <div class="text-center py-4 bg-light bg-opacity-50 border rounded-3 border-dashed">
                             <div class="text-muted mb-2"><i class="bi bi-camera-video opacity-50" style="font-size: 2.5rem;"></i></div>
-                            <p class="text-secondary small mb-0 fw-medium">No site reference pictures found for this job ticket yet.</p>
-                            <span class="text-muted fs-8">Logs can be populated using the file widget interface above.</span>
+                            <p class="text-secondary small mb-0 fw-medium">No site reference pictures or videos found for this job ticket yet.</p>
+                            <span class="text-muted fs-8">Logs can be populated using the file widget fields above.</span>
                         </div>
                     {% endif %}
                 </div>
             </div>
         </div>
+
+
+
+
 
         <div class="col-md-6">
             <div class="card shadow-sm border-0 h-100">

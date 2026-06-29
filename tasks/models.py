@@ -650,6 +650,13 @@ class TaskAttachment(models.Model):
       User,
       on_delete=models.CASCADE
   )
+  # Added Video Field support
+  video = models.FileField(
+      upload_to='task_attachments/videos/',
+      help_text="Upload a video for task completion verification",
+      blank=True,
+      null=True
+  )
   image = models.ImageField(
       upload_to='task_attachments/',
       help_text="Upload a picture for location reference or job verification"
