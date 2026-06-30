@@ -120,23 +120,23 @@
 
 {% if tech_stats %}
 
-<div class="card border-0 shadow-sm mb-4 rounded-3 text-dark border-start border-success border-5 bg-white">
+<div class="card border-0 shadow-sm mb-4 rounded-3 text-dark border-start border-success border-5 bg-dark">
 
     <div class="card-body p-4">
 
-        <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+        <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3 ">
 
             <div>
 
-                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-person-badge text-success me-1"></i> Worker Profile: {{ tech_stats.username }}</h5>
+                <h5 class="fw-bold text-light mb-0"><i class="bi bi-person-badge text-success me-1"></i> Worker Profile: {{ tech_stats.username }}</h5>
 
-                <p class="text-muted small mb-0">Here is how this technician is performing across your selected filters.</p>
+                <p class=" small mb-0 text-light">Here is how this technician is performing across your selected filters.</p>
 
             </div>
 
             <div class="text-end">
 
-                <div class="small fw-bold text-muted">Jobs Completed</div>
+                <div class="small fw-bold text-light">Jobs Completed</div>
 
                 <h3 class="fw-bold text-success mb-0">{{ tech_stats.success_rate }}%</h3>
 
@@ -166,7 +166,7 @@
 
                 <div class="p-3 bg-light rounded h-100">
 
-                    <small class="text-muted fw-bold block">Avg Cost per Job</small>
+                    <small class="text-muted fw-bold block">Avg service charge per Job</small>
 
                     <h3 class="fw-bold text-dark my-1">{{ tech_stats.avg_cost|floatformat:0 }} <span class="fs-6 fw-normal text-muted">AED</span></h3>
 
@@ -178,7 +178,7 @@
 
                 <div class="p-3 bg-light rounded h-100">
 
-                    <small class="text-muted fw-bold block">Total Spent on Him</small>
+                    <small class="text-muted fw-bold block">Total Service Charge ({{ tech_stats.username }}):</small>
 
                     <h3 class="fw-bold text-success my-1">{{ tech_stats.total_cost|floatformat:0 }} <span class="fs-6 fw-normal text-muted">AED</span></h3>
 
@@ -286,7 +286,7 @@
 
         <div class="card p-3 border-0 bg-dark shadow-sm h-100 text-white">
 
-            <h6 class="text-muted-light small fw-bold mb-1 text-white-50">Total Expenses</h6>
+            <h6 class="text-muted-light small fw-bold mb-1 text-white-50">Total Service Charge:</h6>
 
             <h4 class="fw-bold text-success mb-0">{{ total_expenses|floatformat:0 }} <span class="fs-6 text-white-50 font-normal">AED</span></h4>
 

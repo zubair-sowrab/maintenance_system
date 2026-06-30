@@ -75,8 +75,32 @@
               </div>
 
 
+ <!-- NEW: Building Filter -->
 
+              {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
+  {% if "Completed" in title or "مكتمل" in title %}
+              <div class="col-6 col-md-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Building (المبنى)</label>
+                  <select name="building" id="buildingSelect" class="form-select form-select-sm">
+                      <option value="">All Buildings</option>
+                      {% for b in buildings %}
+                          <option value="{{ b }}" {% if request.GET.building == b %}selected{% endif %}>{{ b }}</option>
+                      {% endfor %}
+                  </select>
+              </div>
 
+              <!-- NEW: Unit Filter -->
+              <div class="col-6 col-md-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Unit (الوحدة)</label>
+                  <select name="unit" id="unitSelect" class="form-select form-select-sm">
+                      <option value="">All Units</option>
+                      {% for u in units %}
+                          <option value="{{ u.unit }}" data-building="{{ u.building }}" {% if request.GET.unit == u.unit %}selected{% endif %}>{{ u.unit }}</option>
+                      {% endfor %}
+                  </select>
+              </div>
+{%endif%}
+              {%endif%}
 
 
               <div class="col-6 col-md-2">
@@ -448,6 +472,42 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function() {
+   const buildingSelect = document.getElementById('buildingSelect');
+      const unitSelect = document.getElementById('unitSelect');
+
+      if (buildingSelect && unitSelect) {
+          const allUnitOptions = Array.from(unitSelect.querySelectorAll('option[data-building]'));
+
+          function filterUnits() {
+              const selectedBuilding = buildingSelect.value;
+
+              // Hide all unit options first using the 'hidden' attribute for cross-browser safety
+              allUnitOptions.forEach(opt => opt.hidden = true);
+
+              // Show units that match the selected building, or all if no building is selected
+              if (selectedBuilding === "") {
+                  allUnitOptions.forEach(opt => opt.hidden = false);
+              } else {
+                  allUnitOptions.filter(opt => opt.getAttribute('data-building') === selectedBuilding)
+                                .forEach(opt => opt.hidden = false);
+              }
+          }
+
+          buildingSelect.addEventListener('change', function() {
+              unitSelect.value = ""; // Reset unit when building changes
+              filterUnits();
+          });
+
+          // Run once on load to set initial state based on URL parameters
+          filterUnits();
+      }
+      // --- END NEW LOGIC ---
+
+
+
+
+
+
       // Flatpickr Calendar Core Initializer Routine
       flatpickr(".flatpickr-date", {
           altInput: true,

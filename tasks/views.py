@@ -803,6 +803,8 @@ from django.db.models import Q
 def all_completed_tasks(request):
     user = request.user
 
+
+
     # 1. Gather Role Configuration Strings
     user_role = getattr(user, "role", None)
     if not user_role and hasattr(user, "profile"):
@@ -829,6 +831,8 @@ def all_completed_tasks(request):
     project_type = request.GET.get("project_type")
     date_from = request.GET.get("date_from")
     date_to = request.GET.get("date_to")
+    building = request.GET.get("building")
+    unit = request.GET.get("unit")
 
     if job_id and job_id.strip():
         base_tasks = base_tasks.filter(job_id__icontains=job_id.strip())
@@ -853,10 +857,23 @@ def all_completed_tasks(request):
         except ValueError:
             base_tasks = base_tasks.filter(completed_at__date__lte=date_to)
 
+    if building and building.strip():
+        base_tasks = base_tasks.filter(building__iexact=building.strip())
+
+    if unit and unit.strip():
+        base_tasks = base_tasks.filter(unit__iexact=unit.strip())
+
+        # Automatically extract unique buildings and units from the database to populate the dropdowns
+    buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building',
+                                                                                                    flat=True).distinct()
+    units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
+
+
     return render(
         request,
         "tasks/all_tasks.html",
-        {"tasks": base_tasks.distinct(), "title": "Completed Tasks (المهام المكتملة)"},
+        {"tasks": base_tasks.distinct(), "title": "Completed Tasks (المهام المكتملة)","buildings": buildings,
+           "units": units,},
     )
 
 
@@ -865,6 +882,7 @@ def all_pending_tasks(request):
     # Base query for tasks that are currently pending
     # Added distinct() because filtering by ManyToMany can return duplicates
     tasks = Task.objects.filter(status='Pending(قيد الانتظار)').distinct()
+    
 
     # Gather URL Query Parameters
     job_id = request.GET.get('job_id')
@@ -872,6 +890,7 @@ def all_pending_tasks(request):
     project_type = request.GET.get('project_type')
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
+
 
     if job_id and job_id.strip():
         tasks = tasks.filter(job_id__icontains=job_id.strip())
@@ -895,12 +914,15 @@ def all_pending_tasks(request):
         except ValueError:
             tasks = tasks.filter(created_at__date__lte=date_to)
 
+
+
     return render(
         request,
         'tasks/all_tasks.html',
         {
             'tasks': tasks,
-            'title': 'Pending Tasks'
+            'title': 'Pending Tasks',
+
         }
     )
 
@@ -914,6 +936,7 @@ def all_active_tasks(request):
     project_type = request.GET.get('project_type')
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
+
 
     if job_id and job_id.strip():
         tasks = tasks.filter(job_id__icontains=job_id.strip())
@@ -931,7 +954,9 @@ def all_active_tasks(request):
     if date_to and date_to.strip():
         tasks = tasks.filter(started_at__date__lte=date_to)
 
-    return render(request, 'tasks/all_tasks.html', {'tasks': tasks, 'title': 'Active Tasks'})
+
+    return render(request, 'tasks/all_tasks.html', {'tasks': tasks, 'title': 'Active Tasks',})
+
 
 
 def all_overdue_tasks(request):
