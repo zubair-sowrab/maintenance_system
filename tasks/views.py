@@ -882,7 +882,7 @@ def all_pending_tasks(request):
     # Base query for tasks that are currently pending
     # Added distinct() because filtering by ManyToMany can return duplicates
     tasks = Task.objects.filter(status='Pending(قيد الانتظار)').distinct()
-    
+
 
     # Gather URL Query Parameters
     job_id = request.GET.get('job_id')
