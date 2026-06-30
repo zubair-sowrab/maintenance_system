@@ -645,11 +645,14 @@ def toggle_subtask(request, subtask_id):
 
 @login_required
 def reports(request):
+    context_stats = None
     # 1. Capture Filters
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
     project_type = request.GET.get('project_type', '')
     selected_tech_id = request.GET.get('tech_id', '')
+    selected_building = request.GET.get('building', '')
+    selected_unit = request.GET.get('unit', '')
 
     base_tasks = Task.objects.all()
 
@@ -667,6 +670,12 @@ def reports(request):
         base_tasks = base_tasks.filter(created_at__date__lte=date_to)
     if project_type:
         base_tasks = base_tasks.filter(project_type=project_type)
+    if selected_building: base_tasks = base_tasks.filter(building=selected_building)
+    if selected_unit: base_tasks = base_tasks.filter(unit=selected_unit)
+
+    # Fetch unique list for dropdowns
+    all_buildings = Task.objects.values_list('building', flat=True).distinct().exclude(building__isnull=True)
+    all_units = Task.objects.values_list('unit', flat=True).distinct().exclude(unit__isnull=True)
 
     # 2. Simple Status Counters
     total_tasks = base_tasks.count()
@@ -769,6 +778,26 @@ def reports(request):
         except User.DoesNotExist:
             pass
 
+        if selected_tech_id or selected_building or selected_unit:
+            filtered_stats = base_tasks
+            t_total = filtered_stats.count()
+            t_completed = filtered_stats.filter(status='Completed').count()
+            financials = filtered_stats.aggregate(total_cost=Sum('budget'), avg_cost=Avg('budget'))
+
+            # Calculate stats
+            t_total = filtered_stats.count()
+            t_completed = filtered_stats.filter(status='Completed').count()
+            financials = filtered_stats.aggregate(total_cost=Sum('budget'), avg_cost=Avg('budget'))
+
+            context_stats = {
+                'label': selected_building or selected_unit or "Selected Technician",
+                'total_tasks': t_total,
+                'completed': t_completed,
+                'total_cost': float(financials['total_cost'] or 0.0),
+                'avg_cost': float(financials['avg_cost'] or 0.0),
+                'success_rate': round((t_completed / t_total * 100), 0) if t_total > 0 else 0
+            }
+
     context = {
         'total_tasks': total_tasks, 'completed': completed, 'active': active,
         'pending': pending, 'overdue': overdue, 'total_expenses': total_expenses,
@@ -781,6 +810,11 @@ def reports(request):
         'tech_labels_json': json.dumps(tech_labels),
         'tech_assigned_json': json.dumps(tech_assigned),
         'tech_completed_json': json.dumps(tech_completed),
+        'all_buildings': all_buildings,
+        'all_units': all_units,
+        'selected_building': selected_building,
+        'selected_unit': selected_unit,
+        'context_stats': context_stats,
     }
     return render(request, 'tasks/reports.html', context)
 
