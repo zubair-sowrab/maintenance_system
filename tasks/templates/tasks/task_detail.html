@@ -897,39 +897,74 @@ if (btnPrint) {
 
 function executePrint(customName, customAddress) {
     // 1. Gather Sub-Items for the Print Layout
-    let subCategoriesStr = "";
+  const projectType = "{{ task.project_type|escapejs }}";
+const taskDesc = "{{ task.description|escapejs }}";
 
-    const rows = document.querySelectorAll('#subItemsTable tbody tr:not(#empty-items-row)');
-    rows.forEach((row) => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length >= 2) {
-            const itemName = cells[0].textContent.trim();
-            const qtyDetails = cells[1].textContent.trim();
-            subCategoriesStr += `&bull; ${itemName} (${qtyDetails})<br>`;
-        }
-    });
+let descriptionLines = "";
+let qtyLines = "";
 
-    // 2. Format Description: Project Type -> Description -> Subcategories (on new lines)
-    let descParts = [];
-    const projectType = "{{ task.project_type|escapejs }}";
-    const taskDesc = "{{ task.description|escapejs }}";
+const rows = document.querySelectorAll('#subItemsTable tbody tr:not(#empty-items-row)');
 
-    if (projectType) descParts.push(`<strong>${projectType}</strong>`);
-    if (taskDesc && taskDesc.trim() !== "None") descParts.push(taskDesc);
-    if (subCategoriesStr) descParts.push(subCategoriesStr);
+rows.forEach((row) => {
 
-    const fullDescription = descParts.join('<br>');
+    const cells = row.querySelectorAll("td");
 
-    // 3. Build the single row table structure
-    const itemsHTML = `
-        <tr>
-            <td style="vertical-align: top;">1</td>
-            <td style="white-space: normal; word-wrap: break-word; max-width: 250px; vertical-align: top;">${fullDescription}</td>
-            <td style="vertical-align: top;">{{task.unit}}</td>
-            <td style="vertical-align: top;">{{task.budget}}</td>
-            <td style="vertical-align: top;">{{task.budget}}</td>
-        </tr>
-    `;
+    if (cells.length < 2) return;
+
+    const subCategory = cells[0].textContent.trim();
+
+    let qty = cells[1].textContent.trim();
+
+    const match = qty.match(/\d+/);
+
+    qty = match ? match[0] : "1";
+
+    if (qty === "" || qty === "0") {
+        qty = "1";
+    }
+
+    descriptionLines += `${projectType} - ${subCategory}<br>`;
+    qtyLines += `${qty}<br>`;
+});
+
+if (descriptionLines === "") {
+
+    descriptionLines = `${projectType}`;
+
+    if (taskDesc)
+        descriptionLines += "<br>" + taskDesc;
+
+    qtyLines = "1";
+}
+
+const itemsHTML = `
+<tr>
+
+    <td>1</td>
+
+    <td>
+        ${descriptionLines}
+    </td>
+
+    <td>
+        {{task.unit}}
+    </td>
+
+    <td style="text-align:center;">
+        ${qtyLines}
+    </td>
+
+    <td>
+        {{task.budget}}
+    </td>
+
+    <td>
+        {{task.budget}}
+    </td>
+
+</tr>
+`;
+
 
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-GB').split('/').join('-');
@@ -963,7 +998,7 @@ function executePrint(customName, customAddress) {
         <body>
             <div class="header-container flex justify-start">
                 <div class="header-text">
-                    <h2>ENJAZ TECHNICAL WORKS LLC</h2>
+                    <h2>ENJAZ TECHNICAL WORKS SPS LLC</h2>
                     <p>Rashidiya 2, Ajman UAE | Tel: +971 67422783 | info@edrakuae.com</p>
                 </div>
                 <div class="logo-container">
@@ -988,14 +1023,15 @@ function executePrint(customName, customAddress) {
 
             <table>
                 <thead>
-                    <tr>
-                        <th style="width: 5%;">S No</th>
-                        <th style="width: 45%;">Description</th>
-                        <th style="width: 15%;">Flat No</th>
-                        <th style="width: 10%;">Rate</th>
-                        <th style="width: 15%;">Net Amount</th>
-                    </tr>
-                </thead>
+<tr>
+    <th style="width:5%;">S No</th>
+    <th style="width:40%;">Description</th>
+    <th style="width:12%;">Flat No</th>
+    <th style="width:15%;">Qty / Detail</th>
+    <th style="width:13%;">Rate</th>
+    <th style="width:15%;">Net Amount</th>
+</tr>
+</thead>
                 <tbody>
                     ${itemsHTML}
                 </tbody>

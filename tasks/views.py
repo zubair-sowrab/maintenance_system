@@ -654,6 +654,16 @@ def reports(request):
     selected_building = request.GET.get('building', '')
     selected_unit = request.GET.get('unit', '')
 
+    # 1. Update unit queryset based on building
+    all_buildings = Task.objects.values_list('building', flat=True).distinct().exclude(building__isnull=True)
+
+    # Filter units only belonging to the selected building
+    unit_queryset = Task.objects.values_list('unit', flat=True).distinct().exclude(unit__isnull=True)
+    if selected_building:
+        unit_queryset = unit_queryset.filter(building=selected_building)
+
+    all_units = unit_queryset
+
     base_tasks = Task.objects.all()
 
     # Get staff list safely

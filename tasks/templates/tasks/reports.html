@@ -108,25 +108,30 @@
 
 
 
-                <div class="col-6 col-md-3">
-        <label class="form-label small fw-bold text-muted mb-1">Building</label>
-        <select name="building" class="form-select form-select-sm" onchange="this.form.submit();">
-            <option value="">All Buildings</option>
-            {% for b in all_buildings %}
-                <option value="{{ b }}" {% if selected_building == b %}selected{% endif %}>{{ b }}</option>
-            {% endfor %}
-        </select>
-    </div>
+               <div class="col-12">
+                    <hr class="my-2 text-muted">
+                    <label class="form-label small fw-bold text-primary mb-2"><i class="bi bi-building"></i> Location Filter</label>
+                    <div class="row g-2">
+                        <div class="col-6 col-md-3">
+                            <input list="building-list" name="building" id="buildingInput" class="form-control form-control-sm" placeholder="Type or select building..." >
+                            <datalist id="building-list">
+                                {% for b in all_buildings %}
+                                    <option value="{{ b }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <input list="unit-list" name="unit" id="unitInput" class="form-control form-control-sm" placeholder="Type or select unit..." >
+                            <datalist id="unit-list">
+                                {% for u in all_units %}
+                                    <option value="{{ u }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <div class="col-6 col-md-3">
-        <label class="form-label small fw-bold text-muted mb-1">Unit</label>
-        <select name="unit" class="form-select form-select-sm" onchange="this.form.submit();">
-            <option value="">All Units</option>
-            {% for u in all_units %}
-                <option value="{{ u }}" {% if selected_unit == u %}selected{% endif %}>{{ u }}</option>
-            {% endfor %}
-        </select>
-    </div>
 
 
 
