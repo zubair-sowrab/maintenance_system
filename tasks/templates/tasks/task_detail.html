@@ -78,7 +78,7 @@
                             <p class="mb-1 text-muted small">Location (رقم الوظيفة)</p>
                             <h6 class="fw-bold">{{ task.building }} - {{task.unit}}</h6>
                         </div>
-
+{% if user.profile.role == 'Admin' %}
 
                        <div class="col-md-12 col-lg-6">
     <form id="updateLocationForm" action="{% url 'update_location_ajax' task.id %}" method="POST">
@@ -134,7 +134,7 @@
 </div>
 
 
-
+{%endif%}
 
 
 
@@ -173,16 +173,15 @@
 
 
                         </div>
-                        {%comment%}
-                        <div class="col-md-4 col-lg-4">
-                            <p class="mb-1 text-muted small">Start Date (تاريخ البدء)</p>
-                            <h6>{{ task.started_at|default:"--" }}</h6>
-                        </div>
-                        <div class="col-md-4 col-lg-4">
-                            <p class="mb-1 text-muted small">Deadline (تاريخ الموعد النهائي)</p>
-                            <h6>{{ task.deadline|default:"--" }}</h6>
-                        </div>
-                        {%endcomment%}
+                        {% if user.profile.role == 'Admin' or  user.profile.role == 'Technician' or user.profile.role == 'Supervisor'%}
+                <div class="row g-3">
+                <div class="col-md-4 col-lg-4">
+                            <p class="mb-1 text-muted small">Completed date</p>
+                            <h6>{{ task.completed_at|default:"--" }}</h6>
+                    </div>
+                        {% endif %}
+
+                {% if user.profile.role == 'Admin' %}
                          <div class="col-md-4 col-lg-4">
     <p class="mb-1 text-muted small">Start Date (تاريخ البدء)</p>
     <form class="update-date-form input-group input-group-sm" action="{% url 'update_start_date_ajax' task.id %}">
@@ -212,6 +211,10 @@
         </button>
     </form>
 </div>
+
+                {% endif %}
+
+               {%if user.profile.role == 'Admin'%}
                         <div class="col-md-6 col-lg-3">
     <p class="mb-1 text-muted small">Assigned Technicians (المسؤولون)</p>
     <form id="updateTechniciansForm" action="{% url 'update_technicians_ajax' task.id %}" method="POST">
@@ -257,7 +260,16 @@
     </form>
 </div>
 
-                    </div>
+                    </div>{%endif%}
+
+
+            {%if user.profile.role == 'Admin' or user.profile.role == 'Technician' or user.profile.role == 'Supervisor'%}
+            <div class="col-md-6 col-lg-3">
+                            <p class="mb-1 text-muted small">Technicians</p>
+                            <h6 class="fw-bold">{{ task.assigned_to_display }}</h6>
+                        </div>
+
+            {%endif%}
 
                     <div class="row mt-4">
     <div class="col-12">
