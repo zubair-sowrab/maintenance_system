@@ -4,6 +4,7 @@ from .forms import TaskForm
 import json
 import logging
 from groq import Groq
+import threading
 from dotenv import load_dotenv
 import requests
 import json
@@ -555,6 +556,8 @@ def task_detail(request, task_id):
 
     complaint_form = ComplaintForm()
     subtask_form = SubTaskForm()
+    all_technicians = User.objects.filter(profile__role='Technician')
+
 
     context = {
         'task': task,
@@ -564,6 +567,7 @@ def task_detail(request, task_id):
         'attachments': attachments,
         'complaint_form': complaint_form,
         'subtask_form': subtask_form,
+        'all_technicians': all_technicians,  # ADD THIS TO CONTEXT
     }
 
     return render(request, 'tasks/task_detail.html', context)
@@ -1471,3 +1475,63 @@ def process_audio_file(request):
             return JsonResponse({'error': 'Failed to process audio with AI.'}, status=500)
 
     return JsonResponse({'error': 'No file uploaded'}, status=400)
+
+
+def update_technicians_ajax(request, task_id):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+    try:
+        task = get_object_or_404(Task, id=task_id)
+        # Using getlist because there are multiple inputs with name="technicians"
+        tech_ids = request.POST.getlist('technicians')
+
+        if tech_ids:
+            task.assigned_technicians.set(tech_ids) # Updates the ManyToMany field
+            task.save()
+            return JsonResponse({'status': 'success', 'message': 'Technicians updated successfully'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Please select at least one technician'}, status=400)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+
+
+def update_location_ajax(request, task_id):
+    if request.method == 'POST':
+        task = get_object_or_404(Task, id=task_id)
+
+        building = request.POST.get('building')
+        unit = request.POST.get('unit')
+
+        if building and unit:
+            task.building = building
+            task.unit = unit
+
+            # Reconstruct title format exactly like create_task view logic
+            project_type_str = str(getattr(task, 'project_type', 'General')).strip()
+            loc_parts = [str(building), str(unit)]
+            location = "-".join([p for p in loc_parts if p]) or "No Location"
+
+            # Check if any technicians are assigned to set title metadata
+            if not task.assigned_technicians.exists():
+                task.title = f"{location}-{project_type_str} - [UNASSIGNED]"[:200]
+            else:
+                task.title = f"{location}-{project_type_str}"[:200]
+
+            task.save()
+
+            # Safely build a comma-separated list of technicians for the title banner
+            tech_list = ", ".join([t.username for t in task.assigned_technicians.all()])
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Location and Title updated successfully!',
+                'new_title': task.title,
+                'tech_list': tech_list
+            })
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Building and Unit are required.'}, status=400)

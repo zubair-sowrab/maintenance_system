@@ -8,7 +8,12 @@
             <div class="card shadow-sm border-0 mb-2">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h2 class="h3 mb-0 text-primary">{{ task.title }} - {{ task.assigned_to }}</h2>
+                        <h2 id="task-main-title" class="h3 mb-0 text-primary">
+    {{ task.title }}
+    {% if task.assigned_technicians.all %}
+        - {% for tech in task.assigned_technicians.all %}{{ tech.username }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    {% endif %}
+</h2>
                         <span class="badge {% if task.status == 'Completed' or 'مكتمل' in task.status %}bg-success{% else %}bg-warning text-dark{% endif %} px-3 py-2">
                             {{ task.status }}
                         </span>
@@ -68,10 +73,71 @@
 </button>
     </form>
 </div>
-                        <div class="col-md-6 col-lg-3">
-                            <p class="mb-1 text-muted small">Location (الموقع)</p>
-                            <h6><i class="bi bi-geo-alt-fill text-secondary me-1"></i>{{ task.location }}</h6>
+
+<div class="col-md-6 col-lg-3">
+                            <p class="mb-1 text-muted small">Location (رقم الوظيفة)</p>
+                            <h6 class="fw-bold">{{ task.building }} - {{task.unit}}</h6>
                         </div>
+
+
+                       <div class="col-md-12 col-lg-6">
+    <form id="updateLocationForm" action="{% url 'update_location_ajax' task.id %}" method="POST">
+        {% csrf_token %}
+        <div class="card border border-success border-opacity-25 p-3 mb-3 rounded-3 bg-light bg-opacity-50">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold text-success mb-0 small">
+                    <i class="bi bi-geo-alt-fill me-1"></i> Edit Location (تحرير الموقع )
+                </h6>
+                <button type="submit" class="btn btn-sm btn-save-budget d-flex align-items-center justify-content-center fw-bold" style="background-color: #28a745; color: white; border: none; border-radius: 4px; transition: background-color 0.2s ease; font-size: 0.85rem; padding: 4px 12px;">
+                    Save Location
+                </button>
+            </div>
+
+            <div class="row g-2">
+                <div class="col-6 mb-2">
+                    <label class="form-label fw-semibold small text-secondary mb-1">Building (البناية) <span class="text-danger">*</span></label>
+                    <select name="building" class="form-select form-select-sm fw-bold text-dark" required>
+                        <option value="">-- Select Building (اختر البناية) --</option>
+                        <option value="Aliya Villa (فيلا عليا)" {% if task.building == "Aliya Villa (فيلا عليا)" %}selected{% endif %}>Aliya Villa (فيلا عليا)</option>
+                        <option value="Al Farah Plaza (بلازا الفرح)" {% if task.building == "Al Farah Plaza (بلازا الفرح)" %}selected{% endif %}>Al Farah Plaza (بلازا الفرح)</option>
+                        <option value="Al Huda Building (بناية الهدى)" {% if task.building == "Al Huda Building (بناية الهدى)" %}selected{% endif %}>Al Huda Building (بناية الهدى)</option>
+                        <option value="Al Ithihad Building (بناية الاتحاد)" {% if task.building == "Al Ithihad Building (بناية الاتحاد)" %}selected{% endif %}>Al Ithihad Building (بناية الاتحاد)</option>
+                        <option value="Al Khaleej Building (بناية الخليج)" {% if task.building == "Al Khaleej Building (بناية الخليج)" %}selected{% endif %}>Al Khaleej Building (بناية الخليج)</option>
+                        <option value="Al Maktab Building (بناية المكتب)" {% if task.building == "Al Maktab Building (بناية المكتب)" %}selected{% endif %}>Al Maktab Building (بناية المكتب)</option>
+                        <option value="Al Maass Building (بناية الماس)" {% if task.building == "Al Maass Building (بناية الماس)" %}selected{% endif %}>Al Maass Building (بناية الماس)</option>
+                        <option value="Al Naser Plaza (بلازا النصر)" {% if task.building == "Al Naser Plaza (بلازا النصر)" %}selected{% endif %}>Al Naser Plaza (بلازا النصر)</option>
+                        <option value="Al Raihan Plaza (بلازا الريحان)" {% if task.building == "Al Raihan Plaza (بلازا الريحان)" %}selected{% endif %}>Al Raihan Plaza (بلازا الريحان)</option>
+                        <option value="Al Salam Building (بناية السلام)" {% if task.building == "Al Salam Building (بناية السلام)" %}selected{% endif %}>Al Salam Building (بناية السلام)</option>
+                        <option value="Arbab House (YBN) (منزل أرباب YBN)" {% if task.building == "Arbab House (YBN) (منزل أرباب YBN)" %}selected{% endif %}>Arbab House (YBN) (منزل أرباب YBN)</option>
+                        <option value="Bader Building (بناية بدر)" {% if task.building == "Bader Building (بناية بدر)" %}selected{% endif %}>Bader Building (بناية بدر)</option>
+                        <option value="Fatma YBN Villa (فيلا فاطمة YBN)" {% if task.building == "Fatma YBN Villa (فيلا فاطمة YBN)" %}selected{% endif %}>Fatma YBN Villa (فيلا فاطمة YBN)</option>
+                        <option value="Farm Helio (مزرعة هيليو)" {% if task.building == "Farm Helio (مزرعة هيليو)" %}selected{% endif %}>Farm Helio (مزرعة هيليو)</option>
+                        <option value="Mohammed Yousef Nasser Villa (فيلا محمد يوسف ناصر)" {% if task.building == "Mohammed Yousef Nasser Villa (فيلا محمد يوسف ناصر)" %}selected{% endif %}>Mohammed Yousef Nasser Villa (فيلا محمد يوسف ناصر)</option>
+                        <option value="Muhammed Yousuf Building (بناية محمد يوسف)" {% if task.building == "Muhammed Yousuf Building (بناية محمد يوسف)" %}selected{% endif %}>Muhammed Yousuf Building (بناية محمد يوسف)</option>
+                        <option value="Rashidiya Building (بناية الرشيدية)" {% if task.building == "Rashidiya Building (بناية الرشيدية)" %}selected{% endif %}>Rashidiya Building (بناية الرشيدية)</option>
+                        <option value="Sanahiya Building (بناية الصناعية)" {% if task.building == "Sanahiya Building (بناية الصناعية)" %}selected{% endif %}>Sanahiya Building (بناية الصناعية)</option>
+                        <option value="Souk Building (بناية السوق)" {% if task.building == "Souk Building (بناية السوق)" %}selected{% endif %}>Souk Building (بناية السوق)</option>
+                        <option value="Villa Sanahiya (فيلا الصناعية)" {% if task.building == "Villa Sanahiya (فيلا الصناعية)" %}selected{% endif %}>Villa Sanahiya (فيلا الصناعية)</option>
+                        <option value="Other (آخر)" {% if task.building == "Other (آخر)" %}selected{% endif %}>Other (آخر)</option>
+                    </select>
+                </div>
+
+                <div class="col-6 mb-2" id="unit-container">
+                    <label class="form-label fw-semibold small text-secondary mb-1">Unit / Zone (الشقة / القسم) <span class="text-danger">*</span></label>
+                    <select name="unit" id="detail-unit-select" data-current="{{ task.unit|default:'' }}" class="form-select form-select-sm fw-bold text-dark" required>
+                        <option value="">-- Select Unit --</option>
+                        </select>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+
+
+
+
+
                         <div class="col-12">
                             <p class="mb-1 text-muted small">Description (الوصف)</p>
                            <div class="small mb-2">
@@ -147,15 +213,50 @@
     </form>
 </div>
                         <div class="col-md-6 col-lg-3">
-                            <p class="mb-1 text-muted small">Assigned To:</p>
-                            <p class="text-dark fw-bold">{{ task.assigned_to_display }}</p>
-                        </div>
-                        {%if task.status == 'Completed'%}
-                         <div class="col-md-6 col-lg-3">
-                            <p class="mb-1 text-muted small">Duration:</p>
-                            <p class="text-dark fw-bold">{{ task.time_taken }}</p>
-                        </div>
-                        {%endif%}
+    <p class="mb-1 text-muted small">Assigned Technicians (المسؤولون)</p>
+    <form id="updateTechniciansForm" action="{% url 'update_technicians_ajax' task.id %}" method="POST">
+        {% csrf_token %}
+        <div id="tech-container">
+            {% for assigned_tech in task.assigned_technicians.all %}
+                <div class="input-group input-group-sm mb-2 tech-row">
+                    <select name="technicians" class="form-select fw-bold text-dark">
+                        {% for tech in all_technicians %}
+                            <option value="{{ tech.id }}" {% if tech.id == assigned_tech.id %}selected{% endif %}>
+                                {{ tech.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn btn-outline-danger"  onclick="removeRow(this)">
+                        <strong class="bi bi-trash">❌</strong>
+                    </button>
+                </div>
+            {% empty %}
+                <!-- Fallback if no one is assigned yet -->
+                <div class="input-group input-group-sm mb-2 tech-row">
+                    <select name="technicians" class="form-select fw-bold text-dark">
+                        <option value="">-- Select --</option>
+                        {% for tech in all_technicians %}
+                            <option value="{{ tech.id }}">{{ tech.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn btn-outline-danger" onclick="removeRow(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-1">
+            <button type="button" class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem;" onclick="addTechRow()">
+                <i class="bi bi-plus-lg"></i> Add
+            </button>
+            <button type="submit" class="btn btn-save-budget d-flex align-items-center justify-content-center fw-bold" style="width: 65px; height: 31px; background-color: #28a745; color: white; border: none; border-radius: 4px; transition: background-color 0.2s ease; font-size: 0.85rem;">
+                Save
+            </button>
+        </div>
+    </form>
+</div>
+
                     </div>
 
                     <div class="row mt-4">
@@ -187,7 +288,7 @@
             style="width: 34px; height: 34px; color: #dc3545; background-color: transparent; border: 2px solid #dc3545; font-weight: 900; font-family: sans-serif; font-size: 16px; transition: all 0.2s ease-in-out;"
             onmouseover="this.style.backgroundColor='#dc3545'; this.style.color='#ffffff';"
             onmouseout="this.style.backgroundColor='transparent'; this.style.color='#dc3545';">
-        X
+        ❌
     </button>
 </td>
                         </tr>
@@ -505,6 +606,10 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+
+
+
+
 
     // 1. PROJECT CATEGORY FETCH LOGIC (Mobile-Friendly Custom Dropdown)
     const currentProjectType = "{{ task.project_type }}";
@@ -1043,7 +1148,7 @@ const itemsHTML = `
             </div>
 
             <div class="footer-signature">
-                <span>_______________<br>For ENJAZ TECHNICAL WORKS LLC</span>
+                <span>______________________________<br>For ENJAZ TECHNICAL WORKS SPS LLC</span>
             </div>
         </body>
         </html>
@@ -1231,6 +1336,185 @@ const itemsHTML = `
             });
         });
     });
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // --- Add/Remove Technician Row Logic ---
+function addTechRow() {
+    const container = document.getElementById('tech-container');
+    const firstRow = container.querySelector('.tech-row');
+    const newRow = firstRow.cloneNode(true);
+
+    // Reset the value of the cloned select box
+    newRow.querySelector('select').value = "";
+    container.appendChild(newRow);
+}
+
+function removeRow(btn) {
+    const rows = document.querySelectorAll('.tech-row');
+    if (rows.length > 1) {
+        btn.closest('.tech-row').remove();
+    } else {
+        alert("You must assign at least one technician.");
+    }
+}
+
+// --- AJAX Submit Logic for Technicians ---
+const techForm = document.getElementById('updateTechniciansForm');
+if (techForm) {
+    techForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Optional: Fire a SweetAlert or Toast here
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Saved!',
+                    text: 'Assigned technicians updated successfully.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating technicians:', error);
+            alert('Something went wrong updating the technicians.');
+        });
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// ==========================================
+    // --- Populate Location Units Dropdown ---
+    // ==========================================
+    const buildGlobalUnitsList = () => {
+        let list = [];
+        list.push("None (لا ينطبق)");
+        for (let i = 1; i <= 7; i++) { let num = String(i).padStart(2, '0'); list.push(`Shop S${num} (محل S${num})`); }
+        for (let i = 1; i <= 20; i++) { let num = String(i).padStart(2, '0'); list.push(`Unit G${num} (شقة G${num})`); }
+        for (let i = 1; i <= 10; i++) { let num = String(i).padStart(2, '0'); list.push(`Unit M${num} (شقة M${num})`); }
+        for (let floor = 1; floor <= 9; floor++) {
+            for (let unit = 1; unit <= 10; unit++) {
+                let unitNum = `${floor}${String(unit).padStart(2, '0')}`;
+                list.push(`Flat ${unitNum} (شقة ${unitNum})`);
+            }
+        }
+        list.push("Service Area (منطقة الخدمات)");
+        list.push("Other (آخر)");
+        return list;
+    };
+
+    const unitSelect = document.getElementById('detail-unit-select');
+    if (unitSelect) {
+        const currentUnit = unitSelect.getAttribute('data-current');
+        const units = buildGlobalUnitsList();
+
+        units.forEach(unit => {
+            const option = document.createElement('option');
+            option.value = unit;
+            option.textContent = unit;
+            // Pre-select the currently saved unit from the database
+            if (unit === currentUnit) {
+                option.selected = true;
+            }
+            unitSelect.appendChild(option);
+        });
+    }
+
+    // ==========================================
+    // --- Location Save Form AJAX Logic ---
+    // ==========================================
+    const locationForm = document.getElementById('updateLocationForm');
+    if (locationForm) {
+        locationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const url = this.getAttribute('action');
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+
+            // Extract the CSRF token directly from the form data
+            const csrfToken = formData.get('csrfmiddlewaretoken');
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(async response => {
+                const isJson = response.headers.get('content-type')?.includes('application/json');
+                const data = isJson ? await response.json() : null;
+
+                if (!response.ok) {
+                    const errorMsg = data?.message || `Server returned error status: ${response.status}`;
+                    throw new Error(errorMsg);
+                }
+                return data;
+            })
+            .then(data => {
+                if (data && data.status === 'success') {
+                    // Update the main title banner on screen instantly
+                    const titleHeading = document.getElementById('task-main-title');
+                    if (titleHeading) {
+                        const techText = data.tech_list ? ` - ${data.tech_list}` : '';
+                        titleHeading.textContent = `${data.new_title}${techText}`;
+                    }
+
+                    // Visual Tick-mark feedback animation
+                    submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Saved';
+                    submitBtn.style.backgroundColor = '#218838';
+
+                    // Reset button after 2 seconds
+                    setTimeout(() => {
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.style.backgroundColor = '#28a745';
+                    }, 2000);
+                } else {
+                    Swal.fire('Error', data?.message || 'Could not save location.', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Location save error:', err);
+                Swal.fire('Error Submission Failed', err.message || 'An unexpected connection error occurred.', 'error');
+            });
+        });
+    }
 </script>
 
 <style>
