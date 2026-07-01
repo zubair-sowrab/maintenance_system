@@ -1032,7 +1032,7 @@ rows.forEach((row) => {
 
     let qty = cells[1].textContent.trim();
 
-    const match = qty.match(/\d+/);
+    const match = qty.match(/\d+\s*[a-zA-Z]+/);
 
     qty = match ? match[0] : "1";
 
