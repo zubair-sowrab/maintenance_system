@@ -1535,3 +1535,35 @@ def update_location_ajax(request, task_id):
             })
         else:
             return JsonResponse({'status': 'error', 'message': 'Building and Unit are required.'}, status=400)
+
+
+
+
+
+@login_required
+def bulk_print_invoices(request):
+    # Security: Only Superusers or Admins can access this
+    is_admin = request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'Admin')
+    if not is_admin:
+        raise PermissionDenied("Only administrators can bulk print invoices.")
+
+    # Get the data the JavaScript sent us via the URL link
+    task_ids_str = request.GET.get('ids', '')
+    customer_name = request.GET.get('name', 'EDRAK Properties')
+    customer_address = request.GET.get('address', 'Rashidiya 2, Ajman, UAE')
+
+    # Convert the comma-separated string of IDs into a list of numbers
+    task_ids = [int(i) for i in task_ids_str.split(',') if i.isdigit()]
+
+    # Fetch ONLY the tasks that match the IDs and are strictly 'Completed'
+    tasks = Task.objects.filter(id__in=task_ids, status='Completed')
+
+    context = {
+        'tasks': tasks,
+        'customer_name': customer_name,
+        'customer_address': customer_address,
+        'today': timezone.now().strftime('%d-%m-%Y'),
+    }
+
+    # We haven't made this file yet, but we will in Step 3!
+    return render(request, 'tasks/bulk_invoice_print.html', context)

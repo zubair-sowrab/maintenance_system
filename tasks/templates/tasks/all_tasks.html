@@ -186,6 +186,15 @@
 
 
 
+       {% if request.user.is_superuser or request.user.profile.role == 'Admin'  %}
+        {% if "Completed" in title or "مكتمل" in title %}
+    <button id="btnBulkInvoicePrint" class="btn btn-danger btn-sm fw-bold shadow-sm">
+        <i class="bi bi-printer"></i> Print Selected Invoices
+    </button>
+{% endif %}{% endif %}
+
+
+
 
    <div class="btn-group shadow-sm">
    <button type="button" id="btnExportCSV" class="btn btn-info btn-sm fw-bold text-white">
@@ -232,7 +241,12 @@
 
 
   <div class="row mx-0 px-3 py-2 bg-dark text-white fw-semibold small d-none d-md-flex header-row">
-      <div class="col-md-3 py-1 header-col">Task Title & Details (العنوان والبيانات)</div>
+      <div class="col-md-3 py-1 header-col d-flex align-items-center">
+    {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
+        <input class="form-check-input me-2 mt-0" type="checkbox" id="selectAllInvoices" title="Select All Completed">
+    {% endif %}
+    Task Title & Details (العنوان والبيانات)
+</div>
       <div class="col-md-2 text-center py-1 header-col">Job ID / Work Type</div>
       <div class="col-md-2 text-center py-1 header-col">Status / RP Points</div>
       <div class="col-md-3 py-1 header-col">Personnel & Location (الموقع)</div>
@@ -249,11 +263,16 @@
 
 
       <div class="col-12 col-md-3 mb-2 mb-md-0 py-md-2 task-col">
-          <h6 class="mb-1">
-              <a href="{% url 'task_detail' task.id %}" class="text-decoration-none fw-bold text-dark hover-primary-link">
-                  {{ task.title }}
-              </a>
-          </h6>
+          <h6 class="mb-1 d-flex align-items-start">
+    {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
+        {% if task.status == 'Completed' %}
+            <input class="form-check-input invoice-checkbox me-2 mt-1" type="checkbox" value="{{ task.id }}">
+        {% endif %}
+    {% endif %}
+    <a href="{% url 'task_detail' task.id %}" class="text-decoration-none fw-bold text-dark hover-primary-link">
+        {{ task.title }}
+    </a>
+</h6>
 
 
 
@@ -1097,6 +1116,104 @@ if (itemsStr === "") itemsStr = "-";
    document.body.appendChild(link);
    link.click();
    document.body.removeChild(link);
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// BULK INVOICE PRINT LOGIC
+document.addEventListener("DOMContentLoaded", function() {
+    const selectAllCheckbox = document.getElementById('selectAllInvoices');
+    const invoiceCheckboxes = document.querySelectorAll('.invoice-checkbox');
+    const btnBulkPrint = document.getElementById('btnBulkInvoicePrint');
+
+    // 1. Select All Checkbox logic
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            invoiceCheckboxes.forEach(cb => {
+                cb.checked = selectAllCheckbox.checked;
+            });
+        });
+    }
+
+    // 2. Button click logic
+    if (btnBulkPrint) {
+        btnBulkPrint.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // Gather all checked boxes
+            const selectedCheckboxes = document.querySelectorAll('.invoice-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                alert('Please select at least one completed task to print.');
+                return;
+            }
+            const taskIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+
+            // Create pop-up modal overlay for Name and Address
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '10000';
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 20px; border-radius: 8px; width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    <h5 class="fw-bold mb-1">Bulk Print Invoices</h5>
+                    <p class="small text-muted mb-3">You selected ${taskIds.length} invoice(s)</p>
+
+                    <div style="margin-bottom: 10px;">
+                        <label class="small fw-bold">Customer Name:</label><br>
+                        <input type="text" id="modalName" class="form-control form-control-sm" value="EDRAK Properties">
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label class="small fw-bold">Address:</label><br>
+                        <input type="text" id="modalAddress" class="form-control form-control-sm" value="Rashidiya 2, Ajman, UAE">
+                    </div>
+
+                    <div style="text-align: right;">
+                        <button id="modalCancel" class="btn btn-sm btn-outline-secondary me-2">Cancel</button>
+                        <button id="modalPrint" class="btn btn-sm btn-dark">Print All</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Cancel Button
+            document.getElementById('modalCancel').onclick = () => document.body.removeChild(modal);
+
+            // Print All Button
+            document.getElementById('modalPrint').onclick = () => {
+                const customName = document.getElementById('modalName').value;
+                const customAddress = document.getElementById('modalAddress').value;
+                document.body.removeChild(modal);
+
+                // Pack the IDs, Name, and Address into a URL and open in a new tab!
+                const url = `/tasks/bulk-print-invoices/?ids=${taskIds.join(',')}&name=${encodeURIComponent(customName)}&address=${encodeURIComponent(customAddress)}`;
+                window.open(url, '_blank');
+            };
+        });
+    }
 });
 </script>
 
