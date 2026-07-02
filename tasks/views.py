@@ -1663,26 +1663,60 @@ def calculate_ai_charge_ajax(request, task_id):
         )
 
         # 1. Parse the JSON returned by the AI
+        # 1. Parse the JSON returned by the AI
         response_json = json.loads(completion.choices[0].message.content)
 
-        # 2. Extract the array of costs the AI found (e.g., [100, 10])
-        matched_costs = response_json.get('matched_costs', [])
-        if not isinstance(matched_costs, list):
-            matched_costs = [0]
+        # 2. Extract the array of costs the AI found
+        raw_matched_costs = response_json.get('matched_costs', [])
 
-        # 3. PYTHON MATH: Sum the list of costs accurately
-        raw_charge = sum(int(cost) for cost in matched_costs if str(cost).isdigit())
+        clean_costs = []
 
-        # 4. PYTHON MATH: Force the total charge to be divisible by 5
+        # Normalize into a iterable list structure
+        if isinstance(raw_matched_costs, (str, int, float)):
+            raw_matched_costs = [raw_matched_costs]
+
+        if isinstance(raw_matched_costs, list):
+            for cost in raw_matched_costs:
+                if isinstance(cost, (str, int, float)):
+                    cost_str = str(cost).strip()
+                    if cost_str.isdigit():
+                        val = int(cost_str)
+
+                        # 🔥 EMERGENCY SAFETY VALVE DETECTOR:
+                        # If the AI accidentally smushed two numbers into one (e.g., 6035)
+                        # or returned an impossible maintenance cost greater than 500 AED:
+                        if val > 500 and len(cost_str) == 4:
+                            # Split it right down the middle back into two separate numbers!
+                            try:
+                                part1 = int(cost_str[:2])  # "60" -> 60
+                                part2 = int(cost_str[2:])  # "35" -> 35
+                                clean_costs.append(part1)
+                                clean_costs.append(part2)
+                                continue
+                            except (ValueError, TypeError):
+                                pass
+
+                        # Standard valid item addition
+                        clean_costs.append(val)
+
+        # 3. PYTHON FALLBACK: If parsing completely failed, default to 0
+        if not clean_costs:
+            clean_costs = [0]
+
+        # 4. PYTHON MATH: Sum up the clean integers array perfectly
+        raw_charge = sum(clean_costs)
+
+        # 5. PYTHON MATH: Force the total charge to be divisible by 5
         ai_charge = round(raw_charge / 5) * 5
 
-        # 5. PYTHON MATH: Enforce the 1 RP = 1 AED rule strictly
+        # 6. PYTHON MATH: Enforce the 1 RP = 1 AED rule strictly
         ai_points = ai_charge
 
-        # 6. Clean up the justification text
+        # 7. Clean up the justification text
         justification = response_json.get('justification', '')
-        justification += f"\n\n[System Note: AI identified costs {matched_costs} totaling {raw_charge} AED. Price formatted by server as {ai_charge} AED and synchronized to {ai_points} Reward Points.]"
+        justification += f"\n\n[System Note: AI identified raw segments. Cleaned costs processed as {clean_costs} totaling {raw_charge} AED. Price formatted by server as {ai_charge} AED and synchronized to {ai_points} Reward Points.]"
 
+        # 8. Return response safely
         return JsonResponse({
             'status': 'success',
             'ai_charge': ai_charge,
