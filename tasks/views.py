@@ -300,7 +300,7 @@ def create_task(request):
         now_dubai = timezone.now().astimezone(dubai_tz)
 
         # 2. Add 60 days to the UAE time
-        deadline_dubai = now_dubai + timedelta(days=730)
+        deadline_dubai = now_dubai + timedelta(days=4)
 
         # 3. Format it for the HTML input
         initial_data = {
