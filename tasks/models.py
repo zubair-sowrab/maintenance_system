@@ -206,10 +206,14 @@ class Task(models.Model):
       if not self.job_id:
           self.job_id = f"JOB-{uuid.uuid4().hex[:8].upper()}"
 
+      # Capture final delay duration right before it gets marked Completed
+      if self.status in ['Completed', 'مكتمل'] and self.is_overdue and self.deadline and not self.final_delay_duration:
+          if self.completed_at and self.completed_at > self.deadline:
+              self.final_delay_duration = self.completed_at - self.deadline
+          else:
+              self.final_delay_duration = timezone.now() - self.deadline
 
-
-
-      if self.deadline and timezone.now() > self.deadline and self.status not in ['Completed']:
+      if self.deadline and timezone.now() > self.deadline and self.status not in ['Completed', 'مكتمل']:
           self.status = 'Overdue'
           self.is_overdue = True
       elif self.deadline and timezone.now() <= self.deadline and self.status == 'Overdue':
@@ -217,9 +221,6 @@ class Task(models.Model):
           self.status = 'In Progress' if self.started_at else 'Pending'
           self.is_overdue = False
 
-
-
-
       super().save(*args, **kwargs)
 
 
@@ -229,7 +230,7 @@ class Task(models.Model):
 
 
 
-      super().save(*args, **kwargs)
+
 
 
 
@@ -303,46 +304,28 @@ class Task(models.Model):
   @property
   def work_delay(self):
       """
-      Calculates how long a task has been overdue based on the current time minus the deadline.
-      Follows a precise single-unit rule (only seconds, only minutes, or structured combinations)
-      and omits zero values.
+      Calculates how long a task has been overdue.
+      If completed, uses the locked final_delay_duration.
       """
-      # If the task isn't overdue yet, or hasn't hit its deadline, there is no delay
-      if self.status != 'Overdue' or not self.deadline or timezone.now() <= self.deadline:
+      if self.status in ['Completed', 'مكتمل'] and self.is_overdue and self.final_delay_duration:
+          duration = self.final_delay_duration
+      elif self.status == 'Overdue' and self.deadline and timezone.now() > self.deadline:
+          duration = timezone.now() - self.deadline
+      else:
           return "-"
 
-
-
-
-      # Calculate the dynamic difference between right now and the deadline
-      duration = timezone.now() - self.deadline
       total_seconds = int(duration.total_seconds())
 
-
-
-
-      # Rule 1: If it's less than a minute, show ONLY seconds
       if total_seconds < 60:
           return f"{total_seconds} second{'s' if total_seconds != 1 else ''}"
 
-
-
-
-      # Rule 2: If it's less than an hour, show ONLY minutes
       if total_seconds < 3600:
           minutes = total_seconds // 60
           return f"{minutes} minute{'s' if minutes != 1 else ''}"
 
-
-
-
-      # Rule 3: For hours and days, pull components and omit any zeroes (similar to time_taken)
       days = duration.days
       hours, remainder = divmod(duration.seconds, 3600)
       minutes, _ = divmod(remainder, 60)
-
-
-
 
       parts = []
       if days > 0:
@@ -352,11 +335,7 @@ class Task(models.Model):
       if minutes > 0:
           parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
 
-
-
-
       return ", ".join(parts) if parts else "0 seconds"
-
 
 
 

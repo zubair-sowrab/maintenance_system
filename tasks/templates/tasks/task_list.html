@@ -157,6 +157,10 @@
                            <a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none {% if task.priority == 'Emergency' %}text-danger{% else %}text-warning-emphasis{% endif %}">
                                {{ task.title }}
                            </a>
+                           {% if task.status == 'Overdue' %}
+                <span class="badge bg-danger ms-2">OVERDUE</span>
+            {% endif %}
+
                        </td>
                        <td>{{ task.project_type }}</td>
                        <td><span class="badge bg-warning text-dark">{{ task.status }}</span></td>
@@ -240,6 +244,11 @@
                            <a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none {% if task.priority == 'Emergency' %}text-danger{% else %}text-primary{% endif %}">
                                {{ task.title }}
                            </a>
+
+
+                           {% if task.status == 'Overdue' %}
+                <span class="badge bg-danger ms-2">OVERDUE</span>
+            {% endif %}
                        </td>
                        <td><span class="badge bg-primary">{{ task.status }}</span></td>
                        <td>{{ task.project_type}}</td>
@@ -316,38 +325,58 @@
                        <th>Date</th><th>Location</th><th>Charge</th><th>Message</th><th>Duration</th>
                    </tr>
                </thead>
-               <tbody>
-                   {% for task in completed_tasks %}
-                   <tr>
-                       <td>{{ task.job_id }}</td>
-                       <td><a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none text-success">{{ task.title }}</a></td>
-                       <td><span class="badge bg-success">{{ task.status }}</span></td>
-                       <td>{{ task.project_type }}</td>
-                       <td>{{ task.assigned_to_display }}</td>
-                       <td>{{ task.completed_at|date:"Y-m-d H:i" }}</td>
-                       <td>{{ task.location }}</td>
-                       <td>{{ task.budget }}</td>
-                       <td>{{ task.complaint_set.last.message|default:"None" }}</td>
-                       <td>{{ task.time_taken }}</td>
-                   </tr>
-                   {% endfor %}
-               </tbody>
+              <tbody>
+    {% for task in completed_tasks %}
+    <tr class="{% if task.is_overdue %}text-danger{% endif %}">
+        <td>{{ task.job_id }}</td>
+        <td>
+            <a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none {% if task.is_overdue %}text-danger{% else %}text-success{% endif %}">
+                {{ task.title }}
+            </a>
+            {% if task.is_overdue %}
+                <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">OVERDUE</span>
+            {% endif %}
+        </td>
+        <td><span class="badge {% if task.is_overdue %}bg-danger{% else %}bg-success{% endif %}">{{ task.status }}</span></td>
+        <td>{{ task.project_type }}</td>
+        <td>{{ task.assigned_to_display }}</td>
+        <td>{{ task.completed_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ task.location }}</td>
+        <td>{{ task.budget }}</td>
+        <td>{{ task.complaint_set.last.message|default:"None" }}</td>
+        <td>
+            {{ task.time_taken }}
+            {% if task.is_overdue %}
+                <br><span class="text-danger fw-bold" style="font-size: 0.75rem;">({{ task.work_delay }} delay)</span>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
            </table>
        </div>
 
        <div class="d-md-none" style="max-height: 400px; overflow-y: auto;">
-           {% for task in completed_tasks %}
-           <div class="card mb-2 shadow-sm border-success">
-               <div class="card-body p-2" style="font-size: 0.8rem;">
-                   <strong><a href="{% url 'task_detail' task.id %}">{{ task.title }}</a></strong><br>
-                   ID: {{ task.job_id }} | Status: {{ task.status }} | Type: {{ task.project_type }}<br>
-                   Fee: {{ task.budget }} | Duration: {{ task.time_taken }}
-                                          <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
-
-               </div>
-           </div>
-           {% endfor %}
+   {% for task in completed_tasks %}
+   <div class="card mb-2 shadow-sm {% if task.is_overdue %}border-danger{% else %}border-success{% endif %}">
+       <div class="card-body p-2" style="font-size: 0.8rem;">
+           <strong>
+               <a href="{% url 'task_detail' task.id %}" class="{% if task.is_overdue %}text-danger{% else %}text-success{% endif %}">{{ task.title }}</a>
+           </strong>
+           {% if task.is_overdue %}
+               <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">OVERDUE</span>
+           {% endif %}
+           <br>
+           ID: {{ task.job_id }} | Status: {{ task.status }} | Type: {{ task.project_type }}<br>
+           Fee: {{ task.budget }} | Duration: {{ task.time_taken }}
+           {% if task.is_overdue %}
+               <span class="text-danger fw-bold">({{ task.work_delay }} delay)</span>
+           {% endif %}
+           <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
        </div>
+   </div>
+   {% endfor %}
+</div>
 
        <div class="d-flex justify-content-center mt-2">
            <a href="{% url 'all_completed_tasks' %}" class="btn btn-dark btn-sm px-4 fw-bold shadow-sm">
@@ -358,8 +387,6 @@
 </div>
 
 
-
-<!-- overdue TASKS SECTION -->
 <div class="card shadow-sm border-danger mb-4" style="border-left: 5px solid #dc3545; background-color: #fff5f5; border-radius: 0.5rem;">
    <div class="card-body">
        <h3 class="text-danger mb-3 pb-2 border-bottom d-flex align-items-center">
@@ -367,52 +394,122 @@
            Overdue Tasks (المهام المتأخرة)
        </h3>
 
-       <div class="d-none d-md-block" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6;">
-           <table class="table table-bordered table-dark-bordered table-hover bg-white mb-0">
-               <thead class="table-light">
-                   <tr>
-                       <th>Job ID</th><th>Title</th><th>Status</th><th>Type<th>Concerned</th></th><th>Delay</th><th>Action</th>
-                   </tr>
-               </thead>
-               <tbody>
+       <ul class="nav nav-pills mb-3 bg-white p-1 rounded border shadow-sm" id="overdue-tab" role="tablist" style="width: fit-content;">
+         <li class="nav-item" role="presentation">
+           <button class="nav-link active fw-bold py-1 px-3" id="pending-overdue-tab" data-bs-toggle="pill" data-bs-target="#pending-overdue" type="button" role="tab" aria-selected="true">
+               Pending Overdue
+           </button>
+         </li>
+         <li class="nav-item" role="presentation">
+           <button class="nav-link fw-bold py-1 px-3" id="active-overdue-tab" data-bs-toggle="pill" data-bs-target="#active-overdue" type="button" role="tab" aria-selected="false">
+               Active Overdue
+           </button>
+         </li>
+       </ul>
+
+       <div class="tab-content" id="overdue-tabContent">
+
+           <div class="tab-pane fade show active" id="pending-overdue" role="tabpanel">
+               <div class="d-none d-md-block" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6;">
+                   <table class="table table-bordered table-dark-bordered table-hover bg-white mb-0">
+                       <thead class="table-light">
+                           <tr>
+                               <th>Job ID</th><th>Title</th><th>Status</th><th>Type</th><th>Concerned</th><th>Delay</th><th>Action</th>
+                           </tr>
+                       </thead>
+                       <tbody>
+                           {% for task in overdue_tasks %}
+                           {% if not task.started_at %}
+                           <tr>
+                               <td>{{ task.job_id }}</td>
+                               <td>
+                                   <a href="{% url 'task_detail' task.id %}" class="fw-bold text-danger text-decoration-none">{{ task.title }}</a>
+                                   <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">OVERDUE</span>
+                               </td>
+                               <td><span class="badge bg-danger">{{ task.status }}</span></td>
+                               <td>{{task.project_type}}</td>
+                               <td>{{task.assigned_to_display}}</td>
+                               <td class="text-danger fw-bold">{{ task.work_delay }}</td>
+                               <td><a href="{% url 'start_task' task.id %}" class="btn btn-warning btn-sm text-dark fw-bold w-100" onclick="return confirm('Start task?')">Start</a></td>
+                           </tr>
+                           {% endif %}
+                           {% endfor %}
+                       </tbody>
+                   </table>
+               </div>
+               <div class="d-md-none" style="max-height: 400px; overflow-y: auto;">
                    {% for task in overdue_tasks %}
-                   <tr>
-                       <td>{{ task.job_id }}</td>
-                       <td>{{ task.title }}</td>
-                       <td><span class="badge bg-danger">{{ task.status }}</span></td>
-                       <td>{{task.project_type}}</td>
-                       <td>{{task.assigned_to_display}}</td>
-                       <td class="text-danger fw-bold">{{ task.work_delay }}</td>
-                       <td><a href="{% url 'end_task' task.id %}" class="btn btn-success btn-sm">End</a></td>
-                   </tr>
+                   {% if not task.started_at %}
+                   <div class="card mb-2 shadow-sm border-danger">
+                       <div class="card-body p-2" style="font-size: 0.8rem;">
+                          <strong><a href="{% url 'task_detail' task.id %}" class="text-danger">{{ task.title }}</a></strong>
+                          <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">OVERDUE</span><br>
+                          <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
+                          <div class="col-12"><strong>Type:</strong> {{ task.project_type }}</div>
+                          Delay: <span class="text-danger fw-bold">{{ task.work_delay }}</span><br>
+                          <a href="{% url 'start_task' task.id %}" class="btn btn-warning text-dark fw-bold btn-sm mt-1 w-100" onclick="return confirm('Start task?')">Start Task</a>
+                       </div>
+                   </div>
+                   {% endif %}
                    {% endfor %}
-               </tbody>
-           </table>
-       </div>
-
-       <div class="d-md-none" style="max-height: 400px; overflow-y: auto;">
-           {% for task in overdue_tasks %} <div class="card mb-2 shadow-sm border-danger">
-               <div class="card-body p-2" style="font-size: 0.8rem;">
-                  <strong> <a href="{% url 'task_detail' task.id %}">{{ task.title }}</a></strong><br>
-                                                             <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
-                   <div class="col-12"><strong>Type:</strong> {{ task.project_type }}</div>
-
-                   Delay: <span class="text-danger fw-bold">{{ task.work_delay }}</span><br>
-                   <a href="{% url 'end_task' task.id %}" class="btn btn-success btn-sm mt-1 w-100">End Task</a>
                </div>
            </div>
-           {% endfor %}
+
+           <div class="tab-pane fade" id="active-overdue" role="tabpanel">
+               <div class="d-none d-md-block" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6;">
+                   <table class="table table-bordered table-dark-bordered table-hover bg-white mb-0">
+                       <thead class="table-light">
+                           <tr>
+                               <th>Job ID</th><th>Title</th><th>Status</th><th>Type</th><th>Concerned</th><th>Delay</th><th>Action</th>
+                           </tr>
+                       </thead>
+                       <tbody>
+                           {% for task in overdue_tasks %}
+                           {% if task.started_at %}
+                           <tr>
+                               <td>{{ task.job_id }}</td>
+                               <td>
+                                   <a href="{% url 'task_detail' task.id %}" class="fw-bold text-danger text-decoration-none">{{ task.title }}</a>
+                                   <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">OVERDUE</span>
+                               </td>
+                               <td><span class="badge bg-danger">{{ task.status }}</span></td>
+                               <td>{{task.project_type}}</td>
+                               <td>{{task.assigned_to_display}}</td>
+                               <td class="text-danger fw-bold">{{ task.work_delay }}</td>
+                               <td>
+                                   <button type="button" class="btn btn-primary btn-sm fw-bold w-100" data-bs-toggle="modal" data-bs-target="#endTaskModal" onclick="setTaskUrl('{{ task.id }}')">End</button>
+                               </td>
+                           </tr>
+                           {% endif %}
+                           {% endfor %}
+                       </tbody>
+                   </table>
+               </div>
+               <div class="d-md-none" style="max-height: 400px; overflow-y: auto;">
+                   {% for task in overdue_tasks %}
+                   {% if task.started_at %}
+                   <div class="card mb-2 shadow-sm border-danger">
+                       <div class="card-body p-2" style="font-size: 0.8rem;">
+                          <strong><a href="{% url 'task_detail' task.id %}" class="text-danger">{{ task.title }}</a></strong>
+                          <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">OVERDUE</span><br>
+                          <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
+                          <div class="col-12"><strong>Type:</strong> {{ task.project_type }}</div>
+                          Delay: <span class="text-danger fw-bold">{{ task.work_delay }}</span><br>
+                          <button type="button" class="btn btn-primary fw-bold btn-sm mt-1 w-100" data-bs-toggle="modal" data-bs-target="#endTaskModal" onclick="setTaskUrl('{{ task.id }}')">End Task</button>
+                       </div>
+                   </div>
+                   {% endif %}
+                   {% endfor %}
+               </div>
+           </div>
+
        </div>
 
        <div class="d-flex justify-content-center mt-2">
-           <a href="{% url 'all_overdue_tasks' %}" class="btn btn-dark btn-sm px-4 fw-bold shadow-sm">
-               View All Overdue Tasks
-           </a>
+           <a href="{% url 'all_overdue_tasks' %}" class="btn btn-dark btn-sm px-4 fw-bold shadow-sm">View All Overdue Tasks</a>
        </div>
    </div>
 </div>
-
-
 
 
 <!-- ACCESS CONTROL MODAL & SCRIPTS -->
@@ -478,7 +575,7 @@
                            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 shadow-sm" onclick="clearImage()">×</button>
                        </div>
                    </div>
-
+ {%comment%}
                    <div class="mb-3">
                        <label class="form-label fw-bold">Task Completion Proof (Video):</label>
                        <input type="file" name="task_video" class="form-control" accept="video/*" id="videoInput" onchange="previewVideo(event)">
@@ -489,6 +586,7 @@
                        </div>
                    </div>
                </div>
+                {%endcomment%}
                <div class="modal-footer">
                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                    <button type="submit" class="btn btn-primary">Confirm & End Task</button>

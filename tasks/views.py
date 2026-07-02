@@ -169,7 +169,9 @@ def create_task(request):
             # Set the dates directly on the object
             now = timezone.now()
             task.start_date = now
-            task.deadline = now + timedelta(days=4)
+
+            if not task.deadline:
+                task.deadline = now + timedelta(days=4)
 
             translator = GoogleTranslator(source='auto', target='en')
 
