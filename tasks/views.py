@@ -169,7 +169,7 @@ def create_task(request):
             # Set the dates directly on the object
             now = timezone.now()
             task.start_date = now
-            task.deadline = now + timedelta(days=730)
+            task.deadline = now + timedelta(days=4)
 
             translator = GoogleTranslator(source='auto', target='en')
 
@@ -1671,35 +1671,22 @@ def calculate_ai_charge_ajax(request, task_id):
 
         clean_costs = []
 
-        # Normalize into a iterable list structure
+        # If the AI accidentally returned a single string or integer instead of a list
         if isinstance(raw_matched_costs, (str, int, float)):
-            raw_matched_costs = [raw_matched_costs]
+            # If it's a string containing digits like "95" or "100", treat it as one number
+            if str(raw_matched_costs).strip().isdigit():
+                clean_costs.append(int(str(raw_matched_costs).strip()))
 
-        if isinstance(raw_matched_costs, list):
+        # If it's a list, process each element safely
+        elif isinstance(raw_matched_costs, list):
             for cost in raw_matched_costs:
+                # Ensure the item itself isn't a sub-list or dict
                 if isinstance(cost, (str, int, float)):
                     cost_str = str(cost).strip()
                     if cost_str.isdigit():
-                        val = int(cost_str)
+                        clean_costs.append(int(cost_str))
 
-                        # 🔥 EMERGENCY SAFETY VALVE DETECTOR:
-                        # If the AI accidentally smushed two numbers into one (e.g., 6035)
-                        # or returned an impossible maintenance cost greater than 500 AED:
-                        if val > 500 and len(cost_str) == 4:
-                            # Split it right down the middle back into two separate numbers!
-                            try:
-                                part1 = int(cost_str[:2])  # "60" -> 60
-                                part2 = int(cost_str[2:])  # "35" -> 35
-                                clean_costs.append(part1)
-                                clean_costs.append(part2)
-                                continue
-                            except (ValueError, TypeError):
-                                pass
-
-                        # Standard valid item addition
-                        clean_costs.append(val)
-
-        # 3. PYTHON FALLBACK: If parsing completely failed, default to 0
+        # 3. PYTHON FALLBACK: If parsing completely failed, default to 0 to prevent crashes
         if not clean_costs:
             clean_costs = [0]
 
@@ -1714,7 +1701,7 @@ def calculate_ai_charge_ajax(request, task_id):
 
         # 7. Clean up the justification text
         justification = response_json.get('justification', '')
-        justification += f"\n\n[System Note: AI identified raw segments. Cleaned costs processed as {clean_costs} totaling {raw_charge} AED. Price formatted by server as {ai_charge} AED and synchronized to {ai_points} Reward Points.]"
+        justification += f"\n\n[System Note: AI identified costs {clean_costs} totaling {raw_charge} AED. Price formatted by server as {ai_charge} AED and synchronized to {ai_points} Reward Points.]"
 
         # 8. Return response safely
         return JsonResponse({
