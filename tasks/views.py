@@ -1,9 +1,12 @@
 from django.shortcuts import render, redirect
+
+from core import settings
 from .models import Task, Complaint, SubTask, Notification
 from .forms import TaskForm
 import json
 import logging
 from groq import Groq
+import csv
 import threading
 from dotenv import load_dotenv
 import requests
@@ -1567,3 +1570,127 @@ def bulk_print_invoices(request):
 
     # We haven't made this file yet, but we will in Step 3!
     return render(request, 'tasks/bulk_invoice_print.html', context)
+
+
+@login_required
+def ai_audit_dashboard(request):
+    # Only show completed tasks for auditing
+    completed_tasks = Task.objects.filter(status__icontains='Completed').order_by('-completed_at')[:50]
+    return render(request, 'tasks/ai_audit.html', {'tasks': completed_tasks})
+
+
+# 2. The AI Calculation Logic
+def calculate_ai_charge_ajax(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+
+    # 1. READ AND FILTER THE CSV BY CATEGORY
+    csv_path = os.path.join(settings.BASE_DIR, 'data', 'pricing_chart.csv')
+    relevant_rules = []
+
+    try:
+        with open(csv_path, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                csv_project_type = str(row.get('Project Type', '')).strip().lower()
+                task_project_type = str(task.project_type).strip().lower()
+
+                # Collect all lines belonging to this maintenance category (e.g., Plumbing)
+                if csv_project_type == task_project_type:
+                    task_name = row.get('TASK LIST', 'Unknown Task').strip()
+                    charge = row.get('CHARGE AED', '0').strip()
+                    duration = row.get('DURATION', 'N/A').strip()
+                    relevant_rules.append(f"- {task_name} | Standard Cost: {charge} | Duration: {duration}")
+
+    except FileNotFoundError:
+        return JsonResponse({'status': 'error', 'message': 'pricing_chart.csv not found in the data folder.'})
+
+    pricing_summary = "\n".join(relevant_rules)
+    if not pricing_summary:
+        pricing_summary = "No standard pricing rules found for this category. Apply logical estimation."
+
+    # 2. ENHANCED AI PROMPT WITH SEMANTIC MAPPING & REWARD RULES
+    system_prompt = f"""You are an expert AI Cost Estimator for a property maintenance system in the UAE.
+        You are evaluating a completed task under the '{task.project_type}' category.
+
+        Here are the official business pricing rules for '{task.project_type}':
+        {pricing_summary}
+
+        DIAGNOSTIC & SLANG MAPPING DICTIONARY:
+        Technicians often make spelling mistakes, use short phrases, or use informal slang. You must map them to our official asset lists:
+        - "water motor", "line motor", "pump", "complint" -> Maps to 'SERVICE MOTOR CHANGE (WATER PUMP)' (60 AED) or 'MOTOR TROUBLESHOOT' (35 AED).
+        - "shattaf", "shataf", "shataff" -> Maps to 'SHATTAF FIXING' (20 AED).
+        - "mixer", "basin", "sink tap" -> Maps to 'BASIN MIXER' (40 AED) or 'KITCHEN MIXER' (35 AED).
+        - "leakage", "leak" -> Maps to 'PUMP ROOM LEAKAGE IN PIPE OR JOINT' (20 AED) or 'WATER TANK LEAKAGE' (60 AED).
+
+        CRITICAL EXECUTION RULES:
+        1. NEVER return empty costs if a valid maintenance component or phrase is provided. Find the closest semantic match.
+        2. Extract the base AED cost for each identified item and put them in a JSON array called 'matched_costs'. Do NOT sum them up yourself.
+        3. Provide a step-by-step breakdown in the 'justification' field detailing which rows you used.
+
+        Return the result STRICTLY as a JSON object:
+        {{
+            "matched_costs": [35, 60],
+            "justification": "Matched 'Line motor complint' to 'MOTOR TROUBLESHOOT' (35 AED) and 'water motor(1)' to 'SERVICE MOTOR CHANGE (WATER PUMP)' (60 AED)."
+        }}
+        """
+
+    # Format current task data parameters cleanly
+    task_items = ", ".join([f"{item.sub_category} ({item.quantity})" for item in task.items.all()])
+    technician_count = task.assigned_technicians.count() or 1
+    short_desc = str(task.description)[:300] if task.description else "No description"
+
+    user_prompt = f"""
+    Task Data to Calculate:
+    - Project Type: {task.project_type}
+    - Technician Raw Description: {short_desc}
+    - System Items/Quantities: {task_items}
+    - Total Time Taken: {task.time_taken}
+    - Count of Assigned Technicians: {technician_count}
+    """
+
+    # 3. CONVERT VIA GROQ
+    try:
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        completion = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.1,
+            max_tokens=350,
+            response_format={"type": "json_object"}
+        )
+
+        # 1. Parse the JSON returned by the AI
+        response_json = json.loads(completion.choices[0].message.content)
+
+        # 2. Extract the array of costs the AI found (e.g., [100, 10])
+        matched_costs = response_json.get('matched_costs', [])
+        if not isinstance(matched_costs, list):
+            matched_costs = [0]
+
+        # 3. PYTHON MATH: Sum the list of costs accurately
+        raw_charge = sum(int(cost) for cost in matched_costs if str(cost).isdigit())
+
+        # 4. PYTHON MATH: Force the total charge to be divisible by 5
+        ai_charge = round(raw_charge / 5) * 5
+
+        # 5. PYTHON MATH: Enforce the 1 RP = 1 AED rule strictly
+        ai_points = ai_charge
+
+        # 6. Clean up the justification text
+        justification = response_json.get('justification', '')
+        justification += f"\n\n[System Note: AI identified costs {matched_costs} totaling {raw_charge} AED. Price formatted by server as {ai_charge} AED and synchronized to {ai_points} Reward Points.]"
+
+        return JsonResponse({
+            'status': 'success',
+            'ai_charge': ai_charge,
+            'ai_points': ai_points,
+            'justification': justification
+        })
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return JsonResponse({'status': 'error', 'message': str(e)})

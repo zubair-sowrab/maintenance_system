@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 text-primary"><i class="bi bi-robot"></i> AI Charge Audit Dashboard</h2>
+        <span class="badge bg-secondary">Internal Tool</span>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Job ID</th>
+                        <th>Project & Details</th>
+                        <th>Actual Billed Charge</th>
+                        <th>AI Predicted Charge</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                    <tr id="row-{{ task.id }}">
+                        <td class="fw-bold">{{ task.job_id }}</td>
+                        <td>
+                            <div class="small fw-bold text-dark">{{ task.project_type }}</div>
+                            <div class="small text-muted" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                {{ task.description }}
+                            </div>
+                        </td>
+                        <td>
+                            <h6 class="text-dark mb-0">{{ task.budget }} AED</h6>
+                            <small class="text-muted">{{ task.reward_points_awarded }} RP</small>
+                        </td>
+                        <td id="ai-result-{{ task.id }}">
+                            <span class="text-muted small">Not run yet</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary run-ai-btn" data-task-id="{{ task.id }}">
+                                Run AI Suggestion
+                            </button>
+                            <button class="btn btn-sm btn-outline-info d-none justify-btn" id="justify-btn-{{ task.id }}" data-bs-toggle="modal" data-bs-target="#justifyModal" data-justification="">
+                                Justify
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="justifyModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-light border-0">
+        <h5 class="modal-title text-primary"><i class="bi bi-calculator me-2"></i> AI Calculation Breakdown</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p id="modal-justification-text" style="white-space: pre-line;"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Handle Run AI Button Click
+    document.querySelectorAll('.run-ai-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const taskId = this.getAttribute('data-task-id');
+            const resultCell = document.getElementById(`ai-result-${taskId}`);
+            const justifyBtn = document.getElementById(`justify-btn-${taskId}`);
+
+            // Show loading state
+            this.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Processing...`;
+            this.disabled = true;
+
+            // Call the Django View
+            fetch(`/task/${taskId}/calculate-ai-charge/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update the row with AI results
+                    resultCell.innerHTML = `
+                        <h6 class="text-success mb-0 fw-bold">${data.ai_charge} AED</h6>
+                        <small class="text-warning fw-bold">${data.ai_points} RP</small>
+                    `;
+                    // Hide Run button, Show Justify button
+                    this.classList.add('d-none');
+                    justifyBtn.classList.remove('d-none');
+                    justifyBtn.setAttribute('data-justification', data.justification);
+                } else {
+                    alert("Error: " + data.message);
+                    this.innerHTML = "Run AI Suggestion";
+                    this.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.innerHTML = "Run AI Suggestion";
+                this.disabled = false;
+            });
+        });
+    });
+
+    // 2. Handle Justify Button Click (Populate Modal)
+    document.querySelectorAll('.justify-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const justificationText = this.getAttribute('data-justification');
+            document.getElementById('modal-justification-text').innerText = justificationText;
+        });
+    });
+});
+</script>
+{% endblock %}
