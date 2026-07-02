@@ -522,8 +522,15 @@ def dashboard(request):
     # We use order_by('-created_at') to ensure the newest ones appear first.
     # (Ensure 'created_at' exists in your Task model, otherwise use '-id')
 
-    pending_tasks = tasks.filter(status='Pending(قيد الانتظار)').distinct().order_by('-created_at')
-    active_tasks = tasks.filter(status='In Progress').distinct().order_by('-created_at')
+    pending_tasks = tasks.filter(
+        Q(status__in=['Pending', 'Pending(قيد الانتظار)']) |
+        (Q(status='Overdue') & Q(started_at__isnull=True))
+    ).distinct().order_by('-created_at')
+
+    active_tasks = tasks.filter(
+        Q(status__in=['In Progress', 'قيد التنفيذ']) |
+        (Q(status='Overdue') & Q(started_at__isnull=False))
+    ).distinct().order_by('-created_at')
     completed_tasks = tasks.filter(status='Completed').distinct().order_by('-completed_at')  # Newest completions first
     overdue_tasks = tasks.filter(status='Overdue').distinct().order_by('deadline')  # Closest to deadline first
 
@@ -934,7 +941,10 @@ def all_completed_tasks(request):
 def all_pending_tasks(request):
     # Base query for tasks that are currently pending
     # Added distinct() because filtering by ManyToMany can return duplicates
-    tasks = Task.objects.filter(status='Pending(قيد الانتظار)').distinct()
+    tasks = Task.objects.filter(
+        Q(status__in=['Pending', 'Pending(قيد الانتظار)']) |
+        (Q(status='Overdue') & Q(started_at__isnull=True))
+    ).distinct()
 
 
     # Gather URL Query Parameters
@@ -982,7 +992,10 @@ def all_pending_tasks(request):
 
 # 2. New Active Tasks View
 def all_active_tasks(request):
-    tasks = Task.objects.filter(status='In Progress').distinct()
+    tasks = Task.objects.filter(
+        Q(status__in=['In Progress', 'قيد التنفيذ']) |
+        (Q(status='Overdue') & Q(started_at__isnull=False))
+    ).distinct()
 
     job_id = request.GET.get('job_id')
     user = request.GET.get('user')

@@ -150,16 +150,16 @@
                <tbody>
                    {% for task in pending_tasks %}
                    <!-- If priority is Emergency, the entire row's text will turn RED -->
-                   <tr class="{% if task.priority == 'Emergency' %}text-danger{% endif %}">
-                       <td>{{ task.job_id }}</td>
+<tr class="{% if task.priority == 'Emergency' %}text-danger{% elif task.status == 'Overdue' %}table-danger{% endif %}">                       <td>{{ task.job_id }}</td>
                        <td>
                            <!-- Link color shifts to red if Emergency, otherwise remains warning gold -->
                            <a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none {% if task.priority == 'Emergency' %}text-danger{% else %}text-warning-emphasis{% endif %}">
                                {{ task.title }}
+                               {% if task.status == 'Overdue' %}
+    <span class="badge bg-danger ms-2 shadow-sm" style="font-size: 0.65rem; font-weight: 800;">LATE</span>
+{% endif %}
                            </a>
-                           {% if task.status == 'Overdue' %}
-                <span class="badge bg-danger ms-2">OVERDUE</span>
-            {% endif %}
+
 
                        </td>
                        <td>{{ task.project_type }}</td>
@@ -180,8 +180,7 @@
        <!-- PHONE VIEW (Displays a RED badge with "EMERGENCY" if Emergency) -->
        <div class="d-md-none" style="max-height: 400px; overflow-y: auto;">
            {% for task in pending_tasks %}
-           <div class="card mb-3 shadow-sm border-warning">
-               <div class="card-body p-3">
+<div class="card mb-3 shadow-sm {% if task.status == 'Overdue' %}border-danger bg-danger bg-opacity-10{% else %}border-warning{% endif %}">               <div class="card-body p-3">
                    <h6 class="card-title fw-bold text-dark mb-2">
                        <a href="{% url 'task_detail' task.id %}" class="{% if task.priority == 'Emergency' %}text-danger{% endif %}">{{ task.title }}</a>
 
@@ -189,6 +188,9 @@
                        {% if task.priority == 'Emergency' %}
                            <span class="badge bg-danger text-white ms-1 align-middle" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px;">EMERGENCY</span>
                        {% endif %}
+                             {% if task.status == 'Overdue' %}
+    <span class="badge bg-danger ms-2 shadow-sm" style="font-size: 0.65rem; font-weight: 800;">LATE</span>
+{% endif %}
                    </h6>
                    <div class="row g-1" style="font-size: 0.8rem;">
                        <div class="col-6"><strong>ID:</strong> {{ task.job_id }}</div>
@@ -237,18 +239,17 @@
                <tbody>
                    {% for task in active_tasks %}
                    <!-- If priority is Emergency, the entire row's text will turn RED -->
-                   <tr class="{% if task.priority == 'Emergency' %}text-danger{% endif %}">
-                       <td>{{ task.job_id }}</td>
+<tr class="{% if task.priority == 'Emergency' %}text-danger{% elif task.status == 'Overdue' %}table-danger{% endif %}">                       <td>{{ task.job_id }}</td>
                        <td>
                            <!-- Link color shifts to red if Emergency, otherwise remains primary blue -->
                            <a href="{% url 'task_detail' task.id %}" class="fw-bold text-decoration-none {% if task.priority == 'Emergency' %}text-danger{% else %}text-primary{% endif %}">
                                {{ task.title }}
                            </a>
 
+      {% if task.status == 'Overdue' %}
+    <span class="badge bg-danger ms-2 shadow-sm" style="font-size: 0.65rem; font-weight: 800;">LATE</span>
+{% endif %}
 
-                           {% if task.status == 'Overdue' %}
-                <span class="badge bg-danger ms-2">OVERDUE</span>
-            {% endif %}
                        </td>
                        <td><span class="badge bg-primary">{{ task.status }}</span></td>
                        <td>{{ task.project_type}}</td>
@@ -270,8 +271,7 @@
        <!-- Mobile Scrollable List (Fixed structure) -->
        <div class="d-md-none" style="max-height: 400px; overflow-y: auto;">
            {% for task in active_tasks %}
-           <div class="card mb-3 shadow-sm border-primary">
-               <div class="card-body p-3">
+<div class="card mb-3 shadow-sm {% if task.status == 'Overdue' %}border-danger bg-danger bg-opacity-10{% else %}border-primary{% endif %}">               <div class="card-body p-3">
                    <h6 class="card-title fw-bold text-dark mb-2">
                        <a href="{% url 'task_detail' task.id %}" class="{% if task.priority == 'Emergency' %}text-danger{% endif %}">{{ task.title }}</a>
 
@@ -279,6 +279,9 @@
                        {% if task.priority == 'Emergency' %}
                            <span class="badge bg-danger text-white ms-1 align-middle" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px;">EMERGENCY</span>
                        {% endif %}
+                             {% if task.status == 'Overdue' %}
+    <span class="badge bg-danger ms-2 shadow-sm" style="font-size: 0.65rem; font-weight: 800;">LATE</span>
+{% endif %}
                    </h6>
                    <div class="row g-1" style="font-size: 0.8rem;">
                        <div class="col-6"><strong>ID:</strong> {{ task.job_id }}</div>

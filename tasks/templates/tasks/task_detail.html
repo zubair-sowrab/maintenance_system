@@ -8,10 +8,16 @@
             <div class="card shadow-sm border-0 mb-2">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h2 id="task-main-title" class="h3 mb-0 text-primary">
-    {{ task.title }}
-    {% if task.assigned_technicians.all %}
-        - {% for tech in task.assigned_technicians.all %}{{ tech.username }}{% if not forloop.last %}, {% endif %}{% endfor %}
+            <h2 id="task-main-title" class="h3 mb-0 text-primary d-flex align-items-center flex-wrap gap-2">
+    <span>
+        {{ task.title }}
+        {% if task.assigned_technicians.all %}
+            - {% for tech in task.assigned_technicians.all %}{{ tech.username }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        {% endif %}
+    </span>
+
+    {% if task.status == 'Overdue' or task.is_overdue %}
+        <span class="badge bg-danger text-white align-middle shadow-sm" style="font-size: 0.75rem; font-weight: 800; letter-spacing: 0.5px;">LATE</span>
     {% endif %}
 </h2>
                         <span class="badge {% if task.status == 'Completed' or 'مكتمل' in task.status %}bg-success{% elif task.status == 'Overdue' or task.is_overdue %}bg-danger text-white{% else %}bg-warning text-dark{% endif %} px-3 py-2">
