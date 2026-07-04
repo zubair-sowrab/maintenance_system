@@ -281,6 +281,15 @@ def create_task(request):
             task.save()
             task.assigned_technicians.set(tech_ids)  # Correctly save ManyToMany
 
+            uploaded_images = request.FILES.getlist('task_images')
+            for img in uploaded_images:
+                TaskAttachment.objects.create(
+                    task=task,
+                    image=img,
+                    uploaded_by=request.user
+                )
+            # ==========================================
+
             for tech in task.assigned_technicians.all():
                 if tech.profile.telegram_chat_id:
                     msg = f"New Task: {task.title}\nBuilding: {task.building}\nCheck your dashboard."
@@ -328,6 +337,18 @@ def create_task(request):
             task.save()
             task.assigned_technicians.set(tech_ids)
             # ... rest of code
+
+            # ==============================
+            # NEW: Process Multi-Image Upload
+            # ==============================
+            uploaded_images = request.FILES.getlist('task_images')
+            for img in uploaded_images:
+                TaskAttachment.objects.create(
+                    task=task,
+                    image=img,
+                    uploaded_by=user  # Or request.user
+                )
+            # ==============================
         else:
             # THIS IS CRITICAL
             print("❌ FORM ERRORS:", form.errors)
