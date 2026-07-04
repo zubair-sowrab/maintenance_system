@@ -3,6 +3,8 @@ from django.shortcuts import render, redirect
 from core import settings
 from .models import Task, Complaint, SubTask, Notification
 from .forms import TaskForm
+from django.db.models import Sum
+from django.utils.decorators import method_decorator
 import json
 import logging
 from groq import Groq
@@ -1619,7 +1621,7 @@ def ai_audit_dashboard(request):
 def calculate_ai_charge_ajax(request, task_id):
     task = get_object_or_404(Task, id=task_id)
 
-    # 1. READ AND FILTER THE CSV BY CATEGORY
+    # 1. READ AND FILTER THE CSV BY CATEGORY (pricing_chart.csv)
     csv_path = os.path.join(settings.BASE_DIR, 'data', 'pricing_chart.csv')
     relevant_rules = []
 
@@ -1630,61 +1632,75 @@ def calculate_ai_charge_ajax(request, task_id):
                 csv_project_type = str(row.get('Project Type', '')).strip().lower()
                 task_project_type = str(task.project_type).strip().lower()
 
-                # Collect all lines belonging to this maintenance category (e.g., Plumbing)
                 if csv_project_type == task_project_type:
                     task_name = row.get('TASK LIST', 'Unknown Task').strip()
                     charge = row.get('CHARGE AED', '0').strip()
                     duration = row.get('DURATION', 'N/A').strip()
-                    relevant_rules.append(f"- {task_name} | Standard Cost: {charge} | Duration: {duration}")
+                    relevant_rules.append(f"- {task_name} | Cost: {charge} | Time: {duration}")
 
     except FileNotFoundError:
         return JsonResponse({'status': 'error', 'message': 'pricing_chart.csv not found in the data folder.'})
 
     pricing_summary = "\n".join(relevant_rules)
     if not pricing_summary:
-        pricing_summary = "No standard pricing rules found for this category. Apply logical estimation."
+        pricing_summary = "No standard pricing rules found. Use logical standard rates."
 
-    # 2. ENHANCED AI PROMPT WITH SEMANTIC MAPPING & REWARD RULES
-    system_prompt = f"""You are an expert AI Cost Estimator for a property maintenance system in the UAE.
-        You are evaluating a completed task under the '{task.project_type}' category.
+    # 2. FETCH LIVE DATA FROM GOOGLE SHEETS SAFELY
+    sheet_export_url = "https://docs.google.com/spreadsheets/d/1JHDA_x8JF0oRRyImg50P1n0G31va4tSY4VOauRri-Qc/export?format=csv&gid=0"
+    live_sheet_context = "No live recent data retrieved."
 
-        Here are the official business pricing rules for '{task.project_type}':
+    try:
+        response = requests.get(sheet_export_url, timeout=5)
+        if response.status_code == 200:
+            # Prevent HTML login pages from destroying the AI's context window
+            if "<!DOCTYPE html>" in response.text or "<html" in response.text.lower():
+                live_sheet_context = "[SYSTEM WARNING: Google Sheet is private. Change sharing to 'Anyone with the link can view'.]"
+            else:
+                lines = response.text.split('\n')
+                recent_lines = [lines[0]] + lines[-15:] if len(lines) > 15 else lines
+                live_sheet_context = "\n".join(recent_lines)
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to fetch Google Sheet: {e}")
+
+    # 3. ENHANCED AI PROMPT
+        # 3. ENHANCED AI PROMPT
+        # 3. ENHANCED AI PROMPT
+    system_prompt = f"""You are a strict, logical AI Cost Estimator for property maintenance in the UAE.
+        Category: '{task.project_type}'.
+
+        OFFICIAL PRICING RULES:
         {pricing_summary}
 
-        DIAGNOSTIC & SLANG MAPPING DICTIONARY:
-        Technicians often make spelling mistakes, use short phrases, or use informal slang. You must map them to our official asset lists:
-        - "water motor", "line motor", "pump", "complint" -> Maps to 'SERVICE MOTOR CHANGE (WATER PUMP)' (60 AED) or 'MOTOR TROUBLESHOOT' (35 AED).
-        - "shattaf", "shataf", "shataff" -> Maps to 'SHATTAF FIXING' (20 AED).
-        - "mixer", "basin", "sink tap" -> Maps to 'BASIN MIXER' (40 AED) or 'KITCHEN MIXER' (35 AED).
-        - "leakage", "leak" -> Maps to 'PUMP ROOM LEAKAGE IN PIPE OR JOINT' (20 AED) or 'WATER TANK LEAKAGE' (60 AED).
+        RECENT LIVE CONTEXT (For terminology/standards):
+        {live_sheet_context}
 
-        CRITICAL EXECUTION RULES:
-        1. NEVER return empty costs if a valid maintenance component or phrase is provided. Find the closest semantic match.
-        2. Extract the base AED cost for each identified item and put them in a JSON array called 'matched_costs'. Do NOT sum them up yourself.
-        3. Provide a step-by-step breakdown in the 'justification' field detailing which rows you used.
+        CRITICAL RULES:
+        1. INDEPENDENT ESTIMATION: Calculate the cost strictly based on the Official Pricing Rules and the provided technician description. Do NOT use the technician's Inputted Charge to influence your selection.
+        2. NO HEAVY HARDWARE HALLUCINATIONS: NEVER match a vague symptom (e.g., 'cooling issue', 'leak') to expensive parts (e.g., 'compressor', 'pump') unless explicitly stated as repaired or replaced.
+        3. LOGICAL DEFAULTS FOR VAGUE SYMPTOMS: If the notes describe a general problem without listing exact parts, apply the standard service rate(s) required to resolve that specific issue based on your pricing rules (e.g., standard AC servicing, gas refilling, or standard leak repair). 
+        4. NO SQUISHED NUMBERS: You must output an ARRAY OF INDIVIDUAL INTEGERS representing each charge. Never combine them into one number (e.g., output [35, 50], never [3550]).
 
-        Return the result STRICTLY as a JSON object:
+        Return the result EXACTLY in this JSON format:
         {{
-            "matched_costs": [35, 60],
-            "justification": "Matched 'Line motor complint' to 'MOTOR TROUBLESHOOT' (35 AED) and 'water motor(1)' to 'SERVICE MOTOR CHANGE (WATER PUMP)' (60 AED)."
+            "individual_costs": [50, 35],
+            "justification": "Technician stated 'cooling issue' without specifying parts. Calculated independent cost by applying standard 'gas refilling' (50 AED) and 'troubleshooting' (35 AED) based on pricing rules. Heavy hardware not charged."
         }}
         """
 
-    # Format current task data parameters cleanly
+    short_desc = str(task.description)[:300] if task.description else "No description"
     task_items = ", ".join([f"{item.sub_category} ({item.quantity})" for item in task.items.all()])
     technician_count = task.assigned_technicians.count() or 1
-    short_desc = str(task.description)[:300] if task.description else "No description"
+    actual_budget = float(task.budget) if task.budget else 0.0
 
     user_prompt = f"""
-    Task Data to Calculate:
-    - Project Type: {task.project_type}
-    - Technician Raw Description: {short_desc}
-    - System Items/Quantities: {task_items}
-    - Total Time Taken: {task.time_taken}
-    - Count of Assigned Technicians: {technician_count}
+    - Type: {task.project_type}
+    - Technician Notes: {short_desc}
+    - Items: {task_items}
+    - Time: {task.time_taken}
+    - Inputted Charge: {actual_budget} AED
     """
 
-    # 3. CONVERT VIA GROQ
+    # 4. EXECUTE VIA GROQ
     try:
         client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         completion = client.chat.completions.create(
@@ -1693,61 +1709,178 @@ def calculate_ai_charge_ajax(request, task_id):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.1,
-            max_tokens=350,
+            temperature=0.0,  # Dropped to 0 for maximum deterministic math
+            max_tokens=400,
             response_format={"type": "json_object"}
         )
 
-        # 1. Parse the JSON returned by the AI
-        # 1. Parse the JSON returned by the AI
         response_json = json.loads(completion.choices[0].message.content)
+        raw_matched_costs = response_json.get('individual_costs', [])
 
-        # 2. Extract the array of costs the AI found
-        raw_matched_costs = response_json.get('matched_costs', [])
-
+        # 5. AGGRESSIVE NUMBER PARSING (To catch Llama 3 hallucinations like '3550')
         clean_costs = []
-
-        # If the AI accidentally returned a single string or integer instead of a list
-        if isinstance(raw_matched_costs, (str, int, float)):
-            # If it's a string containing digits like "95" or "100", treat it as one number
-            if str(raw_matched_costs).strip().isdigit():
-                clean_costs.append(int(str(raw_matched_costs).strip()))
-
-        # If it's a list, process each element safely
-        elif isinstance(raw_matched_costs, list):
+        if isinstance(raw_matched_costs, list):
             for cost in raw_matched_costs:
-                # Ensure the item itself isn't a sub-list or dict
-                if isinstance(cost, (str, int, float)):
-                    cost_str = str(cost).strip()
-                    if cost_str.isdigit():
-                        clean_costs.append(int(cost_str))
+                cost_str = str(cost).strip()
+                if cost_str.isdigit():
+                    clean_costs.append(int(cost_str))
+        elif isinstance(raw_matched_costs, (int, str)):
+            # If AI returns "3550", we fallback to 0 to trigger manual review rather than charging 3550
+            cost_str = str(raw_matched_costs).strip()
+            if cost_str.isdigit() and len(cost_str) > 3:
+                clean_costs = [0]
+            elif cost_str.isdigit():
+                clean_costs = [int(cost_str)]
 
-        # 3. PYTHON FALLBACK: If parsing completely failed, default to 0 to prevent crashes
         if not clean_costs:
             clean_costs = [0]
 
-        # 4. PYTHON MATH: Sum up the clean integers array perfectly
         raw_charge = sum(clean_costs)
+        ai_predicted_charge = round(raw_charge / 5) * 5
 
-        # 5. PYTHON MATH: Force the total charge to be divisible by 5
-        ai_charge = round(raw_charge / 5) * 5
+        # 6. THRESHOLD COMPARISON
+        difference = abs(ai_predicted_charge - actual_budget)
 
-        # 6. PYTHON MATH: Enforce the 1 RP = 1 AED rule strictly
-        ai_points = ai_charge
+        if actual_budget > 0 and difference <= 10:
+            final_charge = actual_budget
+            threshold_note = f"\n\n[System Note: AI predicted {ai_predicted_charge} AED based on items {clean_costs}. Inputted charge ({actual_budget} AED) is within the ±10 AED variance. Accepted inputted charge.]"
+        else:
+            final_charge = ai_predicted_charge
+            threshold_note = f"\n\n[System Note: AI identified costs {clean_costs} totaling {raw_charge} AED. The inputted charge of {actual_budget} AED differed by {difference} AED. Standard pricing enforced.]"
 
-        # 7. Clean up the justification text
-        justification = response_json.get('justification', '')
-        justification += f"\n\n[System Note: AI identified costs {clean_costs} totaling {raw_charge} AED. Price formatted by server as {ai_charge} AED and synchronized to {ai_points} Reward Points.]"
+        justification = response_json.get('justification', '') + threshold_note
 
-        # 8. Return response safely
         return JsonResponse({
             'status': 'success',
-            'ai_charge': ai_charge,
-            'ai_points': ai_points,
+            'ai_charge': final_charge,
+            'ai_points': int(final_charge),
             'justification': justification
         })
 
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
         return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+def is_admin_check(user):
+    return user.is_superuser or user.groups.filter(name='Admin').exists() or getattr(user.profile, 'role',
+                                                                                     '') == 'Admin'
+
+
+@login_required
+def all_overtime_tasks(request):
+    if not is_admin_check(request.user):
+        raise PermissionDenied("Only administrators can access overtime management.")
+
+    # Include all tasks that have overtime assigned
+    tasks = Task.objects.exclude(overtime_hours__isnull=True).exclude(overtime_hours=0.00).order_by('-created_at')
+
+    return render(request, 'tasks/overtime_tasks.html', {'tasks': tasks, 'title': 'All Overtime Tasks'})
+
+
+@login_required
+def overtime_reports(request):
+    if not is_admin_check(request.user):
+        raise PermissionDenied("Only administrators can access overtime reports.")
+
+    tasks_with_ot = Task.objects.filter(overtime_hours__gt=0).prefetch_related('assigned_technicians')
+
+    # 1. Aggregate by Technician
+    tech_stats = {}
+    for task in tasks_with_ot:
+        for tech in task.assigned_technicians.all():
+            if tech.username not in tech_stats:
+                tech_stats[tech.username] = {'hours': 0.0, 'charge': 0.0}
+            tech_stats[tech.username]['hours'] += float(task.overtime_hours or 0)
+            tech_stats[tech.username]['charge'] += float(task.overtime_charge or 0)
+
+    # 2. Aggregate by Location (Building)
+    location_stats = tasks_with_ot.values('building').annotate(
+        total_hours=Sum('overtime_hours'),
+        total_charge=Sum('overtime_charge')
+    ).order_by('-total_charge')
+
+    context = {
+        'tech_stats': tech_stats,
+        'location_stats': location_stats,
+    }
+    return render(request, 'tasks/overtime_reports.html', context)
+
+
+@login_required
+def update_overtime_ajax(request, task_id):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+    if not is_admin_check(request.user):
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        task = get_object_or_404(Task, id=task_id)
+
+        # Accept empty fields as 0.00
+        ot_hours = data.get('overtime_hours', '')
+        ot_charge = data.get('overtime_charge', '')
+
+        task.overtime_hours = float(ot_hours) if ot_hours else 0.00
+        task.overtime_charge = float(ot_charge) if ot_charge else 0.00
+        task.save()
+
+        return JsonResponse({
+            'status': 'success',
+            'overtime_hours': task.overtime_hours,
+            'overtime_charge': task.overtime_charge,
+            'total_service_charge': task.total_service_charge,
+            'total_work_time': task.total_work_time
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+def get_assignable_overtime_tasks_ajax(request):
+    if not is_admin_check(request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    # Get all Pending, Active, and Completed tasks
+    tasks = Task.objects.filter(
+        status__in=['Pending', 'Pending(قيد الانتظار)', 'In Progress', 'قيد التنفيذ', 'Completed', 'مكتمل']).order_by(
+        '-created_at')[:100]  # Limit 100 for performance
+
+    task_data = []
+    for t in tasks:
+        task_data.append({
+            'id': t.id,
+            'job_id': t.job_id,
+            'title': t.title,
+            'status': t.status,
+            'current_ot_hours': float(t.overtime_hours or 0),
+            'current_ot_charge': float(t.overtime_charge or 0)
+        })
+
+    return JsonResponse({'tasks': task_data})
+
+
+def overtime_management_view(request):
+    tasks = Task.objects.all()
+    # Apply Filters
+    if request.GET.get('job_id'): tasks = tasks.filter(id=request.GET['job_id'])
+    if request.GET.get('building'): tasks = tasks.filter(building__icontains=request.GET['building'])
+    if request.GET.get('unit'): tasks = tasks.filter(unit__icontains=request.GET['unit'])
+    if request.GET.get('project_type'): tasks = tasks.filter(project_type=request.GET['project_type'])
+    if request.GET.get('date_from'): tasks = tasks.filter(completed_at__gte=request.GET['date_from'])
+    if request.GET.get('date_to'): tasks = tasks.filter(completed_at__lte=request.GET['date_to'])
+
+    return render(request, 'overtime_management.html', {'tasks': tasks})
+
+
+@csrf_exempt
+def update_overtime_ajax(request, task_id):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        task = get_object_or_404(Task, id=task_id)
+        task.overtime_hours = data.get('hours', 0)
+        task.overtime_charge = data.get('charge', 0)
+        task.save()
+        total = float(task.budget or 0) + float(task.overtime_charge)
+        return JsonResponse({'status': 'success', 'total': total})

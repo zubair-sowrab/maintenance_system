@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h3 class="mb-4 fw-bold">Overtime Financial Analysis</h3>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white p-3 shadow-sm">
+                <p class="mb-0 small">Total OT Hours</p>
+                <h3 class="fw-bold">{{ total_ot_hours }} Hrs</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white p-3 shadow-sm">
+                <p class="mb-0 small">Total OT Financial Impact</p>
+                <h3 class="fw-bold">{{ total_ot_charge }} AED</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold">By Technician</div>
+                <table class="table">
+                    <thead><tr><th>Tech</th><th>Hours</th><th>Charge</th></tr></thead>
+                    <tbody>
+                        {% for t, data in tech_stats.items %}
+                        <tr><td>{{ t }}</td><td>{{ data.hours }}</td><td>{{ data.charge }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -4,6 +4,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from datetime import timedelta
 from django.utils import timezone
+from decimal import Decimal
 import uuid
 class Task(models.Model):
 
@@ -36,11 +37,14 @@ class Task(models.Model):
       ('Emergency', 'Emergency'),
   ]
 
-
-
-
-
-
+  overtime_hours = models.DecimalField(
+      max_digits=5, decimal_places=2, null=True, blank=True, default=0.00,
+      help_text="Overtime logged in hours (e.g., 1.5)"
+  )
+  overtime_charge = models.DecimalField(
+      max_digits=10, decimal_places=2, null=True, blank=True, default=0.00,
+      help_text="Additional charge for overtime in AED"
+  )
 
 
 
@@ -223,6 +227,36 @@ class Task(models.Model):
 
       super().save(*args, **kwargs)
 
+  @property
+  def total_service_charge(self):
+      """Service Charge + Overtime Charge"""
+      base_budget = float(self.budget or 0.00)
+      ot_charge = float(self.overtime_charge or 0.00)
+      return base_budget + ot_charge
+
+  @property
+  def total_work_time(self):
+      """Duration + Overtime = Total Work Time"""
+      if not self.started_at or not self.completed_at:
+          base_duration = timedelta()
+      else:
+          base_duration = self.completed_at - self.started_at
+
+      ot_hours = float(self.overtime_hours or 0.00)
+      ot_duration = timedelta(hours=ot_hours)
+
+      total_duration = base_duration + ot_duration
+
+      days = total_duration.days
+      hours, remainder = divmod(total_duration.seconds, 3600)
+      minutes, seconds = divmod(remainder, 60)
+
+      parts = []
+      if days > 0: parts.append(f"{days} day{'s' if days != 1 else ''}")
+      if hours > 0: parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+      if minutes > 0: parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+
+      return ", ".join(parts) if parts else "0 minutes"
 
 
 

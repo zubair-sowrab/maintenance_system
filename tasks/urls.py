@@ -100,6 +100,11 @@ path('task/<int:task_id>/update_technicians/', views.update_technicians_ajax, na
 path('tasks/bulk-print-invoices/', views.bulk_print_invoices, name='bulk_print_invoices'),
 path('hidden-audit-dashboard/', views.ai_audit_dashboard, name='ai_audit_dashboard'),
 path('task/<int:task_id>/calculate-ai-charge/', views.calculate_ai_charge_ajax, name='calculate_ai_charge_ajax'),
+# Overtime Features (Admin Only)
+    path('overtime/all-tasks/', views.all_overtime_tasks, name='all_overtime_tasks'),
+    path('overtime/reports/', views.overtime_reports, name='overtime_reports'),
+    path('overtime/ajax/update/<int:task_id>/', views.update_overtime_ajax, name='update_overtime_ajax'),
+    path('overtime/ajax/get-assignable-tasks/', views.get_assignable_overtime_tasks_ajax, name='get_assignable_overtime_tasks_ajax'),
 #path('data-audit/', views.data_audit_dashboard, name='data_audit_dashboard'),
  #   path('api/standardize-item/<int:task_id>/', views.api_get_standardized_items, name='api_get_standardized_items'),
 ]
