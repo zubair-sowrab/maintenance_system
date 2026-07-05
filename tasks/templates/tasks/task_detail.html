@@ -23,6 +23,49 @@
                         <span class="badge {% if task.status == 'Completed' or 'مكتمل' in task.status %}bg-success{% elif task.status == 'Overdue' or task.is_overdue %}bg-danger text-white{% else %}bg-warning text-dark{% endif %} px-3 py-2">
     {{ task.status }}
 </span>
+
+
+
+
+                        {% if user.profile.role == "Admin" %}
+<div class="row mt-3">
+
+    <div class="col-md-6">
+
+        <label class="form-label">
+            Change Task Status
+        </label>
+
+        <select id="taskStatusSelect"
+                class="form-select">
+
+            {% for value,label in task.STATUS_CHOICES %}
+            <option value="{{ value }}"
+                {% if task.status == value %}selected{% endif %}>
+               <small> {{ label }}</small>
+            </option>
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-6 d-flex align-items-end">
+
+        <button
+            id="deleteTaskBtn"
+            class="btn btn-danger">
+
+            Delete Task
+
+        </button>
+
+    </div>
+
+</div>
+{% endif %}
+
+
                     </div>
 
 
@@ -1474,6 +1517,110 @@ if (techForm) {
             unitSelect.appendChild(option);
         });
     }
+
+
+
+
+
+
+
+
+    // ==========================================
+    // --- Status Change Form AJAX Logic ---
+    // ==========================================
+
+
+ document.getElementById("taskStatusSelect").addEventListener("change", function () {
+
+    fetch("{% url 'update_status_ajax' task.id %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+            status: this.value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+
+        if(data.status === "success"){
+
+            Swal.fire({
+                icon: "success",
+                title: "Status Updated"
+            }).then(()=>{
+                location.reload();
+            });
+
+        }else{
+
+            Swal.fire("Error","Could not update status","error");
+
+        }
+
+    });
+
+});
+
+
+
+
+// ==========================================
+    // --- Delete Button Logic ---
+    // ==========================================
+
+
+document.getElementById("deleteTaskBtn").addEventListener("click", function () {
+
+    Swal.fire({
+        title: "Delete Task?",
+        text: "This action cannot be undone.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Delete",
+        confirmButtonColor: "#d33"
+    }).then((result) => {
+
+        if(result.isConfirmed){
+
+            fetch("{% url 'delete_task_ajax' task.id %}",{
+                method:"POST",
+                headers:{
+                    "X-CSRFToken":"{{ csrf_token }}"
+                }
+            })
+            .then(response=>response.json())
+            .then(data=>{
+
+                if(data.status==="success"){
+
+                    Swal.fire({
+                        icon:"success",
+                        title:"Task Deleted"
+                    }).then(()=>{
+                        window.location="{% url 'dashboard' %}";
+                    });
+
+                }else{
+
+                    Swal.fire("Error","Could not delete task","error");
+
+                }
+
+            });
+
+        }
+
+    });
+
+});
+
+
+
+
+
 
     // ==========================================
     // --- Location Save Form AJAX Logic ---

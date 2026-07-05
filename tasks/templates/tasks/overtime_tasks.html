@@ -1,86 +1,276 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container-fluid py-3">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="fw-bold text-dark"><i class="bi bi-clock-fill text-warning"></i> Overtime Management</h4>
-        <div class="btn-group">
-            <button onclick="window.print()" class="btn btn-outline-dark btn-sm"><i class="bi bi-printer"></i> Print</button>
-            <button onclick="copyTable()" class="btn btn-outline-dark btn-sm"><i class="bi bi-clipboard"></i> Copy</button>
-            <button onclick="exportCSV()" class="btn btn-outline-dark btn-sm"><i class="bi bi-file-earmark-spreadsheet"></i> CSV</button>
-        </div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<div class="sticky-top bg-white p-2 shadow-sm d-flex align-items-center mb-3">
+  <a href="javascript:history.back()" class="btn btn-outline-dark btn-sm">← Back (رجوع)</a>
+  <h5 class="ms-3 mb-0 fw-bold text-dark">{{ title }}</h5>
+</div>
+
+<div class="card shadow-sm border-0 mb-4 bg-light">
+  <div class="card-body p-3">
+      <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-funnel-fill text-dark me-1"></i> Filters (التصفية)</h6>
+      <form method="GET">
+          <div class="row g-2">
+            <div class="col-6 col-md-2">
+
+   <label class="small fw-bold text-muted mb-1">Date From</label><input type="text" name="date_from" class="form-control form-control-sm flatpickr-date" value="{{ request.GET.date_from }}">
+               <label class="small fw-bold text-muted mb-1">Date To</label><input type="text" name="date_to" class="form-control form-control-sm flatpickr-date" value="{{ request.GET.date_to }}"></div>
+ <div class="col-6 col-md-2">
+                  <label class="small fw-semibold text-muted mb-1">Building</label>
+                  <select name="building" class="form-select form-select-sm">
+                      <option value="">All</option>
+                      {% for b in buildings %}<option value="{{ b }}" {% if request.GET.building == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
+                  </select>
+              </div>
+              <div class="col-6 col-md-2"><label class="small fw-semibold text-muted mb-1">Unit</label><input type="text" name="unit" class="form-control form-control-sm" value="{{ request.GET.unit }}"></div>
+              <div class="col-6 col-md-2"><label class="small fw-semibold text-muted mb-1">Technician</label><input type="text" name="user" class="form-control form-control-sm" value="{{ request.GET.user }}"></div>
+              <div class="col-6 col-md-2"><label class="small fw-semibold text-muted mb-1">Project Type</label><select name="project_type" class="form-select form-select-sm"><option value="">All</option><option value="Electric">Electric</option><option value="Plumbing">Plumbing</option><option value="AC">AC</option></select></div>
+              <div class="col-12 mt-2 d-flex justify-content-end gap-2">
+                  <button type="submit" class="btn btn-dark btn-sm fw-bold px-4"><i class="bi bi-search"></i> Filter</button>
+                  <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm px-4"><i class="bi bi-arrow-counterclockwise"></i> Reset</a>
+              </div>
+          </div>
+      </form>
+  </div>
+</div>
+
+<div class="d-flex justify-content-end gap-2 mb-3">
+
+    <div class="btn-group shadow-sm">
+        <button type="button" id="btnQuickClipboardCopy" class="btn btn-success btn-sm fw-bold"><i class="bi bi-clipboard-check me-1"></i> Copy</button>
+        <button type="button" class="btn btn-success btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside"></button>
+        <ul class="dropdown-menu dropdown-menu-end p-2" style="font-size: 0.85rem;">
+            <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns</li>
+            <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="0" checked id="c0"><label class="form-check-label" for="c0">Job ID</label></div></li>
+            <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="1" checked id="c1"><label class="form-check-label" for="c1">Title</label></div></li>
+            <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="2" checked id="c2"><label class="form-check-label" for="c2">Assigned To</label></div></li>
+            <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="3" checked id="c3"><label class="form-check-label" for="c3">Location</label></div></li>
+            <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="4" checked id="c4"><label class="form-check-label fw-bold text-primary" for="c4">Overtime (Hrs / AED)</label></div></li>
+            <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="5" checked id="c5"><label class="form-check-label" for="c5">Total Pay</label></div></li>
+            <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="6" checked id="c6"><label class="form-check-label" for="c6">Total Work Time</label></div></li>
+        </ul>
     </div>
 
-    <div class="card shadow-sm border-0 mb-3 bg-light">
-        <div class="card-body p-3">
-            <form method="GET" class="row g-2 align-items-end">
-                <div class="col-md-3">
-                    <label class="small fw-bold">Search Job ID/Title</label>
-                    <input type="text" name="q" class="form-control form-control-sm" value="{{ request.GET.q }}">
-                </div>
-                <div class="col-md-2">
-                    <label class="small fw-bold">Status</label>
-                    <select name="status" class="form-select form-select-sm">
-                        <option value="">All</option>
-                        <option value="Completed">Completed</option>
-                        <option value="In Progress">In Progress</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <button type="button" class="btn btn-dark btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#printSetupModal">
+        <i class="bi bi-printer-fill me-1"></i> Print Report
+    </button>
 
-    <div class="card shadow-sm border-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="otTable">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Job ID</th>
-                        <th>Task</th>
-                        <th>Status</th>
-                        <th>OT Hours</th>
-                        <th>OT Charge</th>
-                        <th>Total Time</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for task in tasks %}
-                    <tr id="task-row-{{ task.id }}">
-                        <td class="fw-bold">{{ task.job_id }}</td>
-                        <td>{{ task.title }}</td>
-                        <td><span class="badge bg-secondary">{{ task.status }}</span></td>
-                        <td><span id="ot-hrs-{{ task.id }}">{{ task.overtime_hours|default:"0.0" }}</span></td>
-                        <td><span id="ot-chg-{{ task.id }}">{{ task.overtime_charge|default:"0.0" }}</span></td>
-                        <td class="text-info fw-bold">{{ task.total_work_time }}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="openOTModal({{ task.id }}, '{{ task.title }}')">Edit</button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="btn-group shadow-sm">
+        <button type="button" id="btnExportCSV" class="btn btn-info btn-sm fw-bold text-white"><i class="bi bi-download me-1"></i> CSV</button>
+        <button type="button" class="btn btn-info btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside"></button>
+        <ul class="dropdown-menu dropdown-menu-end p-2" style="font-size: 0.85rem;">
+            <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Export Columns</li>
+            <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="0" checked id="e0"><label class="form-check-label" for="e0">Job ID</label></div></li>
+            <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="1" checked id="e1"><label class="form-check-label" for="e1">Title</label></div></li>
+            <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="2" checked id="e2"><label class="form-check-label" for="e2">Assigned To</label></div></li>
+            <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="e3"><label class="form-check-label" for="e3">Location</label></div></li>
+            <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="4" checked id="e4"><label class="form-check-label fw-bold text-primary" for="e4">Overtime (Hrs / AED)</label></div></li>
+            <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="5" checked id="e5"><label class="form-check-label" for="e5">Total Pay</label></div></li>
+            <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="6" checked id="e6"><label class="form-check-label" for="e6">Total Work Time</label></div></li>
+        </ul>
     </div>
 </div>
 
-<div class="modal fade" id="otEditModal" tabindex="-1">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title">Set Overtime</h5></div>
-            <div class="modal-body">
-                <input type="hidden" id="editTaskId">
-                <label>Hours</label>
-                <input type="number" id="editHrs" class="form-control mb-2">
-                <label>Charge</label>
-                <input type="number" id="editChg" class="form-control">
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary w-100" onclick="saveOT()">Save Changes</button>
-            </div>
-        </div>
-    </div>
+<div class="container-fluid px-0 border rounded overflow-hidden shadow-sm">
+  <div class="row mx-0 px-3 py-2 bg-dark text-white fw-semibold small d-none d-md-flex">
+      <div class="col-md-3 py-1">Task Title & Details</div>
+      <div class="col-md-2 text-center py-1">Status / Budget</div>
+      <div class="col-md-3 py-1">Overtime Edit (Hrs & AED)</div>
+      <div class="col-md-3 py-1">Calculated Totals</div>
+      <div class="col-md-1 text-end py-1">Action</div>
+  </div>
+
+  {% for task in tasks %}
+  <div class="row mx-0 px-3 py-3 align-items-center bg-white task-row" style="border-bottom:1px solid #eee; border-left: 6px solid #4B0082;">
+      <div class="col-12 col-md-3 mb-2 py-md-2">
+          <h6 class="mb-1"><a href="{% url 'task_detail' task.id %}" class="text-decoration-none fw-bold text-dark">{{ task.title }}</a></h6>
+          <span class="text-muted d-block small fw-bold mt-1">ID: {{ task.job_id }} | {{ task.project_type }}</span>
+          <div class="small text-dark mt-1"><i class="bi bi-person-fill text-secondary me-1"></i> <strong>{{ task.assigned_to_display }}</strong></div>
+          <div class="small text-secondary"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ task.location }}</div>
+      </div>
+
+      <div class="col-6 col-md-2 text-md-center mb-2 py-md-2">
+          <span class="badge bg-secondary px-2 py-1 mb-2">{{ task.status }}</span><br>
+          <span class="small fw-bold text-muted">Budget: </span><span class="text-success fw-bold">{{ task.budget|default:"0.00" }}</span>
+      </div>
+
+      <div class="col-12 col-md-3 mb-3 py-md-2">
+          <div class="d-flex align-items-center gap-2">
+              <div>
+                  <label class="small text-muted fw-bold" style="font-size:0.7rem;">OT Hrs</label>
+                  <input type="number" id="ot-hrs-{{ task.id }}" class="form-control form-control-sm text-center fw-bold" value="{{ task.overtime_hours|default:'' }}" step="0.5" style="width: 70px;">
+              </div>
+              <div>
+                  <label class="small text-muted fw-bold" style="font-size:0.7rem;">OT AED</label>
+                  <input type="number" id="ot-chg-{{ task.id }}" class="form-control form-control-sm text-center fw-bold text-success" value="{{ task.overtime_charge|default:'' }}" style="width: 80px;">
+              </div>
+              <div class="mt-3">
+                  <button type="button" class="btn btn-warning btn-sm fw-bold p-1 px-2 btn-save-ot" data-task-id="{{ task.id }}"><i class="bi bi-check-lg"></i></button>
+              </div>
+          </div>
+      </div>
+
+      <div class="col-12 col-md-3 py-md-2">
+          <div class="small mb-1"><span class="text-muted fw-bold">Total Pay:</span> <span class="fw-bold text-success fs-6" id="total-chg-{{ task.id }}">{{ task.total_service_charge }} AED</span></div>
+          <div class="small"><span class="text-muted fw-bold">Total Time:</span> <span class="fw-bold text-info" id="total-time-{{ task.id }}">{{ task.total_work_time }}</span></div>
+      </div>
+
+      <div class="col-12 col-md-1 text-end py-md-2">
+          <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-dark"><i class="bi bi-arrow-right"></i></a>
+      </div>
+  </div>
+  {% empty %}
+  <div class="text-center py-5 bg-white"><p class="text-muted fs-6 mb-0">No overtime tasks found.</p></div>
+  {% endfor %}
 </div>
+
+<div class="modal fade" id="printSetupModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-dark text-white p-3">
+              <h6 class="modal-title fw-bold"><i class="bi bi-printer-fill me-2"></i> Print Overtime Report</h6>
+              <button type="button" class="btn-close btn-close-white small" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-3">
+              <p class="text-muted small fw-semibold mb-3">Select columns to include in the printed report:</p>
+              <div class="row g-2">
+                  <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="0" checked id="p0"><label class="form-check-label" for="p0">Job ID</label></div></div>
+                  <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="1" checked id="p1"><label class="form-check-label" for="p1">Title</label></div></div>
+                  <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="2" checked id="p2"><label class="form-check-label" for="p2">Assigned To</label></div></div>
+                  <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="3" checked id="p3"><label class="form-check-label" for="p3">Location</label></div></div>
+                  <div class="col-12"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="4" checked id="p4"><label class="form-check-label fw-bold" for="p4">Overtime (Hrs / AED)</label></div></div>
+                  <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="5" checked id="p5"><label class="form-check-label" for="p5">Total Pay</label></div></div>
+                  <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="6" checked id="p6"><label class="form-check-label" for="p6">Total Work Time</label></div></div>
+              </div>
+          </div>
+          <div class="modal-footer p-2 bg-light">
+              <button type="button" id="btnExecutePrintReport" class="btn btn-dark btn-sm fw-bold px-4">Print Now</button>
+          </div>
+      </div>
+  </div>
+</div>
+
+<div id="copyToastNotification" class="custom-toast shadow border border-success d-none animate-fade-in" style="position: fixed; bottom: 20px; left: 20px; z-index: 9999; background: white; padding: 15px; border-radius: 8px;">
+  <i class="bi bi-check-circle-fill text-success"></i> Copied to clipboard!
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+ document.addEventListener("DOMContentLoaded", function() {
+    flatpickr(".flatpickr-date", { altInput: true, altFormat: "d/m/Y", dateFormat: "Y-m-d" });
+
+    // 1. AJAX Save Overtime
+    document.querySelectorAll('.btn-save-ot').forEach(button => {
+        button.addEventListener('click', function() {
+            const taskId = this.getAttribute('data-task-id');
+            const hrs = document.getElementById(`ot-hrs-${taskId}`).value;
+            const chg = document.getElementById(`ot-chg-${taskId}`).value;
+
+            const original = this.innerHTML;
+            this.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
+            this.disabled = true;
+
+            fetch(`/overtime/ajax/update/${taskId}/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ hours: hrs, charge: chg })
+            }).then(r => r.json()).then(data => {
+                this.disabled = false;
+                this.innerHTML = original;
+                if (data.status === 'success') {
+                    document.getElementById(`total-chg-${taskId}`).innerText = data.total_service_charge + " AED";
+                    document.getElementById(`total-time-${taskId}`).innerText = data.total_work_time;
+                    this.classList.replace('btn-warning', 'btn-success');
+                    setTimeout(() => this.classList.replace('btn-success', 'btn-warning'), 1500);
+                } else alert("Error saving.");
+            });
+        });
+    });
+
+    // 2. Data Matrix Generator (Respects Checkboxes)
+    const headersList = ["Job ID", "Title", "Assigned To", "Location", "Overtime (Hrs / AED)", "Total Pay", "Total Work Time"];
+
+    function getMatrixData(checkboxClass) {
+        let activeIndices = [];
+        document.querySelectorAll(`.${checkboxClass}:checked`).forEach(cb => activeIndices.push(parseInt(cb.value)));
+
+        let rows = [activeIndices.map(idx => headersList[idx])];
+        const cleanStr = (val) => val ? val.replace(/[\t\n\r]/g, " ").trim() : "";
+
+        {% for task in tasks %}
+            let fullRow = [
+                "{{ task.job_id }}", cleanStr("{{ task.title }}"), "{{ task.assigned_to_display }}", cleanStr("{{ task.location }}"),
+                "{{ task.overtime_hours|default:'0' }} Hrs ({{ task.overtime_charge|default:'0' }} AED)",
+                "{{ task.total_service_charge }} AED", "{{ task.total_work_time }}"
+            ];
+            rows.push(activeIndices.map(idx => fullRow[idx]));
+        {% endfor %}
+        return rows;
+    }
+
+    // 3. COPY Logic
+    document.getElementById("btnQuickClipboardCopy").addEventListener("click", function() {
+        const matrixString = getMatrixData("copy-col-check").map(row => row.join("\t")).join("\n");
+        navigator.clipboard.writeText(matrixString).then(() => {
+            const toast = document.getElementById("copyToastNotification");
+            toast.classList.remove('d-none');
+            setTimeout(() => toast.classList.add('d-none'), 3000);
+        });
+    });
+
+    // 4. CSV Logic
+    document.getElementById('btnExportCSV').addEventListener('click', function() {
+        const csvString = "\uFEFF" + getMatrixData("export-col-check").map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "overtime_tasks.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    // 5. PRINT Logic
+    document.getElementById('btnExecutePrintReport').addEventListener('click', function() {
+        let activeIndices = [];
+        document.querySelectorAll(".print-col-check:checked").forEach(cb => activeIndices.push(parseInt(cb.value)));
+
+        if (activeIndices.length === 0) { alert("Select at least one column."); return; }
+
+        bootstrap.Modal.getInstance(document.getElementById('printSetupModal')).hide();
+
+        const printData = getMatrixData("print-col-check");
+        const printWindow = window.open("", "_blank");
+
+        let htmlPayload = `
+            <html>
+            <head>
+                <title>Overtime Report</title>
+                <style>
+                    body { font-family: sans-serif; padding: 20px; font-size: 12px;}
+                    h2 { border-bottom: 2px solid #000; padding-bottom: 10px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f4f4f4; }
+                </style>
+            </head>
+            <body>
+                <h2>Overtime Summary Log</h2>
+                <p>Generated: ${new Date().toLocaleString()}</p>
+                <table>
+                    <thead><tr>${printData[0].map(h => `<th>${h}</th>`).join('')}</tr></thead>
+                    <tbody>${printData.slice(1).map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>
+                </table>
+            </body>
+            </html>
+        `;
+        printWindow.document.write(htmlPayload);
+        printWindow.document.close();
+        printWindow.onload = () => printWindow.print();
+    });
+});
+</script>
 {% endblock %}

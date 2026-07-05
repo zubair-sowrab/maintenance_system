@@ -1675,15 +1675,19 @@ def calculate_ai_charge_ajax(request, task_id):
         {live_sheet_context}
 
         CRITICAL RULES:
-        1. INDEPENDENT ESTIMATION: Calculate the cost strictly based on the Official Pricing Rules and the provided technician description. Do NOT use the technician's Inputted Charge to influence your selection.
-        2. NO HEAVY HARDWARE HALLUCINATIONS: NEVER match a vague symptom (e.g., 'cooling issue', 'leak') to expensive parts (e.g., 'compressor', 'pump') unless explicitly stated as repaired or replaced.
-        3. LOGICAL DEFAULTS FOR VAGUE SYMPTOMS: If the notes describe a general problem without listing exact parts, apply the standard service rate(s) required to resolve that specific issue based on your pricing rules (e.g., standard AC servicing, gas refilling, or standard leak repair). 
-        4. NO SQUISHED NUMBERS: You must output an ARRAY OF INDIVIDUAL INTEGERS representing each charge. Never combine them into one number (e.g., output [35, 50], never [3550]).
+        1. COMPREHENSIVE ANALYSIS (USE ALL DATA): You MUST evaluate ALL provided data before forming a conclusion. First, parse the Technician Notes and 'Items'. Then, cross-reference this information against BOTH the Official Pricing Rules AND the Recent Live Context. Do not stop at the first partial match. Form your final cost only after verifying all sources.
+        2. ITEM PARSING LOGIC: When evaluating the 'Items' list:
+           - If a sub-category is listed as 'General', completely ignore it and rely on the Technician Notes instead.
+           - If a quantity is listed as '0', you MUST treat it as exactly 1 unit or 1 piece.
+        3. INDEPENDENCE: Do NOT use the technician's Inputted Charge to influence your selection. Calculate the cost strictly based on the rules and context.
+        4. NO INVENTED MATH OR METRICS: NEVER invent hourly rates, measurements (like 'meters'), or timeframes. Only apply exact flat rates from the pricing rules based on the parsed items and notes. NEVER make up your own multipliers.
+        5. NO HEAVY HARDWARE HALLUCINATIONS: NEVER match a vague symptom to expensive parts (e.g., 'compressor', 'pump') unless explicitly stated as repaired or replaced in the Items or Notes.
+        6. NO SQUISHED NUMBERS: You must output an ARRAY OF INDIVIDUAL INTEGERS representing each charge. Never combine them into one number (e.g., output [35, 50], never [3550]).
 
         Return the result EXACTLY in this JSON format:
         {{
-            "individual_costs": [50, 35],
-            "justification": "Technician stated 'cooling issue' without specifying parts. Calculated independent cost by applying standard 'gas refilling' (50 AED) and 'troubleshooting' (35 AED) based on pricing rules. Heavy hardware not charged."
+            "individual_costs": [50],
+            "justification": "Analyzed ALL data. Items listed 'General (0)'. Treated quantity '0' as 1 unit. Notes stated 'replaced switch'. Cross-referenced Official Pricing Rules which lists electrical switch replacement at 50 AED. Verified Recent Live Context which confirmed standard switch jobs are 50 AED. Applied standard 50 AED flat rate."
         }}
         """
 
@@ -1761,91 +1765,159 @@ def calculate_ai_charge_ajax(request, task_id):
         return JsonResponse({'status': 'error', 'message': str(e)})
 
 
-def is_admin_check(user):
-    return user.is_superuser or user.groups.filter(name='Admin').exists() or getattr(user.profile, 'role',
-                                                                                     '') == 'Admin'
+from django.db.models import Sum, Count, Avg, F
+from django.utils.decorators import method_decorator
+import json
+
+
+def is_admin_strict(user):
+    return user.is_superuser or (hasattr(user, 'profile') and user.profile.role == 'Admin')
 
 
 @login_required
 def all_overtime_tasks(request):
-    if not is_admin_check(request.user):
-        raise PermissionDenied("Only administrators can access overtime management.")
+    tasks = Task.objects.filter(overtime_hours__gt=0)
 
-    # Include all tasks that have overtime assigned
-    tasks = Task.objects.exclude(overtime_hours__isnull=True).exclude(overtime_hours=0.00).order_by('-created_at')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
 
-    return render(request, 'tasks/overtime_tasks.html', {'tasks': tasks, 'title': 'All Overtime Tasks'})
+    # Filter by completed_at range
+    if date_from: base_tasks = tasks.filter(created_at__date__gte=date_from)
+    if date_to: base_tasks = tasks.filter(created_at__date__lte=date_to)
+
+    if not is_admin_strict(request.user):
+        raise PermissionDenied("Only administrators can access the Overtime System.")
+
+    # Base Query: Only tasks that have overtime assigned
+    tasks = Task.objects.filter(overtime_hours__gt=0).prefetch_related('assigned_technicians', 'items',
+                                                                       'complaint_set').distinct().order_by(
+        '-created_at')
+
+    # Apply Filters (Matching your all_tasks.html capability)
+    job_id = request.GET.get('job_id')
+    user_query = request.GET.get('user')
+    project_type = request.GET.get('project_type')
+
+    building = request.GET.get('building')
+    unit = request.GET.get('unit')
+
+    if job_id and job_id.strip():
+        tasks = tasks.filter(job_id__icontains=job_id.strip())
+    if user_query and user_query.strip():
+        tasks = tasks.filter(assigned_technicians__username__icontains=user_query.strip())
+    if project_type and project_type.strip():
+        tasks = tasks.filter(project_type=project_type)
+    if date_from and date_from.strip():
+        tasks = tasks.filter(completed_at__date__gte=date_from)
+    if date_to and date_to.strip():
+        try:
+            parsed_date_to = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
+            next_day = parsed_date_to + timedelta(days=1)
+            tasks = tasks.filter(completed_at__lt=next_day)
+        except ValueError:
+            tasks = tasks.filter(completed_at__date__lte=date_to)
+    if building and building.strip():
+        tasks = tasks.filter(building__iexact=building.strip())
+    if unit and unit.strip():
+        tasks = tasks.filter(unit__iexact=unit.strip())
+
+    buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building',
+                                                                                                    flat=True).distinct()
+    units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
+
+    context = {
+        'tasks': tasks,
+        'title': 'Overtime Tasks (مهام العمل الإضافي)',
+        'buildings': buildings,
+        'units': units,
+    }
+    return render(request, 'tasks/overtime_tasks.html', context)
 
 
 @login_required
 def overtime_reports(request):
-    if not is_admin_check(request.user):
-        raise PermissionDenied("Only administrators can access overtime reports.")
+    if not is_admin_strict(request.user):
+        raise PermissionDenied("Only administrators can access Overtime Reports.")
 
-    tasks_with_ot = Task.objects.filter(overtime_hours__gt=0).prefetch_related('assigned_technicians')
+    base_tasks = Task.objects.filter(overtime_hours__gt=0)
 
-    # 1. Aggregate by Technician
-    tech_stats = {}
-    for task in tasks_with_ot:
-        for tech in task.assigned_technicians.all():
-            if tech.username not in tech_stats:
-                tech_stats[tech.username] = {'hours': 0.0, 'charge': 0.0}
-            tech_stats[tech.username]['hours'] += float(task.overtime_hours or 0)
-            tech_stats[tech.username]['charge'] += float(task.overtime_charge or 0)
+    # Apply standard page filters
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    project_type = request.GET.get('project_type')
+    selected_building = request.GET.get('building')
+    selected_tech_id = request.GET.get('tech_id')
 
-    # 2. Aggregate by Location (Building)
-    location_stats = tasks_with_ot.values('building').annotate(
+    if date_from: base_tasks = base_tasks.filter(created_at__date__gte=date_from)
+    if date_to: base_tasks = base_tasks.filter(created_at__date__lte=date_to)
+    if project_type: base_tasks = base_tasks.filter(project_type=project_type)
+    if selected_building: base_tasks = base_tasks.filter(building=selected_building)
+    if selected_tech_id: base_tasks = base_tasks.filter(assigned_technicians__id=selected_tech_id)
+
+    # Aggregates
+    total_ot_hours = base_tasks.aggregate(total=Sum('overtime_hours'))['total'] or 0.0
+    total_ot_charge = base_tasks.aggregate(total=Sum('overtime_charge'))['total'] or 0.0
+
+    # Technician Stats for Chart
+    techs_summary = User.objects.filter(assigned_tasks__in=base_tasks).annotate(
+        total_hours=Sum('assigned_tasks__overtime_hours'),
+        total_charge=Sum('assigned_tasks__overtime_charge')
+    ).distinct().order_by('-total_hours')
+
+    tech_labels = [t.username for t in techs_summary]
+    tech_hours = [float(t.total_hours or 0) for t in techs_summary]
+    tech_charges = [float(t.total_charge or 0) for t in techs_summary]
+
+    # Building Stats
+    building_stats = base_tasks.values('building').annotate(
         total_hours=Sum('overtime_hours'),
         total_charge=Sum('overtime_charge')
     ).order_by('-total_charge')
 
+    all_technicians = User.objects.filter(profile__role__in=['Technician', 'Supervisor'])
+    all_buildings = Task.objects.values_list('building', flat=True).distinct().exclude(building__isnull=True)
+
     context = {
-        'tech_stats': tech_stats,
-        'location_stats': location_stats,
+        'total_ot_hours': total_ot_hours,
+        'total_ot_charge': total_ot_charge,
+        'tech_labels_json': json.dumps(tech_labels),
+        'tech_hours_json': json.dumps(tech_hours),
+        'tech_charges_json': json.dumps(tech_charges),
+        'building_stats': building_stats,
+        'all_technicians': all_technicians,
+        'all_buildings': all_buildings,
+        'selected_tech_id': selected_tech_id,
+        'selected_building': selected_building,
     }
     return render(request, 'tasks/overtime_reports.html', context)
 
 
+@csrf_exempt
 @login_required
 def update_overtime_ajax(request, task_id):
-    if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
-
-    if not is_admin_check(request.user):
-        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
-
-    try:
+    if request.method == 'POST' and is_admin_strict(request.user):
         data = json.loads(request.body)
         task = get_object_or_404(Task, id=task_id)
 
-        # Accept empty fields as 0.00
-        ot_hours = data.get('overtime_hours', '')
-        ot_charge = data.get('overtime_charge', '')
-
-        task.overtime_hours = float(ot_hours) if ot_hours else 0.00
-        task.overtime_charge = float(ot_charge) if ot_charge else 0.00
+        task.overtime_hours = float(data.get('hours') or 0.00)
+        task.overtime_charge = float(data.get('charge') or 0.00)
         task.save()
 
         return JsonResponse({
             'status': 'success',
-            'overtime_hours': task.overtime_hours,
-            'overtime_charge': task.overtime_charge,
             'total_service_charge': task.total_service_charge,
             'total_work_time': task.total_work_time
         })
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error'}, status=403)
 
 
 @login_required
 def get_assignable_overtime_tasks_ajax(request):
-    if not is_admin_check(request.user):
+    if not is_admin_strict(request.user):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
 
-    # Get all Pending, Active, and Completed tasks
-    tasks = Task.objects.filter(
-        status__in=['Pending', 'Pending(قيد الانتظار)', 'In Progress', 'قيد التنفيذ', 'Completed', 'مكتمل']).order_by(
-        '-created_at')[:100]  # Limit 100 for performance
+    # Get all tasks (so admin can assign OT to anything)
+    tasks = Task.objects.all().order_by('-created_at')[:100]
 
     task_data = []
     for t in tasks:
@@ -1857,30 +1929,74 @@ def get_assignable_overtime_tasks_ajax(request):
             'current_ot_hours': float(t.overtime_hours or 0),
             'current_ot_charge': float(t.overtime_charge or 0)
         })
-
     return JsonResponse({'tasks': task_data})
 
 
-def overtime_management_view(request):
-    tasks = Task.objects.all()
-    # Apply Filters
-    if request.GET.get('job_id'): tasks = tasks.filter(id=request.GET['job_id'])
-    if request.GET.get('building'): tasks = tasks.filter(building__icontains=request.GET['building'])
-    if request.GET.get('unit'): tasks = tasks.filter(unit__icontains=request.GET['unit'])
-    if request.GET.get('project_type'): tasks = tasks.filter(project_type=request.GET['project_type'])
-    if request.GET.get('date_from'): tasks = tasks.filter(completed_at__gte=request.GET['date_from'])
-    if request.GET.get('date_to'): tasks = tasks.filter(completed_at__lte=request.GET['date_to'])
+@login_required
+@require_POST
+def update_status_ajax(request, task_id):
 
-    return render(request, 'overtime_management.html', {'tasks': tasks})
+    task = get_object_or_404(Task, id=task_id)
+
+    if request.user.profile.role != "Admin":
+        return JsonResponse(
+            {"status":"error"},
+            status=403
+        )
+
+    status = request.POST.get("status")
+
+    valid_statuses = [choice[0] for choice in Task.STATUS_CHOICES]
+
+    if status not in valid_statuses:
+
+        return JsonResponse({
+
+            "status":"error",
+
+            "message":"Invalid status"
+
+        },status=400)
+
+    task.status = status
+
+    if status == "Completed":
+
+        if not task.completed_at:
+            task.completed_at = timezone.now()
+
+    elif status == "In Progress":
+
+        if not task.started_at:
+            task.started_at = timezone.now()
+
+    task.save()
+
+    return JsonResponse({
+
+        "status":"success"
+
+    })
 
 
-@csrf_exempt
-def update_overtime_ajax(request, task_id):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        task = get_object_or_404(Task, id=task_id)
-        task.overtime_hours = data.get('hours', 0)
-        task.overtime_charge = data.get('charge', 0)
-        task.save()
-        total = float(task.budget or 0) + float(task.overtime_charge)
-        return JsonResponse({'status': 'success', 'total': total})
+@login_required
+@require_POST
+def delete_task_ajax(request, task_id):
+
+    task = get_object_or_404(Task,id=task_id)
+
+    if request.user.profile.role != "Admin":
+
+        return JsonResponse({
+
+            "status":"error"
+
+        },status=403)
+
+    task.delete()
+
+    return JsonResponse({
+
+        "status":"success"
+
+    })

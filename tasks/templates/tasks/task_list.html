@@ -276,12 +276,13 @@
                        <a href="{% url 'task_detail' task.id %}" class="{% if task.priority == 'Emergency' %}text-danger{% endif %}">{{ task.title }}</a>
 
                        <!-- RED EMERGENCY BADGE FOR MOBILE SCREENS -->
-                       {% if task.priority == 'Emergency' %}
-                           <span class="badge bg-danger text-white ms-1 align-middle" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px;">EMERGENCY</span>
-                       {% endif %}
+
                              {% if task.status == 'Overdue' %}
     <span class="badge bg-danger ms-2 shadow-sm" style="font-size: 0.65rem; font-weight: 800;">LATE</span>
 {% endif %}
+                        {% if task.priority == 'Emergency' %}
+                           <span class="badge bg-danger text-white ms-1 align-middle text-danger" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px;">EMERGENCY</span>
+                       {% endif %}
                    </h6>
                    <div class="row g-1" style="font-size: 0.8rem;">
                        <div class="col-6"><strong>ID:</strong> {{ task.job_id }}</div>

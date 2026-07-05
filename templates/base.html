@@ -3,6 +3,10 @@
 <html>
 {% load static %}
 <head>
+    <!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
     <link rel="stylesheet" href="{% static 'app/css/owl.carousel.min.css' %}">
@@ -81,26 +85,30 @@ function googleTranslateElementInit() {
                     <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">إنشاء مهمة</small>
                 </a>
 
-
 {%comment%}
-                {% if user.is_superuser or user.profile.role == 'Admin' %}
-<li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle btn btn-light btn-sm mb-0 mb-lg-0 text-center" href="#" id="overtimeDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {% if user.profile.role == 'Admin' or user.is_superuser %}
+<li class="nav-item dropdown list-unstyled">
+    <a class="nav-link dropdown-toggle btn btn-light btn-sm mb-2 mb-lg-0 text-center  text-primary" href="#" id="overtimeDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
         <i class="bi bi-clock-history"></i> Overtime
+        <small class="d-block opacity-75 fs-7 text-dark" style="font-size: 0.75rem;">الوقت الإضافي</small>
     </a>
-    <ul class="dropdown-menu shadow" aria-labelledby="overtimeDropdown">
-        <li><a class="dropdown-item btn  btn-sm mb-0 mb-lg-0 text-center" href="{% url 'all_overtime_tasks' %}"><i class="bi bi-list-task"></i> All Overtime Tasks</a></li>
+    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="overtimeDropdown">
+        <li><a class="dropdown-item fw-semibold" href="{% url 'all_overtime_tasks' %}"><i class="bi bi-list-task text-primary me-2"></i> All Overtime Tasks</a></li>
         <li>
             <a class="dropdown-item fw-bold text-success" href="#" data-bs-toggle="modal" data-bs-target="#assignOvertimeModal" onclick="loadOvertimeTasks()">
-                <i class="bi bi-plus-circle"></i> Add New Task to Set Overtime
+                <i class="bi bi-plus-circle-fill me-2"></i> Add Task to Overtime
             </a>
         </li>
         <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item" href="{% url 'overtime_reports' %}"><i class="bi bi-bar-chart-line"></i> Overtime Reports</a></li>
+        <li><a class="dropdown-item fw-semibold" href="{% url 'overtime_reports' %}"><i class="bi bi-bar-chart-line-fill text-info me-2"></i> Overtime Reports</a></li>
     </ul>
 </li>
 {% endif %}
+
 {%endcomment%}
+
+
+
                 <form action="{% url 'logout' %}" method="POST" class="d-inline mb-2 mb-lg-0">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger btn-sm w-100 text-center">
@@ -160,112 +168,129 @@ function googleTranslateElementInit() {
 
 
 
-{%comment%}
-    <!-- Main Modal: Task List to select from -->
+
+
+
+
+
+    {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
 <div class="modal fade" id="assignOvertimeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title"><i class="bi bi-card-checklist"></i> Select Task to Set Overtime</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-dark text-white p-3">
+                <h6 class="modal-title fw-bold"><i class="bi bi-search me-2"></i> Select Task to Set Overtime</h6>
+                <button type="button" class="btn-close btn-close-white small" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body bg-light">
-                <table class="table table-hover table-bordered bg-white shadow-sm" id="otSelectionTable">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Job ID</th>
-                            <th>Task Title</th>
-                            <th>Status</th>
-                            <th>Current OT (Hours / AED)</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="otSelectionTableBody">
-                        <!-- Populated via AJAX -->
-                    </tbody>
-                </table>
+            <div class="modal-body bg-light p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 bg-white" style="font-size: 0.85rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Job ID</th>
+                                <th>Task Title</th>
+                                <th>Status</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="otSelectionTableBody">
+                            <tr><td colspan="4" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div> Loading tasks...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Sub Modal: Setting the Hours and Charge -->
-<div class="modal fade" id="setOvertimeModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="setOvertimeSubModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content shadow">
-            <div class="modal-header bg-success text-white">
-                <h6 class="modal-title">Set Overtime</h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-success text-white p-3">
+                <h6 class="modal-title fw-bold">Set Overtime</h6>
+                <button type="button" class="btn-close btn-close-white small" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="hidden" id="ot_active_task_id">
+                <input type="hidden" id="ot_modal_task_id">
                 <div class="mb-3">
-                    <label class="form-label fw-bold text-secondary">Overtime Hours</label>
-                    <input type="number" step="0.5" class="form-control" id="ot_input_hours" placeholder="e.g. 2.5">
+                    <label class="form-label fw-bold text-secondary small">Overtime Hours</label>
+                    <input type="number" step="0.5" class="form-control" id="ot_modal_hours" placeholder="0.0">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold text-secondary">Overtime Charge (AED)</label>
-                    <input type="number" step="1" class="form-control" id="ot_input_charge" placeholder="e.g. 150">
+                    <label class="form-label fw-bold text-secondary small">Overtime Charge (AED)</label>
+                    <input type="number" step="1" class="form-control text-success fw-bold" id="ot_modal_charge" placeholder="0">
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" onclick="saveOvertime()">Save Overtime</button>
+            <div class="modal-footer p-2 bg-light">
+                <button type="button" class="btn btn-outline-secondary btn-sm fw-bold" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success btn-sm fw-bold" onclick="saveNewOvertime()">Save</button>
             </div>
         </div>
     </div>
 </div>
-{%endcomment%}
+
 <script>
-function openOTModal(taskId, title) {
-    document.getElementById('editTaskId').value = taskId;
-    // Pre-fill existing data from the table row
-    document.getElementById('editHrs').value = document.getElementById('ot-hrs-' + taskId).innerText;
-    document.getElementById('editChg').value = document.getElementById('ot-chg-' + taskId).innerText;
-    new bootstrap.Modal(document.getElementById('otEditModal')).show();
+// 1. Fetch and list all tasks
+function loadOvertimeTasks() {
+    fetch("{% url 'get_assignable_overtime_tasks_ajax' %}")
+    .then(r => r.json())
+    .then(data => {
+        const tbody = document.getElementById('otSelectionTableBody');
+        tbody.innerHTML = '';
+        data.tasks.forEach(task => {
+            let badge = task.status.includes('Completed') ? 'bg-success' : 'bg-primary';
+            tbody.innerHTML += `
+                <tr>
+                    <td class="fw-bold text-secondary">${task.job_id}</td>
+                    <td class="fw-semibold">${task.title}</td>
+                    <td><span class="badge ${badge}">${task.status}</span></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-success fw-bold"
+                                onclick="openOTInputModal(${task.id}, ${task.current_ot_hours}, ${task.current_ot_charge})">
+                            <i class="bi bi-clock-fill me-1"></i> Setup
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    });
 }
 
-function saveOT() {
-    const taskId = document.getElementById('editTaskId').value;
-    const hrs = document.getElementById('editHrs').value;
-    const chg = document.getElementById('editChg').value;
+// 2. Open the input modal for a specific task
+function openOTInputModal(id, hrs, chg) {
+    document.getElementById('ot_modal_task_id').value = id;
+    document.getElementById('ot_modal_hours').value = hrs > 0 ? hrs : '';
+    document.getElementById('ot_modal_charge').value = chg > 0 ? chg : '';
 
-    fetch(`/overtime/ajax/update/${taskId}/`, {
+    // Hide list, show input
+    bootstrap.Modal.getInstance(document.getElementById('assignOvertimeModal')).hide();
+    new bootstrap.Modal(document.getElementById('setOvertimeSubModal')).show();
+}
+
+// 3. Save it to the database via AJAX
+function saveNewOvertime() {
+    const id = document.getElementById('ot_modal_task_id').value;
+    const hrs = document.getElementById('ot_modal_hours').value;
+    const chg = document.getElementById('ot_modal_charge').value;
+
+    fetch(`/overtime/ajax/update/${id}/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-        body: JSON.stringify({ overtime_hours: hrs, overtime_charge: chg })
+        body: JSON.stringify({ hours: hrs, charge: chg })
     })
     .then(r => r.json())
     .then(data => {
-        // Update Table UI instantly
-        document.getElementById('ot-hrs-' + taskId).innerText = data.overtime_hours;
-        document.getElementById('ot-chg-' + taskId).innerText = data.overtime_charge;
-        bootstrap.Modal.getInstance(document.getElementById('otEditModal')).hide();
+        if (data.status === 'success') {
+            bootstrap.Modal.getInstance(document.getElementById('setOvertimeSubModal')).hide();
+            // Refresh the current page so the new task appears in the table
+            window.location.reload();
+        } else { alert("Error saving overtime."); }
     });
-}
-
-function copyTable() {
-    // Standard logic to copy table innerHTML to clipboard
-    const table = document.getElementById("otTable");
-    navigator.clipboard.writeText(table.innerText);
-    alert("Copied to clipboard!");
-}
-
-function exportCSV() {
-    // Simple table-to-CSV logic
-    let csv = [];
-    document.querySelectorAll('#otTable tr').forEach(row => {
-        let cols = Array.from(row.querySelectorAll('td, th')).map(c => c.innerText);
-        csv.push(cols.join(","));
-    });
-    const blob = new Blob([csv.join("\n")], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'overtime_report.csv';
-    a.click();
 }
 </script>
+{% endif %}
+
+
+
 
 
 

@@ -1,37 +1,120 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container-fluid py-4">
-    <h3 class="mb-4 fw-bold">Overtime Financial Analysis</h3>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card bg-primary text-white p-3 shadow-sm">
-                <p class="mb-0 small">Total OT Hours</p>
-                <h3 class="fw-bold">{{ total_ot_hours }} Hrs</h3>
+<div class="sticky-top bg-white p-3 shadow-sm d-flex align-items-center mb-4 justify-content-between border-bottom">
+    <div class="d-flex align-items-center">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm px-3">← Go Back</a>
+        <h5 class="ms-3 mb-0 fw-bold text-dark"><i class="bi bi-bar-chart-line-fill text-success me-2"></i> Overtime Analytics Dashboard</h5>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4 bg-light rounded-3">
+    <div class="card-body p-3">
+        <form method="GET" id="analyticsFilterForm">
+            <div class="row g-2">
+                <div class="col-6 col-md-2"><label class="small fw-bold text-muted mb-1">Date From</label><input type="text" name="date_from" class="form-control form-control-sm flatpickr-date" value="{{ request.GET.date_from }}"></div>
+                <div class="col-6 col-md-2"><label class="small fw-bold text-muted mb-1">Date To</label><input type="text" name="date_to" class="form-control form-control-sm flatpickr-date" value="{{ request.GET.date_to }}"></div>
+
+                <div class="col-12 col-md-3">
+                    <label class="small fw-bold text-success mb-1">Specific Worker</label>
+                    <select name="tech_id" class="form-select form-select-sm border-success text-success fw-bold">
+                        <option value="">All Technicians</option>
+                        {% for tech in all_technicians %}<option value="{{ tech.id }}" {% if selected_tech_id == tech.id|stringformat:"s" %}selected{% endif %}>{{ tech.username }}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <label class="small fw-bold text-primary mb-1">Building</label>
+                    <select name="building" class="form-select form-select-sm border-primary">
+                        <option value="">All Buildings</option>
+                        {% for b in all_buildings %}<option value="{{ b }}" {% if selected_building == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-2 d-flex align-items-end gap-1">
+                    <button type="submit" class="btn btn-success btn-sm w-100 fw-bold"><i class="bi bi-funnel"></i> Apply</button>
+                    <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+                </div>
             </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card p-4 border-0 bg-dark shadow-sm h-100 text-white border-start border-warning border-5">
+            <h6 class="text-white-50 small fw-bold mb-1">Total Overtime Hours (Filtered)</h6>
+            <h2 class="fw-bold text-warning mb-0">{{ total_ot_hours|floatformat:1 }} <span class="fs-6 font-normal text-white-50">Hrs</span></h2>
         </div>
-        <div class="col-md-4">
-            <div class="card bg-success text-white p-3 shadow-sm">
-                <p class="mb-0 small">Total OT Financial Impact</p>
-                <h3 class="fw-bold">{{ total_ot_charge }} AED</h3>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4 border-0 bg-dark shadow-sm h-100 text-white border-start border-success border-5">
+            <h6 class="text-white-50 small fw-bold mb-1">Total Overtime Financial Cost</h6>
+            <h2 class="fw-bold text-success mb-0">{{ total_ot_charge|floatformat:2 }} <span class="fs-6 font-normal text-white-50">AED</span></h2>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm h-100 rounded-3">
+            <div class="card-header bg-white border-0 pt-3">
+                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-people-fill text-primary me-1"></i> Overtime by Technician</h6>
             </div>
+            <div class="card-body p-3" style="min-height: 350px;"><canvas id="techOtChart"></canvas></div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header fw-bold">By Technician</div>
-                <table class="table">
-                    <thead><tr><th>Tech</th><th>Hours</th><th>Charge</th></tr></thead>
-                    <tbody>
-                        {% for t, data in tech_stats.items %}
-                        <tr><td>{{ t }}</td><td>{{ data.hours }}</td><td>{{ data.charge }}</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm h-100 rounded-3">
+            <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-building text-info me-1"></i> OT Cost by Building</h6>
+                <button onclick="window.print()" class="btn btn-sm btn-outline-dark"><i class="bi bi-printer"></i></button>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for b in building_stats|slice:":8" %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                        <span class="fw-semibold text-secondary">{{ b.building }}</span>
+                        <span class="badge bg-success rounded-pill px-3 py-2 fs-6">{{ b.total_charge }} AED</span>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center text-muted py-4">No data available</li>
+                    {% endfor %}
+                </ul>
             </div>
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    flatpickr(".flatpickr-date", { altInput: true, altFormat: "d/m/Y", dateFormat: "Y-m-d" });
+
+    const techLabels = JSON.parse('{{ tech_labels_json|safe }}');
+    const techHours = JSON.parse('{{ tech_hours_json|safe }}');
+    const techCharges = JSON.parse('{{ tech_charges_json|safe }}');
+
+    new Chart(document.getElementById('techOtChart'), {
+        type: 'bar',
+        data: {
+            labels: techLabels.length ? techLabels : ["No Data"],
+            datasets: [
+                { label: 'OT Hours', data: techHours, backgroundColor: '#ffc107', borderRadius: 4, yAxisID: 'y' },
+                { label: 'Cost (AED)', data: techCharges, backgroundColor: '#198754', borderRadius: 4, yAxisID: 'y1' }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                y: { type: 'linear', position: 'left', title: {display: true, text: 'Hours'} },
+                y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: {display: true, text: 'AED'} }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}
