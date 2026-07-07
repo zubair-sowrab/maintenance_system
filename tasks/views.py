@@ -969,7 +969,6 @@ def all_pending_tasks(request):
         (Q(status='Overdue') & Q(started_at__isnull=True))
     ).distinct()
 
-
     # Gather URL Query Parameters
     job_id = request.GET.get('job_id')
     user = request.GET.get('user')
@@ -977,18 +976,19 @@ def all_pending_tasks(request):
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
 
+    # NEW: Capture building and unit
+    building = request.GET.get('building')
+    unit = request.GET.get('unit')
 
     if job_id and job_id.strip():
         tasks = tasks.filter(job_id__icontains=job_id.strip())
 
-    # FIXED: Changed 'assigned_to' to 'assigned_technicians'
     if user and user.strip():
         tasks = tasks.filter(assigned_technicians__username__icontains=user.strip()).distinct()
 
     if project_type and project_type.strip():
         tasks = tasks.filter(project_type=project_type)
 
-    # Filter Pending tasks by creation date
     if date_from and date_from.strip():
         tasks = tasks.filter(created_at__date__gte=date_from)
 
@@ -1000,7 +1000,17 @@ def all_pending_tasks(request):
         except ValueError:
             tasks = tasks.filter(created_at__date__lte=date_to)
 
+    # NEW: Apply Building and Unit filters
+    if building and building.strip():
+        tasks = tasks.filter(building__iexact=building.strip())
 
+    if unit and unit.strip():
+        tasks = tasks.filter(unit__iexact=unit.strip())
+
+    # NEW: Get distinct options for the dropdowns
+    buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building',
+                                                                                                    flat=True).distinct()
+    units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
 
     return render(
         request,
@@ -1008,12 +1018,12 @@ def all_pending_tasks(request):
         {
             'tasks': tasks,
             'title': 'Pending Tasks',
-
+            'buildings': buildings,
+            'units': units,
         }
     )
 
 
-# 2. New Active Tasks View
 def all_active_tasks(request):
     tasks = Task.objects.filter(
         Q(status__in=['In Progress', 'قيد التنفيذ']) |
@@ -1026,11 +1036,13 @@ def all_active_tasks(request):
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
 
+    # NEW: Capture building and unit
+    building = request.GET.get('building')
+    unit = request.GET.get('unit')
 
     if job_id and job_id.strip():
         tasks = tasks.filter(job_id__icontains=job_id.strip())
 
-    # FIXED: Changed 'assigned_to' to 'assigned_technicians'
     if user and user.strip():
         tasks = tasks.filter(assigned_technicians__username__icontains=user.strip()).distinct()
 
@@ -1043,10 +1055,28 @@ def all_active_tasks(request):
     if date_to and date_to.strip():
         tasks = tasks.filter(started_at__date__lte=date_to)
 
+    # NEW: Apply Building and Unit filters
+    if building and building.strip():
+        tasks = tasks.filter(building__iexact=building.strip())
 
-    return render(request, 'tasks/all_tasks.html', {'tasks': tasks, 'title': 'Active Tasks',})
+    if unit and unit.strip():
+        tasks = tasks.filter(unit__iexact=unit.strip())
 
+    # NEW: Get distinct options for the dropdowns
+    buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building',
+                                                                                                    flat=True).distinct()
+    units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
 
+    return render(
+        request,
+        'tasks/all_tasks.html',
+        {
+            'tasks': tasks,
+            'title': 'Active Tasks',
+            'buildings': buildings,
+            'units': units,
+        }
+    )
 
 def all_overdue_tasks(request):
     tasks = Task.objects.filter(status='Overdue').distinct()
@@ -1776,54 +1806,55 @@ def is_admin_strict(user):
 
 @login_required
 def all_overtime_tasks(request):
-    tasks = Task.objects.filter(overtime_hours__gt=0)
-
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-
-    # Filter by completed_at range
-    if date_from: base_tasks = tasks.filter(created_at__date__gte=date_from)
-    if date_to: base_tasks = tasks.filter(created_at__date__lte=date_to)
-
     if not is_admin_strict(request.user):
+        from django.core.exceptions import PermissionDenied
         raise PermissionDenied("Only administrators can access the Overtime System.")
 
-    # Base Query: Only tasks that have overtime assigned
-    tasks = Task.objects.filter(overtime_hours__gt=0).prefetch_related('assigned_technicians', 'items',
-                                                                       'complaint_set').distinct().order_by(
-        '-created_at')
+    # 1. Single Base Query
+    tasks = Task.objects.filter(overtime_hours__gt=0).prefetch_related(
+        'assigned_technicians', 'items', 'complaint_set'
+    ).distinct().order_by('-created_at')
 
-    # Apply Filters (Matching your all_tasks.html capability)
+    # 2. Capture Parameters
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
     job_id = request.GET.get('job_id')
     user_query = request.GET.get('user')
     project_type = request.GET.get('project_type')
-
     building = request.GET.get('building')
     unit = request.GET.get('unit')
 
+    # 3. Apply Filters sequentially to the SAME variable
     if job_id and job_id.strip():
         tasks = tasks.filter(job_id__icontains=job_id.strip())
+
     if user_query and user_query.strip():
         tasks = tasks.filter(assigned_technicians__username__icontains=user_query.strip())
+
     if project_type and project_type.strip():
         tasks = tasks.filter(project_type=project_type)
-    if date_from and date_from.strip():
-        tasks = tasks.filter(completed_at__date__gte=date_from)
-    if date_to and date_to.strip():
-        try:
-            parsed_date_to = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
-            next_day = parsed_date_to + timedelta(days=1)
-            tasks = tasks.filter(completed_at__lt=next_day)
-        except ValueError:
-            tasks = tasks.filter(completed_at__date__lte=date_to)
+
     if building and building.strip():
         tasks = tasks.filter(building__iexact=building.strip())
+
     if unit and unit.strip():
         tasks = tasks.filter(unit__iexact=unit.strip())
 
+    # Safely apply Date Filters (using created_at consistently)
+    if date_from and date_from.strip():
+        tasks = tasks.filter(created_at__date__gte=date_from)
+
+    if date_to and date_to.strip():
+        try:
+            parsed_date_to = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
+            tasks = tasks.filter(created_at__date__lte=parsed_date_to)
+        except ValueError:
+            tasks = tasks.filter(created_at__date__lte=date_to)
+
+    # 4. Fetch unique dropdown options
     buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building',
                                                                                                     flat=True).distinct()
-    units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
+    units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values_list('unit', flat=True).distinct()
 
     context = {
         'tasks': tasks,
@@ -1836,58 +1867,87 @@ def all_overtime_tasks(request):
 
 @login_required
 def overtime_reports(request):
-    if not is_admin_strict(request.user):
-        raise PermissionDenied("Only administrators can access Overtime Reports.")
+    if not request.user.is_superuser:  # Adjust permissions as needed
+        return render(request, '403.html')
 
-    base_tasks = Task.objects.filter(overtime_hours__gt=0)
+    # 1. Base Query: Only get tasks that have actual overtime logged
+    tasks = Task.objects.filter(overtime_hours__gt=0)
 
-    # Apply standard page filters
+    # 2. Capture Filters
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
-    project_type = request.GET.get('project_type')
-    selected_building = request.GET.get('building')
-    selected_tech_id = request.GET.get('tech_id')
+    building = request.GET.get('building')
+    unit = request.GET.get('unit')
+    tech_id = request.GET.get('tech_id')
 
-    if date_from: base_tasks = base_tasks.filter(created_at__date__gte=date_from)
-    if date_to: base_tasks = base_tasks.filter(created_at__date__lte=date_to)
-    if project_type: base_tasks = base_tasks.filter(project_type=project_type)
-    if selected_building: base_tasks = base_tasks.filter(building=selected_building)
-    if selected_tech_id: base_tasks = base_tasks.filter(assigned_technicians__id=selected_tech_id)
+    # 3. Apply Filters
+    if date_from:
+        tasks = tasks.filter(created_at__date__gte=date_from)
+    if date_to:
+        tasks = tasks.filter(created_at__date__lte=date_to)
+    if building:
+        tasks = tasks.filter(building__iexact=building)
+    if unit:
+        tasks = tasks.filter(unit__iexact=unit)
+    if tech_id:
+        tasks = tasks.filter(assigned_technicians__id=tech_id)
 
-    # Aggregates
-    total_ot_hours = base_tasks.aggregate(total=Sum('overtime_hours'))['total'] or 0.0
-    total_ot_charge = base_tasks.aggregate(total=Sum('overtime_charge'))['total'] or 0.0
-
-    # Technician Stats for Chart
-    techs_summary = User.objects.filter(assigned_tasks__in=base_tasks).annotate(
-        total_hours=Sum('assigned_tasks__overtime_hours'),
-        total_charge=Sum('assigned_tasks__overtime_charge')
-    ).distinct().order_by('-total_hours')
-
-    tech_labels = [t.username for t in techs_summary]
-    tech_hours = [float(t.total_hours or 0) for t in techs_summary]
-    tech_charges = [float(t.total_charge or 0) for t in techs_summary]
-
-    # Building Stats
-    building_stats = base_tasks.values('building').annotate(
+    # 4. Calculate Top-Level KPIs
+    kpis = tasks.aggregate(
         total_hours=Sum('overtime_hours'),
-        total_charge=Sum('overtime_charge')
-    ).order_by('-total_charge')
+        total_cost=Sum('overtime_charge'),
+        total_tasks=Count('id', distinct=True)
+    )
 
-    all_technicians = User.objects.filter(profile__role__in=['Technician', 'Supervisor'])
-    all_buildings = Task.objects.values_list('building', flat=True).distinct().exclude(building__isnull=True)
+    # 5. Chart Data: Overtime by Technician
+    tech_stats = tasks.values('assigned_technicians__username').annotate(
+        total_hrs=Sum('overtime_hours'),
+        total_cst=Sum('overtime_charge')
+    ).exclude(assigned_technicians__username__isnull=True)
+
+    tech_labels = [t['assigned_technicians__username'] for t in tech_stats]
+    tech_hours = [float(t['total_hrs'] or 0) for t in tech_stats]
+    tech_costs = [float(t['total_cst'] or 0) for t in tech_stats]
+
+    # 6. Chart Data: Overtime by Building
+    building_stats = tasks.values('building').annotate(
+        total_cst=Sum('overtime_charge')
+    ).exclude(Q(building__isnull=True) | Q(building=''))
+
+    bldg_labels = [b['building'] for b in building_stats]
+    bldg_costs = [float(b['total_cst'] or 0) for b in building_stats]
+
+    # 7. Get distinct values for the filter dropdowns
+    all_buildings = Task.objects.exclude(Q(building__isnull=True) | Q(building='')).values_list('building',
+                                                                                                flat=True).distinct()
+    all_units = Task.objects.exclude(Q(unit__isnull=True) | Q(unit='')).values_list('unit', flat=True).distinct()
+    all_technicians = User.objects.filter(is_active=True)  # Or however you define technicians
 
     context = {
-        'total_ot_hours': total_ot_hours,
-        'total_ot_charge': total_ot_charge,
+        # KPIs
+        'total_hours': kpis['total_hours'] or 0,
+        'total_cost': kpis['total_cost'] or 0,
+        'total_tasks': kpis['total_tasks'] or 0,
+
+        # JSON for Charts
         'tech_labels_json': json.dumps(tech_labels),
         'tech_hours_json': json.dumps(tech_hours),
-        'tech_charges_json': json.dumps(tech_charges),
-        'building_stats': building_stats,
-        'all_technicians': all_technicians,
+        'tech_costs_json': json.dumps(tech_costs),
+        'bldg_labels_json': json.dumps(bldg_labels),
+        'bldg_costs_json': json.dumps(bldg_costs),
+
+        # Dropdown lists
         'all_buildings': all_buildings,
-        'selected_tech_id': selected_tech_id,
-        'selected_building': selected_building,
+        'all_units': all_units,
+        'all_technicians': all_technicians,
+
+        # Keep selected filters in context to maintain state
+        'selected_building': building,
+        'selected_unit': unit,
+        'selected_tech_id': tech_id,
+
+        # Send raw tasks for the detailed table at the bottom
+        'detailed_tasks': tasks.order_by('-created_at')[:100]  # Limit to 100 for performance
     }
     return render(request, 'tasks/overtime_reports.html', context)
 
@@ -1927,7 +1987,8 @@ def get_assignable_overtime_tasks_ajax(request):
             'title': t.title,
             'status': t.status,
             'current_ot_hours': float(t.overtime_hours or 0),
-            'current_ot_charge': float(t.overtime_charge or 0)
+            'current_ot_charge': float(t.overtime_charge or 0),
+            'assigned_to': t.assigned_to_display or 'Unassigned'
         })
     return JsonResponse({'tasks': task_data})
 
@@ -2000,3 +2061,95 @@ def delete_task_ajax(request, task_id):
         "status":"success"
 
     })
+
+
+@login_required
+def overtime_technicians(request):
+    if not request.user.is_superuser and getattr(request.user.profile, 'role', '') != 'Admin':
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("Only administrators can manage personnel overtime.")
+
+    # Fetch all relevant staff
+    technicians = User.objects.filter(
+        profile__role__in=['Technician', 'Supervisor']
+    ).prefetch_related('assigned_tasks', 'profile')
+
+    tech_data = []
+    for tech in technicians:
+        # Get all tasks for this technician that actually have overtime
+        ot_tasks = tech.assigned_tasks.filter(overtime_hours__gt=0)
+
+        # Calculate their share of the Task OT
+        # (Assuming the OT is split evenly among assigned technicians on that specific task)
+        task_accrued_hrs = 0.0
+        task_accrued_chg = 0.0
+
+        for t in ot_tasks:
+            tech_count = t.assigned_technicians.count()
+            if tech_count > 0:
+                task_accrued_hrs += float(t.overtime_hours or 0) / tech_count
+                task_accrued_chg += float(t.overtime_charge or 0) / tech_count
+
+        manual_hrs = float(tech.profile.manual_ot_hours or 0)
+        manual_chg = float(tech.profile.manual_ot_charge or 0)
+
+        tech_data.append({
+            'id': tech.id,
+            'username': tech.username,
+            'role': tech.profile.role,
+            'task_ot_hrs': task_accrued_hrs,
+            'task_ot_chg': task_accrued_chg,
+            'manual_ot_hrs': manual_hrs,
+            'manual_ot_charge': manual_chg,
+            'total_hrs': task_accrued_hrs + manual_hrs,
+            'total_chg': task_accrued_chg + manual_chg,
+            'has_details': ot_tasks.exists()
+        })
+
+    return render(request, 'tasks/overtime_technicians.html', {'technicians': tech_data})
+
+
+@login_required
+@require_POST
+def update_tech_overtime_ajax(request, tech_id):
+    if not request.user.is_superuser and getattr(request.user.profile, 'role', '') != 'Admin':
+        return JsonResponse({'status': 'error'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        target_user = get_object_or_404(User, id=tech_id)
+
+        target_user.profile.manual_ot_hours = float(data.get('hours') or 0.00)
+        target_user.profile.manual_ot_charge = float(data.get('charge') or 0.00)
+        target_user.profile.save()
+
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+def get_tech_overtime_details_ajax(request, tech_id):
+    if not request.user.is_superuser and getattr(request.user.profile, 'role', '') != 'Admin':
+        return JsonResponse({'status': 'error'}, status=403)
+
+    target_user = get_object_or_404(User, id=tech_id)
+    ot_tasks = target_user.assigned_tasks.filter(overtime_hours__gt=0).order_by('-completed_at')
+
+    task_list = []
+    for t in ot_tasks:
+        tech_count = t.assigned_technicians.count()
+        # Calculate their specific slice of the job's overtime
+        split_hrs = float(t.overtime_hours or 0) / tech_count if tech_count else 0
+        split_chg = float(t.overtime_charge or 0) / tech_count if tech_count else 0
+
+        task_list.append({
+            'job_id': t.job_id,
+            'title': t.title,
+            'date': t.completed_at.strftime('%Y-%m-%d') if t.completed_at else 'Active',
+            'split_hrs': round(split_hrs, 2),
+            'split_chg': round(split_chg, 2),
+            'shared_with': tech_count - 1  # How many other guys were on this job
+        })
+
+    return JsonResponse({'tasks': task_list, 'username': target_user.username})

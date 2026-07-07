@@ -112,4 +112,8 @@ path('overtime/ajax/get-tasks/', views.get_assignable_overtime_tasks_ajax, name=
 # Add these beneath your existing AJAX paths:
 path('tasks/update-status-ajax/<int:task_id>/', views.update_status_ajax, name='update_status_ajax'),
 path('tasks/delete-task-ajax/<int:task_id>/', views.delete_task_ajax, name='delete_task_ajax'),
+# Technician Overtime Management
+path('overtime/technicians/', views.overtime_technicians, name='overtime_technicians'),
+path('overtime/technicians/update/<int:tech_id>/', views.update_tech_overtime_ajax, name='update_tech_overtime_ajax'),
+path('overtime/technicians/details/<int:tech_id>/', views.get_tech_overtime_details_ajax, name='get_tech_overtime_details_ajax'),
 ]

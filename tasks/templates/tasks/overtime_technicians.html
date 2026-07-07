@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    body { background-color: #f8f9fa; }
+    .table-container { border-radius: 12px; overflow: hidden; border: 1px solid #e9ecef; background: #fff; }
+    .input-ot { width: 85px; text-align: center; font-weight: bold; }
+    .btn-details.active { background-color: #198754; color: white; border: none; }
+    .btn-details.inactive { background-color: #f8d7da; color: #dc3545; border: none; cursor: not-allowed; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+    <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-person-lines-fill text-primary me-2"></i> Employee Overtime Ledger</h4>
+        <p class="text-muted small mb-0">Manage direct manual overtime inputs and view accrued task-based overtime.</p>
+    </div>
+</div>
+
+<div class="table-container shadow-sm mb-5">
+    <div class="p-3 bg-white border-bottom">
+        <h6 class="fw-bold text-dark mb-0">Personnel Roster</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-secondary small text-uppercase">
+                <tr>
+                    <th class="px-4">Technician</th>
+                    <th class="text-center">Task Accrued (Hrs / AED)</th>
+                    <th class="text-center bg-light">Manual Entry (Hrs / AED)</th>
+                    <th class="text-center text-primary">Final Total (Hrs / AED)</th>
+                    <th class="text-center px-4">Task Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tech in technicians %}
+                <tr>
+                    <td class="px-4">
+                        <div class="fw-bold text-dark fs-6">{{ tech.username }}</div>
+                        <span class="badge bg-secondary opacity-75">{{ tech.role }}</span>
+                    </td>
+
+                    <td class="text-center text-muted fw-semibold">
+                        {{ tech.task_ot_hrs|floatformat:1 }} h <span class="mx-1">/</span> {{ tech.task_ot_chg|floatformat:1 }} AED
+                    </td>
+
+                    <td class="text-center bg-light">
+                        <div class="d-flex align-items-center justify-content-center gap-2">
+                            <input type="number" id="manual-hrs-{{ tech.id }}" class="form-control form-control-sm input-ot border-warning" value="{{ tech.manual_ot_hrs|floatformat:1 }}" step="0.5" placeholder="Hrs">
+                            <input type="number" id="manual-chg-{{ tech.id }}" class="form-control form-control-sm input-ot border-success text-success" value="{{ tech.manual_ot_charge|floatformat:1 }}" step="1" placeholder="AED">
+                            <button class="btn btn-sm btn-primary fw-bold btn-save-manual shadow-sm" data-id="{{ tech.id }}"><i class="bi bi-save"></i></button>
+                        </div>
+                    </td>
+
+                    <td class="text-center fw-bold text-dark fs-6">
+                        <span id="total-hrs-{{ tech.id }}" class="text-primary">{{ tech.total_hrs|floatformat:1 }}</span> h
+                        <span class="mx-1 text-muted">/</span>
+                        <span id="total-chg-{{ tech.id }}" class="text-success">{{ tech.total_chg|floatformat:1 }}</span> AED
+                    </td>
+
+                    <td class="text-center px-4">
+                        {% if tech.has_details %}
+                        <button class="btn btn-sm btn-details active fw-bold shadow-sm rounded-pill px-3" onclick="openDetailsModal({{ tech.id }})">
+                            <i class="bi bi-check-circle-fill me-1"></i> Details
+                        </button>
+                        {% else %}
+                        <button class="btn btn-sm btn-details inactive fw-bold rounded-pill px-3" disabled>
+                            <i class="bi bi-x-circle-fill me-1"></i> N/A
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="techDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white p-3">
+                <h6 class="modal-title fw-bold" id="modalTechName"><i class="bi bi-search me-2"></i> Overtime Breakdown</h6>
+                <button type="button" class="btn-close btn-close-white small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0 bg-light">
+                <table class="table table-hover align-middle mb-0 text-sm">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th class="px-3">Date</th>
+                            <th>Job ID</th>
+                            <th>Task Title</th>
+                            <th class="text-center">Shared With</th>
+                            <th class="text-end text-warning">Their Share (Hrs)</th>
+                            <th class="text-end text-success px-3">Their Share (AED)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailsTableBody">
+                        </tbody>
+                </table>
+            </div>
+            <div class="modal-footer p-2 bg-white">
+                <button type="button" class="btn btn-outline-dark btn-sm fw-bold px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    // 1. Save Manual OT Inputs
+    document.querySelectorAll('.btn-save-manual').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const techId = this.getAttribute('data-id');
+            const hrs = document.getElementById(`manual-hrs-${techId}`).value;
+            const chg = document.getElementById(`manual-chg-${techId}`).value;
+
+            const originalIcon = this.innerHTML;
+            this.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
+            this.disabled = true;
+
+            fetch(`/overtime/technicians/update/${techId}/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ hours: hrs, charge: chg })
+            })
+            .then(r => r.json())
+            .then(data => {
+                this.innerHTML = originalIcon;
+                this.disabled = false;
+                if(data.status === 'success') {
+                    this.classList.replace('btn-primary', 'btn-success');
+                    setTimeout(() => {
+                        this.classList.replace('btn-success', 'btn-primary');
+                        window.location.reload(); // Reload to recalculate final totals cleanly
+                    }, 1000);
+                } else {
+                    alert("Failed to save data.");
+                }
+            });
+        });
+    });
+});
+
+// 2. Fetch and Open Details Modal
+function openDetailsModal(techId) {
+    const tbody = document.getElementById('detailsTableBody');
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>`;
+
+    new bootstrap.Modal(document.getElementById('techDetailsModal')).show();
+
+    fetch(`/overtime/technicians/details/${techId}/`)
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('modalTechName').innerHTML = `<i class="bi bi-person-badge-fill me-2"></i> Overtime Breakdown: ${data.username}`;
+        tbody.innerHTML = '';
+
+        data.tasks.forEach(t => {
+            let sharedBadge = t.shared_with > 0
+                ? `<span class="badge bg-info text-dark border">${t.shared_with} other(s)</span>`
+                : `<span class="badge bg-light text-muted border">Solo Job</span>`;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="px-3 text-muted fw-bold">${t.date}</td>
+                    <td class="fw-bold text-dark">${t.job_id}</td>
+                    <td class="text-truncate" style="max-width: 150px;">${t.title}</td>
+                    <td class="text-center">${sharedBadge}</td>
+                    <td class="text-end fw-bold text-warning">${t.split_hrs} h</td>
+                    <td class="text-end fw-bold text-success px-3">${t.split_chg} AED</td>
+                </tr>
+            `;
+        });
+    });
+}
+</script>
+{% endblock %}

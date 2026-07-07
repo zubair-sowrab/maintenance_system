@@ -1,89 +1,165 @@
 {% extends 'base.html' %}
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-<div class="sticky-top bg-white p-3 shadow-sm d-flex align-items-center mb-4 justify-content-between border-bottom">
-    <div class="d-flex align-items-center">
-        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm px-3">← Go Back</a>
-        <h5 class="ms-3 mb-0 fw-bold text-dark"><i class="bi bi-bar-chart-line-fill text-success me-2"></i> Overtime Analytics Dashboard</h5>
-    </div>
+<style>
+    body { background-color: #f4f6f9; }
+    .stat-card { border-radius: 12px; transition: transform 0.2s ease; border: none; }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.10)!important; }
+    .chart-box { background: #fff; border-radius: 12px; border: 1px solid #e9ecef; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .table-responsive { border-radius: 12px; border: 1px solid #e9ecef; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+    <h4 class="fw-bold text-dark mb-0"><i class="bi bi-graph-up-arrow text-primary me-2"></i> Overtime Analytics</h4>
+    <button onclick="window.print()" class="btn btn-dark btn-sm shadow-sm fw-bold"><i class="bi bi-printer me-1"></i> Print Dashboard</button>
 </div>
 
-<div class="card shadow-sm border-0 mb-4 bg-light rounded-3">
+<!-- FILTER BAR -->
+<div class="card border-0 shadow-sm rounded-3 mb-4">
     <div class="card-body p-3">
-        <form method="GET" id="analyticsFilterForm">
-            <div class="row g-2">
-                <div class="col-6 col-md-2"><label class="small fw-bold text-muted mb-1">Date From</label><input type="text" name="date_from" class="form-control form-control-sm flatpickr-date" value="{{ request.GET.date_from }}"></div>
-                <div class="col-6 col-md-2"><label class="small fw-bold text-muted mb-1">Date To</label><input type="text" name="date_to" class="form-control form-control-sm flatpickr-date" value="{{ request.GET.date_to }}"></div>
-
-                <div class="col-12 col-md-3">
-                    <label class="small fw-bold text-success mb-1">Specific Worker</label>
-                    <select name="tech_id" class="form-select form-select-sm border-success text-success fw-bold">
-                        <option value="">All Technicians</option>
-                        {% for tech in all_technicians %}<option value="{{ tech.id }}" {% if selected_tech_id == tech.id|stringformat:"s" %}selected{% endif %}>{{ tech.username }}</option>{% endfor %}
-                    </select>
+        <form method="GET" id="otReportsFilterForm">
+            <div class="row g-2 align-items-end">
+                <div class="col-6 col-md-2">
+                    <label class="small fw-bold text-secondary mb-1">Date From</label>
+                    <input type="text" name="date_from" class="form-control form-control-sm flatpickr-date bg-light" value="{{ request.GET.date_from }}" placeholder="Start Date">
                 </div>
-
-                <div class="col-6 col-md-3">
-                    <label class="small fw-bold text-primary mb-1">Building</label>
-                    <select name="building" class="form-select form-select-sm border-primary">
+                <div class="col-6 col-md-2">
+                    <label class="small fw-bold text-secondary mb-1">Date To</label>
+                    <input type="text" name="date_to" class="form-control form-control-sm flatpickr-date bg-light" value="{{ request.GET.date_to }}" placeholder="End Date">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="small fw-bold text-secondary mb-1">Building</label>
+                    <select name="building" class="form-select form-select-sm bg-light">
                         <option value="">All Buildings</option>
                         {% for b in all_buildings %}<option value="{{ b }}" {% if selected_building == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
                     </select>
                 </div>
-
-                <div class="col-6 col-md-2 d-flex align-items-end gap-1">
-                    <button type="submit" class="btn btn-success btn-sm w-100 fw-bold"><i class="bi bi-funnel"></i> Apply</button>
-                    <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+                <div class="col-6 col-md-2">
+                    <label class="small fw-bold text-secondary mb-1">Unit</label>
+                    <select name="unit" class="form-select form-select-sm bg-light">
+                        <option value="">All Units</option>
+                        {% for u in all_units %}<option value="{{ u }}" {% if selected_unit == u %}selected{% endif %}>{{ u }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="small fw-bold text-primary mb-1">Specific Technician</label>
+                    <select name="tech_id" class="form-select form-select-sm border-primary fw-bold text-primary bg-light">
+                        <option value="">All Technicians</option>
+                        {% for tech in all_technicians %}
+                            <option value="{{ tech.id }}" {% if selected_tech_id == tech.id|stringformat:"s" %}selected{% endif %}>{{ tech.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-1 d-flex gap-1 justify-content-end">
+                    <a href="{{ request.path }}" class="btn btn-light btn-sm border w-100" title="Clear Filters"><i class="bi bi-x-lg"></i></a>
+                    <button type="submit" class="btn btn-primary btn-sm w-100 shadow-sm" title="Apply Filters"><i class="bi bi-search"></i></button>
                 </div>
             </div>
         </form>
     </div>
 </div>
 
+<!-- KPI CARDS -->
 <div class="row g-3 mb-4">
-    <div class="col-md-6">
-        <div class="card p-4 border-0 bg-dark shadow-sm h-100 text-white border-start border-warning border-5">
-            <h6 class="text-white-50 small fw-bold mb-1">Total Overtime Hours (Filtered)</h6>
-            <h2 class="fw-bold text-warning mb-0">{{ total_ot_hours|floatformat:1 }} <span class="fs-6 font-normal text-white-50">Hrs</span></h2>
+    <div class="col-12 col-md-4">
+        <div class="card stat-card shadow-sm bg-white p-4 h-100" style="border-left: 5px solid #ffc107;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted small fw-bold text-uppercase mb-1">Total OT Hours</h6>
+                    <h2 class="fw-bold mb-0 text-dark">{{ total_hours|floatformat:1 }} <span class="fs-6 fw-normal text-muted">Hrs</span></h2>
+                </div>
+                <div class="bg-warning bg-opacity-10 p-3 rounded-circle"><i class="bi bi-clock-fill text-warning fs-3"></i></div>
+            </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card p-4 border-0 bg-dark shadow-sm h-100 text-white border-start border-success border-5">
-            <h6 class="text-white-50 small fw-bold mb-1">Total Overtime Financial Cost</h6>
-            <h2 class="fw-bold text-success mb-0">{{ total_ot_charge|floatformat:2 }} <span class="fs-6 font-normal text-white-50">AED</span></h2>
+    <div class="col-12 col-md-4">
+        <div class="card stat-card shadow-sm bg-white p-4 h-100" style="border-left: 5px solid #198754;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted small fw-bold text-uppercase mb-1">Total OT Expense</h6>
+                    <h2 class="fw-bold mb-0 text-success">{{ total_cost|floatformat:2 }} <span class="fs-6 fw-normal text-muted">AED</span></h2>
+                </div>
+                <div class="bg-success bg-opacity-10 p-3 rounded-circle"><i class="bi bi-cash-stack text-success fs-3"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card stat-card shadow-sm bg-white p-4 h-100" style="border-left: 5px solid #0d6efd;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted small fw-bold text-uppercase mb-1">Tasks w/ Overtime</h6>
+                    <h2 class="fw-bold mb-0 text-primary">{{ total_tasks }}</h2>
+                </div>
+                <div class="bg-primary bg-opacity-10 p-3 rounded-circle"><i class="bi bi-briefcase-fill text-primary fs-3"></i></div>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- CHARTS -->
 <div class="row g-4 mb-4">
-    <div class="col-12 col-lg-8">
-        <div class="card border-0 shadow-sm h-100 rounded-3">
-            <div class="card-header bg-white border-0 pt-3">
-                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-people-fill text-primary me-1"></i> Overtime by Technician</h6>
-            </div>
-            <div class="card-body p-3" style="min-height: 350px;"><canvas id="techOtChart"></canvas></div>
+    <!-- Tech Breakdown -->
+    <div class="col-12 col-lg-7">
+        <div class="chart-box p-4 h-100">
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-people-fill text-primary me-2"></i>Overtime per Technician</h6>
+            <div style="height: 300px;"><canvas id="techChart"></canvas></div>
         </div>
     </div>
+    <!-- Building Breakdown -->
+    <div class="col-12 col-lg-5">
+        <div class="chart-box p-4 h-100">
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-building text-info me-2"></i>Financial Expense by Building</h6>
+            <div style="height: 300px;"><canvas id="bldgChart"></canvas></div>
+        </div>
+    </div>
+</div>
 
-    <div class="col-12 col-lg-4">
-        <div class="card border-0 shadow-sm h-100 rounded-3">
-            <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-building text-info me-1"></i> OT Cost by Building</h6>
-                <button onclick="window.print()" class="btn btn-sm btn-outline-dark"><i class="bi bi-printer"></i></button>
-            </div>
-            <div class="card-body p-0">
-                <ul class="list-group list-group-flush">
-                    {% for b in building_stats|slice:":8" %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                        <span class="fw-semibold text-secondary">{{ b.building }}</span>
-                        <span class="badge bg-success rounded-pill px-3 py-2 fs-6">{{ b.total_charge }} AED</span>
-                    </li>
+<!-- DETAILED BREAKDOWN TABLE -->
+<div class="card border-0 shadow-sm rounded-3 mb-5">
+    <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold text-dark mb-0"><i class="bi bi-table text-secondary me-2"></i>Detailed Job Breakdown (Filtered)</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle mb-0">
+                <thead class="table-light border-bottom text-muted small text-uppercase">
+                    <tr>
+                        <th class="px-4">Job ID</th>
+                        <th>Technician(s)</th>
+                        <th>Location</th>
+                        <th class="text-center">OT Hours</th>
+                        <th class="text-end px-4">OT Charge (AED)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in detailed_tasks %}
+                    <tr>
+                        <td class="px-4 fw-bold"><a href="#" class="text-decoration-none">{{ t.job_id }}</a></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-person-circle text-primary me-2"></i>
+                                <span class="fw-semibold text-dark">{{ t.assigned_to_display|default:"Unassigned" }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border me-1">{{ t.building|default:"N/A" }}</span>
+                            <span class="badge bg-light text-dark border">Unit {{ t.unit|default:"N/A" }}</span>
+                        </td>
+
+                        <td class="text-center fw-bold text-warning">{{ t.overtime_hours|floatformat:1 }}</td>
+                        <td class="text-end px-4 fw-bold text-success">{{ t.overtime_charge|floatformat:2 }}</td>
+                    </tr>
                     {% empty %}
-                    <li class="list-group-item text-center text-muted py-4">No data available</li>
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i> No overtime records found for this criteria.
+                        </td>
+                    </tr>
                     {% endfor %}
-                </ul>
-            </div>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -94,24 +170,53 @@
 document.addEventListener("DOMContentLoaded", function() {
     flatpickr(".flatpickr-date", { altInput: true, altFormat: "d/m/Y", dateFormat: "Y-m-d" });
 
+    // Chart Global Settings
+    Chart.defaults.font.family = 'system-ui, -apple-system, sans-serif';
+
+    // 1. Tech Chart (Bar)
     const techLabels = JSON.parse('{{ tech_labels_json|safe }}');
     const techHours = JSON.parse('{{ tech_hours_json|safe }}');
-    const techCharges = JSON.parse('{{ tech_charges_json|safe }}');
+    const techCosts = JSON.parse('{{ tech_costs_json|safe }}');
 
-    new Chart(document.getElementById('techOtChart'), {
+    new Chart(document.getElementById('techChart').getContext('2d'), {
         type: 'bar',
         data: {
-            labels: techLabels.length ? techLabels : ["No Data"],
+            labels: techLabels.length ? techLabels : ['No Data'],
             datasets: [
                 { label: 'OT Hours', data: techHours, backgroundColor: '#ffc107', borderRadius: 4, yAxisID: 'y' },
-                { label: 'Cost (AED)', data: techCharges, backgroundColor: '#198754', borderRadius: 4, yAxisID: 'y1' }
+                { label: 'Cost (AED)', data: techCosts, backgroundColor: '#198754', borderRadius: 4, yAxisID: 'y1' }
             ]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
             scales: {
-                y: { type: 'linear', position: 'left', title: {display: true, text: 'Hours'} },
-                y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: {display: true, text: 'AED'} }
+                x: { grid: { display: false } },
+                y: { type: 'linear', position: 'left', title: { display: true, text: 'Hours' } },
+                y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'AED' } }
+            },
+            plugins: { legend: { position: 'top', labels: { usePointStyle: true } } }
+        }
+    });
+
+    // 2. Building Chart (Doughnut)
+    const bldgLabels = JSON.parse('{{ bldg_labels_json|safe }}');
+    const bldgCosts = JSON.parse('{{ bldg_costs_json|safe }}');
+
+    new Chart(document.getElementById('bldgChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: bldgLabels.length ? bldgLabels : ['No Data'],
+            datasets: [{
+                data: bldgCosts.length ? bldgCosts : [1],
+                backgroundColor: ['#0d6efd', '#0dcaf0', '#6610f2', '#d63384', '#fd7e14', '#20c997'],
+                borderWidth: 0, hoverOffset: 5
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '65%',
+            plugins: {
+                legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8 } },
+                tooltip: { callbacks: { label: function(context) { return ' ' + context.raw + ' AED'; } } }
             }
         }
     });

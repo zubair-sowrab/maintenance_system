@@ -78,28 +78,29 @@
  <!-- NEW: Building Filter -->
 
               {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
-  {% if "Completed" in title or "مكتمل" in title %}
-              <div class="col-6 col-md-2">
-                  <label class="form-label small fw-semibold text-muted mb-1">Building (المبنى)</label>
-                  <select name="building" id="buildingSelect" class="form-select form-select-sm">
-                      <option value="">All Buildings</option>
-                      {% for b in buildings %}
-                          <option value="{{ b }}" {% if request.GET.building == b %}selected{% endif %}>{{ b }}</option>
-                      {% endfor %}
-                  </select>
-              </div>
+  {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
+                  {% if buildings %}
+                  <div class="col-6 col-md-2">
+                      <label class="form-label small fw-semibold text-muted mb-1">Building (المبنى)</label>
+                      <select name="building" id="buildingSelect" class="form-select form-select-sm">
+                          <option value="">All Buildings</option>
+                          {% for b in buildings %}
+                              <option value="{{ b }}" {% if request.GET.building == b %}selected{% endif %}>{{ b }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
 
-              <!-- NEW: Unit Filter -->
-              <div class="col-6 col-md-2">
-                  <label class="form-label small fw-semibold text-muted mb-1">Unit (الوحدة)</label>
-                  <select name="unit" id="unitSelect" class="form-select form-select-sm">
-                      <option value="">All Units</option>
-                      {% for u in units %}
-                          <option value="{{ u.unit }}" data-building="{{ u.building }}" {% if request.GET.unit == u.unit %}selected{% endif %}>{{ u.unit }}</option>
-                      {% endfor %}
-                  </select>
-              </div>
-{%endif%}
+                  <div class="col-6 col-md-2">
+                      <label class="form-label small fw-semibold text-muted mb-1">Unit (الوحدة)</label>
+                      <select name="unit" id="unitSelect" class="form-select form-select-sm">
+                          <option value="">All Units</option>
+                          {% for u in units %}
+                              <option value="{{ u.unit }}" data-building="{{ u.building }}" {% if request.GET.unit == u.unit %}selected{% endif %}>{{ u.unit }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+                  {% endif %}
+              {% endif %}
               {%endif%}
 
 

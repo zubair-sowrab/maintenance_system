@@ -548,7 +548,14 @@ class Profile(models.Model):
       on_delete=models.CASCADE
   )
 
-
+  manual_ot_hours = models.DecimalField(
+      max_digits=6, decimal_places=2, default=0.00,
+      help_text="Directly inputted loose overtime hours"
+  )
+  manual_ot_charge = models.DecimalField(
+      max_digits=10, decimal_places=2, default=0.00,
+      help_text="Directly inputted overtime charge/bonus"
+  )
 
 
   role = models.CharField(
