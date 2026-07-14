@@ -955,7 +955,7 @@ def all_completed_tasks(request):
     return render(
         request,
         "tasks/all_tasks.html",
-        {"tasks": base_tasks.distinct(), "title": "Completed Tasks (المهام المكتملة)","buildings": buildings,
+        {"tasks": base_tasks.distinct().order_by('-completed_at'), "title": "Completed Tasks (المهام المكتملة)","buildings": buildings,
            "units": units,},
     )
 
@@ -1016,7 +1016,7 @@ def all_pending_tasks(request):
         request,
         'tasks/all_tasks.html',
         {
-            'tasks': tasks,
+            'tasks': tasks.order_by('-created_at'),
             'title': 'Pending Tasks',
             'buildings': buildings,
             'units': units,
@@ -1071,7 +1071,7 @@ def all_active_tasks(request):
         request,
         'tasks/all_tasks.html',
         {
-            'tasks': tasks,
+            'tasks': tasks.order_by('-started_at'),
             'title': 'Active Tasks',
             'buildings': buildings,
             'units': units,
@@ -1627,8 +1627,7 @@ def bulk_print_invoices(request):
     task_ids = [int(i) for i in task_ids_str.split(',') if i.isdigit()]
 
     # Fetch ONLY the tasks that match the IDs and are strictly 'Completed'
-    tasks = Task.objects.filter(id__in=task_ids, status='Completed')
-
+    tasks = Task.objects.filter(id__in=task_ids, status='Completed').order_by('-completed_at')
     context = {
         'tasks': tasks,
         'customer_name': customer_name,
