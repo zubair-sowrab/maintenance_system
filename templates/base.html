@@ -60,7 +60,10 @@ function googleTranslateElementInit() {
             <div class="ms-auto d-flex flex-column flex-lg-row gap-2 align-items-lg-center">
 
             {% if user.is_authenticated %}
-
+<a href="{% url 'approved_materials_list' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
+    Approved Materials
+    <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">المواد المعتمدة</small>
+</a>
                    <a href="{% url 'task_list' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
                         Tasks
                         <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">المهام</small>

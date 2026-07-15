@@ -121,4 +121,6 @@ path('overtime/technicians/details/<int:tech_id>/', views.get_tech_overtime_deta
     path('materials/task/<int:task_id>/save/', views.save_material_request_ajax, name='save_material_request_ajax'),
     path('materials/task/<int:task_id>/get/', views.get_material_request_ajax, name='get_material_request_ajax'),
     path('materials/task/<int:task_id>/disapprove/', views.disapprove_material_request_ajax, name='disapprove_material_request_ajax'),
+path('materials/approved-list/', views.approved_materials_list, name='approved_materials_list'),
+path('materials/print-voucher/<int:req_id>/', views.print_material_approval, name='print_material_approval'),
 ]

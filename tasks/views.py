@@ -2243,3 +2243,32 @@ def disapprove_material_request_ajax(request, task_id):
         TaskItem.objects.filter(task=task, sub_category__startswith='[Material]').delete()
 
     return JsonResponse({'status': 'success'})
+
+
+@login_required
+def approved_materials_list(request):
+    is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
+
+    # Admins see all approved materials, Technicians see only their assigned tasks
+    if is_admin:
+        approved_reqs = MaterialRequest.objects.filter(status='Approved').order_by('-approved_at')
+    else:
+        approved_reqs = MaterialRequest.objects.filter(
+            status='Approved',
+            task__assigned_technicians=request.user
+        ).distinct().order_by('-approved_at')
+
+    return render(request, 'tasks/approved_materials.html', {'requests': approved_reqs})
+
+
+@login_required
+def print_material_approval(request, req_id):
+    mat_req = get_object_or_404(MaterialRequest, id=req_id, status='Approved')
+
+    # Security check: Ensure a technician cannot type in a random ID to print another team's voucher
+    is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
+    if not is_admin and not mat_req.task.assigned_technicians.filter(id=request.user.id).exists():
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("You do not have access to view this approval document.")
+
+    return render(request, 'tasks/print_material_approval.html', {'req': mat_req})
