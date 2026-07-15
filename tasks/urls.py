@@ -116,4 +116,9 @@ path('tasks/delete-task-ajax/<int:task_id>/', views.delete_task_ajax, name='dele
 path('overtime/technicians/', views.overtime_technicians, name='overtime_technicians'),
 path('overtime/technicians/update/<int:tech_id>/', views.update_tech_overtime_ajax, name='update_tech_overtime_ajax'),
 path('overtime/technicians/details/<int:tech_id>/', views.get_tech_overtime_details_ajax, name='get_tech_overtime_details_ajax'),
+# Material Approvals System
+    path('materials/approvals/', views.material_approvals_view, name='material_approvals'),
+    path('materials/task/<int:task_id>/save/', views.save_material_request_ajax, name='save_material_request_ajax'),
+    path('materials/task/<int:task_id>/get/', views.get_material_request_ajax, name='get_material_request_ajax'),
+    path('materials/task/<int:task_id>/disapprove/', views.disapprove_material_request_ajax, name='disapprove_material_request_ajax'),
 ]

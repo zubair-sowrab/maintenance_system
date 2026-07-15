@@ -693,5 +693,18 @@ class TaskAttachment(models.Model):
 
 
 
+class MaterialRequest(models.Model):
+    task = models.OneToOneField(Task, on_delete=models.CASCADE, related_name='material_request')
+    status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Approved', 'Approved')], default='Pending')
+    submitted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return f"Materials for {self.task.job_id} - {self.status}"
+
+class RequestedMaterialItem(models.Model):
+    request = models.ForeignKey(MaterialRequest, on_delete=models.CASCADE, related_name='items')
+    material_name = models.CharField(max_length=250, blank=True, null=True)
+    quantity = models.CharField(max_length=100, blank=True, null=True)
 

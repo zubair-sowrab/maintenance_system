@@ -32,7 +32,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import datetime, timedelta
 from django.contrib import messages
-from .models import TaskAttachment  # Ensure you import this at the top
+from .models import TaskAttachment,MaterialRequest,RequestedMaterialItem  # Ensure you import this at the top
 import uuid
 from .models import Profile
 import pytz  # Import pytz
@@ -2152,3 +2152,94 @@ def get_tech_overtime_details_ajax(request, tech_id):
         })
 
     return JsonResponse({'tasks': task_list, 'username': target_user.username})
+
+
+@login_required
+def material_approvals_view(request):
+    # Check if user is Admin safely
+    if getattr(request.user.profile, 'role', '') != 'Admin' and not request.user.is_superuser:
+        return redirect('dashboard')
+
+    # Rule: Keep approved items on the board for exactly 3 days
+    three_days_ago = timezone.now() - timedelta(days=3)
+
+    requests = MaterialRequest.objects.filter(
+        Q(status='Pending') |
+        (Q(status='Approved') & Q(approved_at__gte=three_days_ago))
+    ).order_by('-updated_at')
+
+    return render(request, 'tasks/material_approvals.html', {'requests': requests})
+
+
+@login_required
+def save_material_request_ajax(request, task_id):
+    if request.method == 'POST':
+        task = get_object_or_404(Task, id=task_id)
+        data = json.loads(request.body)
+        items = data.get('items', [])
+        action = data.get('action', 'save')
+
+        mat_req, created = MaterialRequest.objects.get_or_create(task=task)
+        if created or mat_req.status != 'Approved':
+            mat_req.submitted_by = request.user
+
+        # Clear old rows and recreate them
+        mat_req.items.all().delete()
+        for item in items:
+            name = item.get('name', '').strip()
+            qty = item.get('qty', '').strip()
+            if name or qty:
+                RequestedMaterialItem.objects.create(request=mat_req, material_name=name, quantity=qty)
+
+        # ADMIN APPROVAL LOGIC
+        is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
+
+        if action == 'approve' and is_admin:
+            mat_req.status = 'Approved'
+            mat_req.approved_at = timezone.now()
+
+            # Clear previously approved materials from TaskItem to prevent duplicates if admin edits it again
+            TaskItem.objects.filter(task=task, sub_category__startswith='[Material]').delete()
+
+            # Append materials to the official sub-items breakdown!
+            for item in items:
+                name = item.get('name', '').strip()
+                qty = item.get('qty', '').strip()
+                if name:
+                    TaskItem.objects.create(task=task, sub_category=f"[Material] {name}", quantity=qty or "1")
+        else:
+            mat_req.status = 'Pending'
+
+        mat_req.save()
+        return JsonResponse({'status': 'success', 'req_status': mat_req.status})
+    return JsonResponse({'status': 'error'}, status=400)
+
+
+@login_required
+def get_material_request_ajax(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+
+    # Safe check that prevents the 500 error crash
+    if hasattr(task, 'material_request'):
+        mat_req = task.material_request
+        items = [{'name': i.material_name, 'qty': i.quantity} for i in mat_req.items.all()]
+        return JsonResponse({'status': 'success', 'items': items, 'req_status': mat_req.status})
+
+    return JsonResponse({'status': 'success', 'items': [], 'req_status': 'None'})
+
+
+@login_required
+def disapprove_material_request_ajax(request, task_id):
+    is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
+    if not is_admin:
+        return JsonResponse({'status': 'error'}, status=403)
+
+    task = get_object_or_404(Task, id=task_id)
+    if hasattr(task, 'material_request'):
+        task.material_request.status = 'Pending'
+        task.material_request.approved_at = None
+        task.material_request.save()
+        # Immediately strip them from the sub-item breakdown
+        TaskItem.objects.filter(task=task, sub_category__startswith='[Material]').delete()
+
+    return JsonResponse({'status': 'success'})

@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+    <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-box-seam text-primary me-2"></i> Materials Approval Dashboard</h4>
+        <p class="text-muted small mb-0">Review, modify, and approve material requests from technicians. Approved items expire from this list after 3 days.</p>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 bg-white">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-secondary small text-uppercase">
+                <tr>
+                    <th class="px-4">Job ID</th>
+                    <th>Task Title</th>
+                    <th>Submitted By</th>
+                    <th>Status</th>
+                    <th>Last Updated</th>
+                    <th class="text-center px-4">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requests %}
+                <tr>
+                    <td class="px-4 fw-bold text-dark">{{ req.task.job_id }}</td>
+                    <td>
+                        <a href="{% url 'task_detail' req.task.id %}" class="text-decoration-none fw-bold text-primary">{{ req.task.title }}</a>
+                    </td>
+                    <td>{{ req.submitted_by.username|default:"Unknown" }}</td>
+                    <td>
+                        {% if req.status == 'Pending' %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Pending</span>
+                        {% else %}
+                            <span class="badge bg-success"><i class="bi bi-check2-all"></i> Approved</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small">{{ req.updated_at|date:"d/m/Y H:i" }}</td>
+                    <td class="text-center px-4">
+                        <button class="btn btn-sm btn-dark fw-bold px-3" onclick="openAdminMaterialsModal({{ req.task.id }})">
+                            See Materials
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">No pending or recently approved material requests found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="materialsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white p-3">
+                <h6 class="modal-title fw-bold"><i class="bi bi-shield-lock me-2"></i> Admin Material Review</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3 bg-light">
+                <div class="d-flex justify-content-end mb-2 gap-2">
+                    <button class="btn btn-danger btn-sm fw-bold px-3" onclick="disapproveMaterials()">Disapprove</button>
+                    <button class="btn btn-success btn-sm fw-bold px-4" onclick="saveMaterials('approve')">Approve & Append</button>
+                </div>
+
+                <table class="table table-bordered table-sm bg-white mb-2">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th style="width: 70%;">Material Name</th>
+                            <th style="width: 30%;">Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody id="materialsTbody">
+                        </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span id="matSaveSpinner" class="text-success small fw-bold d-none"><i class="bi bi-hourglass-split"></i> Processing...</span>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-danger btn-sm fw-bold px-3" onclick="disapproveMaterials()">Disapprove</button>
+                        <button class="btn btn-success btn-sm fw-bold px-4" onclick="saveMaterials('approve')">Approve & Append</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentTaskForMaterials = null;
+
+function openAdminMaterialsModal(taskId) {
+    currentTaskForMaterials = taskId;
+    const tbody = document.getElementById('materialsTbody');
+    tbody.innerHTML = '<tr><td colspan="2" class="text-center py-3"><div class="spinner-border text-dark spinner-border-sm"></div></td></tr>';
+
+    new bootstrap.Modal(document.getElementById('materialsModal')).show();
+
+    fetch(`/materials/task/${taskId}/get/`)
+    .then(r => r.json())
+    .then(data => {
+        tbody.innerHTML = '';
+        for(let i=0; i<15; i++) {
+            let name = data.items[i] ? data.items[i].name : '';
+            let qty = data.items[i] ? data.items[i].qty : '';
+            tbody.innerHTML += `
+                <tr>
+                    <td><input type="text" class="form-control form-control-sm mat-name" value="${name}"></td>
+                    <td><input type="text" class="form-control form-control-sm mat-qty" value="${qty}"></td>
+                </tr>
+            `;
+        }
+    });
+}
+
+function saveMaterials(actionType) {
+    const names = document.querySelectorAll('.mat-name');
+    const qtys = document.querySelectorAll('.mat-qty');
+    let items = [];
+
+    for(let i=0; i<15; i++) {
+        if(names[i].value.trim() !== '' || qtys[i].value.trim() !== '') {
+            items.push({ name: names[i].value, qty: qtys[i].value });
+        }
+    }
+
+    document.getElementById('matSaveSpinner').classList.remove('d-none');
+
+    fetch(`/materials/task/${currentTaskForMaterials}/save/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({ items: items, action: actionType })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'success') location.reload();
+    });
+}
+
+function disapproveMaterials() {
+    if(confirm('Are you sure you want to disapprove this? It will remove approved items from the task.')) {
+        document.getElementById('matSaveSpinner').classList.remove('d-none');
+        fetch(`/materials/task/${currentTaskForMaterials}/disapprove/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        }).then(r => r.json()).then(d => {
+            if(d.status === 'success') location.reload();
+        });
+    }
+}
+</script>
+{% endblock %}

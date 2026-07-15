@@ -84,6 +84,12 @@ function googleTranslateElementInit() {
                     Create Task
                     <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">إنشاء مهمة</small>
                 </a>
+                {% if user.profile.role == 'Admin' %}
+<a href="{% url 'material_approvals' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
+    Approvals
+    <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">الموافقات</small>
+</a>
+{% endif %}
 {%comment%}
 
           {% if user.profile.role == 'Admin' or user.is_superuser %}
