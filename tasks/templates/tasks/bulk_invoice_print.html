@@ -50,7 +50,8 @@
                 <strong>Invoice Number:</strong> {{ task.job_id }}<br>
                 <strong>Date:</strong> {{ today }}<br>
                 <strong>Building:</strong> {{ task.building|default:"N/A" }}<br>
-                <strong>Unit:</strong> {{ task.unit|default:"N/A" }}
+                <strong>Unit:</strong> {{ task.unit|default:"N/A" }}<br>
+                <strong>Duration:</strong> {{ task.time_taken|default:"N/A" }} ({{task.started_at}} - {{task.completed_at}})
             </div>
         </div>
 

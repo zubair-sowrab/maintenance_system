@@ -1175,7 +1175,8 @@ const itemsHTML = `
                     <strong>Invoice Number:</strong> {{task.job_id}}<br>
                     <strong>Date:</strong> ${formattedDate}<br>
                     <strong>Building:</strong> {{task.building}}<br>
-                    <strong>Unit:</strong> {{task.unit}}
+                    <strong>Unit:</strong> {{task.unit}}<br>
+                     <strong>Duration:</strong> {{ task.time_taken|default:"N/A" }} ({{task.started_at}} - {{task.completed_at}})
                 </div>
             </div>
 
