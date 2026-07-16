@@ -2153,22 +2153,6 @@ def get_tech_overtime_details_ajax(request, tech_id):
     return JsonResponse({'tasks': task_list, 'username': target_user.username})
 
 
-@login_required
-def material_approvals_view(request):
-    # Check if user is Admin safely
-    if getattr(request.user.profile, 'role', '') != 'Admin' and not request.user.is_superuser:
-        return redirect('dashboard')
-
-    # Rule: Keep approved items on the board for exactly 3 days
-    three_days_ago = timezone.now() - timedelta(days=3)
-
-    requests = MaterialRequest.objects.filter(
-        Q(status='Pending') |
-        (Q(status='Approved') & Q(approved_at__gte=three_days_ago))
-    ).order_by('-updated_at')
-
-    return render(request, 'tasks/material_approvals.html', {'requests': requests})
-
 
 @login_required
 def save_material_request_ajax(request, task_id):
@@ -2245,6 +2229,50 @@ def disapprove_material_request_ajax(request, task_id):
 
 
 @login_required
+def material_approvals_view(request):
+    # Check if user is Admin safely
+    if getattr(request.user.profile, 'role', '') != 'Admin' and not request.user.is_superuser:
+        return redirect('dashboard')
+
+    # REMOVED 3-DAY LIMIT - Show all requests
+    requests_qs = MaterialRequest.objects.all().order_by('-updated_at')
+
+    # Apply Filters
+    job_id = request.GET.get('job_id')
+    user = request.GET.get('user')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    building = request.GET.get('building')
+    unit = request.GET.get('unit')
+
+    if job_id:
+        requests_qs = requests_qs.filter(task__job_id__icontains=job_id.strip())
+    if user:
+        requests_qs = requests_qs.filter(task__assigned_technicians__username__icontains=user.strip()).distinct()
+    if building:
+        requests_qs = requests_qs.filter(task__building__iexact=building.strip())
+    if unit:
+        requests_qs = requests_qs.filter(task__unit__iexact=unit.strip())
+    if date_from:
+        requests_qs = requests_qs.filter(updated_at__date__gte=date_from)
+    if date_to:
+        try:
+            parsed_date = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
+            requests_qs = requests_qs.filter(updated_at__date__lte=parsed_date)
+        except ValueError:
+            pass
+
+    buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building', flat=True).distinct()
+    units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
+
+    return render(request, 'tasks/material_approvals.html', {
+        'requests': requests_qs,
+        'buildings': buildings,
+        'units': units
+    })
+
+
+@login_required
 def approved_materials_list(request):
     is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
 
@@ -2257,7 +2285,39 @@ def approved_materials_list(request):
             task__assigned_technicians=request.user
         ).distinct().order_by('-approved_at')
 
-    return render(request, 'tasks/approved_materials.html', {'requests': approved_reqs})
+    # Apply Filters
+    job_id = request.GET.get('job_id')
+    user = request.GET.get('user')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    building = request.GET.get('building')
+    unit = request.GET.get('unit')
+
+    if job_id:
+        approved_reqs = approved_reqs.filter(task__job_id__icontains=job_id.strip())
+    if user:
+        approved_reqs = approved_reqs.filter(task__assigned_technicians__username__icontains=user.strip()).distinct()
+    if building:
+        approved_reqs = approved_reqs.filter(task__building__iexact=building.strip())
+    if unit:
+        approved_reqs = approved_reqs.filter(task__unit__iexact=unit.strip())
+    if date_from:
+        approved_reqs = approved_reqs.filter(approved_at__date__gte=date_from)
+    if date_to:
+        try:
+            parsed_date = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
+            approved_reqs = approved_reqs.filter(approved_at__date__lte=parsed_date)
+        except ValueError:
+            pass
+
+    buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building', flat=True).distinct()
+    units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
+
+    return render(request, 'tasks/approved_materials.html', {
+        'requests': approved_reqs,
+        'buildings': buildings,
+        'units': units
+    })
 
 
 @login_required
