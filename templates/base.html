@@ -93,7 +93,7 @@ function googleTranslateElementInit() {
     <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">الموافقات</small>
 </a>
 {% endif %}
-{%comment%}
+
 
           {% if user.profile.role == 'Admin' or user.is_superuser %}
 <li class="nav-item dropdown px-1" style="list-style: none;">
@@ -118,23 +118,13 @@ function googleTranslateElementInit() {
             </a>
         </li>
 
-         <li>
-            <a class="dropdown-item fw-semibold py-2 d-flex align-items-center" href="{% url 'overtime_technicians' %}">
-                <i class="bi bi-list-task text-primary me-2 fs-5"></i> Technicians Overtime
-            </a>
-        </li>
-        <li><hr class="dropdown-divider my-1"></li>
-        <li>
-            <a class="dropdown-item fw-semibold py-2 d-flex align-items-center" href="{% url 'overtime_reports' %}">
-                <i class="bi bi-bar-chart-line-fill text-info me-2 fs-5"></i> Overtime Reports
-            </a>
-        </li>
+        
     </ul>
 </li>
 {% endif %}
 
 
-{%endcomment%}
+
 
 
 
