@@ -2331,3 +2331,4 @@ def print_material_approval(request, req_id):
         raise PermissionDenied("You do not have access to view this approval document.")
 
     return render(request, 'tasks/print_material_approval.html', {'req': mat_req})
+
