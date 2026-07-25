@@ -1803,20 +1803,18 @@ def is_admin_strict(user):
 
 
 from django.db.models import Q
-
 @login_required
 def all_overtime_tasks(request):
     if not is_admin_strict(request.user):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied("Only administrators can access the Overtime System.")
 
-    # FIX 1: Show tasks if they have either hours OR a charge.
-    # Order by completion date instead of creation date.
+    # 1. Base Query: Safely check for hours OR charge, and revert to created_at sorting
     tasks = Task.objects.filter(
         Q(overtime_hours__gt=0) | Q(overtime_charge__gt=0)
     ).prefetch_related(
         'assigned_technicians', 'items', 'complaint_set'
-    ).distinct().order_by('-completed_at')
+    ).distinct().order_by('-created_at')
 
     # 2. Capture Parameters
     date_from = request.GET.get('date_from')
@@ -1827,42 +1825,33 @@ def all_overtime_tasks(request):
     building = request.GET.get('building')
     unit = request.GET.get('unit')
 
-    # 3. Apply Filters sequentially to the SAME variable
+    # 3. Apply String Filters
     if job_id and job_id.strip():
         tasks = tasks.filter(job_id__icontains=job_id.strip())
-
     if user_query and user_query.strip():
         tasks = tasks.filter(assigned_technicians__username__icontains=user_query.strip())
-
     if project_type and project_type.strip():
         tasks = tasks.filter(project_type=project_type)
-
     if building and building.strip():
         tasks = tasks.filter(building__iexact=building.strip())
-
     if unit and unit.strip():
         tasks = tasks.filter(unit__iexact=unit.strip())
 
-    # FIX 2 & 3: Bypass the live server '__date' bug by using timezone-aware datetimes
+    # 4. Bulletproof Date Filters (Bypasses __date bug without timezone crashes)
     if date_from and date_from.strip():
-        try:
-            parsed_from = datetime.strptime(date_from.strip(), "%Y-%m-%d")
-            aware_from = timezone.make_aware(parsed_from)
-            tasks = tasks.filter(completed_at__gte=aware_from)
-        except ValueError:
-            pass
+        # Django automatically handles "YYYY-MM-DD" string limits safely
+        tasks = tasks.filter(created_at__gte=date_from.strip())
 
     if date_to and date_to.strip():
         try:
             parsed_to = datetime.strptime(date_to.strip(), "%Y-%m-%d")
-            # Push the time to the very end of the selected day (11:59:59 PM)
-            parsed_to = parsed_to.replace(hour=23, minute=59, second=59)
-            aware_to = timezone.make_aware(parsed_to)
-            tasks = tasks.filter(completed_at__lte=aware_to)
+            # Push to the exact start of the next day to include the full selected day
+            next_day = parsed_to + timedelta(days=1)
+            tasks = tasks.filter(created_at__lt=next_day)
         except ValueError:
             pass
 
-    # 4. Fetch unique dropdown options
+    # 5. Fetch Dropdowns
     buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building', flat=True).distinct()
     units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values_list('unit', flat=True).distinct()
 
