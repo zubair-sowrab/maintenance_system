@@ -1802,16 +1802,21 @@ def is_admin_strict(user):
     return user.is_superuser or (hasattr(user, 'profile') and user.profile.role == 'Admin')
 
 
+from django.db.models import Q
+
 @login_required
 def all_overtime_tasks(request):
     if not is_admin_strict(request.user):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied("Only administrators can access the Overtime System.")
 
-    # 1. Single Base Query
-    tasks = Task.objects.filter(overtime_hours__gt=0).prefetch_related(
+    # FIX 1: Show tasks if they have either hours OR a charge.
+    # Order by completion date instead of creation date.
+    tasks = Task.objects.filter(
+        Q(overtime_hours__gt=0) | Q(overtime_charge__gt=0)
+    ).prefetch_related(
         'assigned_technicians', 'items', 'complaint_set'
-    ).distinct().order_by('-created_at')
+    ).distinct().order_by('-completed_at')
 
     # 2. Capture Parameters
     date_from = request.GET.get('date_from')
@@ -1838,20 +1843,27 @@ def all_overtime_tasks(request):
     if unit and unit.strip():
         tasks = tasks.filter(unit__iexact=unit.strip())
 
-    # Safely apply Date Filters (using created_at consistently)
+    # FIX 2 & 3: Bypass the live server '__date' bug by using timezone-aware datetimes
     if date_from and date_from.strip():
-        tasks = tasks.filter(created_at__date__gte=date_from)
+        try:
+            parsed_from = datetime.strptime(date_from.strip(), "%Y-%m-%d")
+            aware_from = timezone.make_aware(parsed_from)
+            tasks = tasks.filter(completed_at__gte=aware_from)
+        except ValueError:
+            pass
 
     if date_to and date_to.strip():
         try:
-            parsed_date_to = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
-            tasks = tasks.filter(created_at__date__lte=parsed_date_to)
+            parsed_to = datetime.strptime(date_to.strip(), "%Y-%m-%d")
+            # Push the time to the very end of the selected day (11:59:59 PM)
+            parsed_to = parsed_to.replace(hour=23, minute=59, second=59)
+            aware_to = timezone.make_aware(parsed_to)
+            tasks = tasks.filter(completed_at__lte=aware_to)
         except ValueError:
-            tasks = tasks.filter(created_at__date__lte=date_to)
+            pass
 
     # 4. Fetch unique dropdown options
-    buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building',
-                                                                                                    flat=True).distinct()
+    buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building', flat=True).distinct()
     units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values_list('unit', flat=True).distinct()
 
     context = {
@@ -1861,7 +1873,6 @@ def all_overtime_tasks(request):
         'units': units,
     }
     return render(request, 'tasks/overtime_tasks.html', context)
-
 
 @login_required
 def overtime_reports(request):
