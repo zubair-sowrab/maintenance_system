@@ -440,12 +440,12 @@
           <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-dark w-100-mobile fw-bold text-center">
               View Details <i class="bi bi-arrow-right-short ms-1"></i>
           </a>
-        {% if task.status == 'Completed' %}
-          <button type="button" class="btn btn-sm btn-outline-success w-100-mobile fw-bold text-center mt-1"
-                  onclick="openOTInputModal({{ task.id }}, {{ task.overtime_hours|default:0 }}, {{ task.overtime_charge|default:0 }})">
-              <i class="bi bi-plus-circle me-1"></i> Add to Overtime
-          </button>
-          {% endif %}
+       {% if task.status == 'Completed' %}
+<button type="button" class="btn btn-sm btn-outline-success w-100-mobile fw-bold text-center mt-1"
+        onclick="openOTInputModal('{{ task.id }}', '{{ task.overtime_hours|default:0 }}', '{{ task.overtime_charge|default:0 }}')">
+    <i class="bi bi-plus-circle me-1"></i> Add to Overtime
+</button>
+{% endif %}
 
       </div>
 

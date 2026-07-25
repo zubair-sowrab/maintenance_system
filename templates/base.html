@@ -263,10 +263,9 @@ function loadOvertimeTasks() {
                     <td class="fw-semibold">${task.title}</td>
                      <td class="fw-semibold">${task.assigned_to || 'Unassigned'}</td>
                     <td><span class="badge ${badge}">${task.status}</span></td>
-
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-success fw-bold"
-                                onclick="openOTInputModal(${task.id}, ${task.current_ot_hours}, ${task.current_ot_charge})">
+                                onclick="openOTInputModal('${task.id}', '${task.current_ot_hours}', '${task.current_ot_charge}')">
                             <i class="bi bi-clock-fill me-1"></i> Setup
                         </button>
                     </td>
@@ -276,37 +275,42 @@ function loadOvertimeTasks() {
     });
 }
 
-// 2. Open the input modal for a specific task
+// 2. Open the input modal for a specific task safely
 function openOTInputModal(id, hrs, chg) {
-    document.getElementById('ot_modal_task_id').value = id;
-    document.getElementById('ot_modal_hours').value = hrs > 0 ? hrs : '';
-    document.getElementById('ot_modal_charge').value = chg > 0 ? chg : '';
+    // Force browser to drop focus to prevent the aria-hidden crash
+    if (document.activeElement) {
+        document.activeElement.blur();
+    }
 
-    // Safely check if the assign modal exists/is open before hiding it
+    document.getElementById('ot_modal_task_id').value = id;
+    document.getElementById('ot_modal_hours').value = parseFloat(hrs) > 0 ? hrs : '';
+    document.getElementById('ot_modal_charge').value = parseFloat(chg) > 0 ? chg : '';
+
+    // Safely hide the assign modal if it's open, forcefully removing aria-hidden first
     const assignModalEl = document.getElementById('assignOvertimeModal');
     if (assignModalEl) {
+        assignModalEl.removeAttribute('aria-hidden'); // Bypass the browser block
         const assignModal = bootstrap.Modal.getInstance(assignModalEl);
         if (assignModal) {
             assignModal.hide();
         }
     }
 
-    // Show the input modal
-    new bootstrap.Modal(document.getElementById('setOvertimeSubModal')).show();
+    // Add a tiny delay to let the first modal close before opening the second
+    setTimeout(() => {
+        new bootstrap.Modal(document.getElementById('setOvertimeSubModal')).show();
+    }, 150);
 }
 
 // 3. Save it to the database via AJAX
 function saveNewOvertime() {
-    // FIX: Force the browser to drop focus from the clicked button to prevent the aria-hidden crash
-    if (document.activeElement) {
-        document.activeElement.blur();
-    }
+    // Drop focus immediately
+    if (document.activeElement) document.activeElement.blur();
 
     const id = document.getElementById('ot_modal_task_id').value;
     const hrs = document.getElementById('ot_modal_hours').value;
     const chg = document.getElementById('ot_modal_charge').value;
 
-    // Visual feedback while saving
     const saveBtn = document.querySelector('#setOvertimeSubModal .btn-success');
     const originalText = saveBtn.innerHTML;
     saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
@@ -319,21 +323,13 @@ function saveNewOvertime() {
     })
     .then(r => r.json())
     .then(data => {
-        saveBtn.innerHTML = originalText;
-        saveBtn.disabled = false;
-
         if (data.status === 'success') {
-            const modalEl = document.getElementById('setOvertimeSubModal');
-            const modalInst = bootstrap.Modal.getInstance(modalEl);
-            if (modalInst) {
-                modalInst.hide();
-            }
-
-            // Wait a tiny fraction of a second for the modal to vanish before reloading
-            setTimeout(() => {
-                window.location.reload();
-            }, 300);
+            // DO NOT call modal.hide() here.
+            // Just instantly reload the page to apply the changes safely.
+            window.location.reload();
         } else {
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
             alert("Error saving overtime: " + data.message);
         }
     }).catch(err => {
