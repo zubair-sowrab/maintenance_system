@@ -46,6 +46,12 @@ class Task(models.Model):
       help_text="Additional charge for overtime in AED"
   )
 
+  # --- ADD THIS NEW FIELD ---
+  is_overtime = models.BooleanField(
+      default=False,
+      help_text="Flag to explicitly pin this task to the Overtime board"
+  )
+
 
 
 

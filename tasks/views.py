@@ -1802,21 +1802,21 @@ def is_admin_strict(user):
     return user.is_superuser or (hasattr(user, 'profile') and user.profile.role == 'Admin')
 
 
-from django.db.models import Q
 @login_required
 def all_overtime_tasks(request):
     if not is_admin_strict(request.user):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied("Only administrators can access the Overtime System.")
 
-    # 1. Base Query: Safely check for hours OR charge, and revert to created_at sorting
+    # --- THE FILTER FIX ---
+    # Now looks for our new flag OR legacy tasks with >0 hours
     tasks = Task.objects.filter(
-        Q(overtime_hours__gt=0) | Q(overtime_charge__gt=0)
+        Q(is_overtime=True) | Q(overtime_hours__gt=0) | Q(overtime_charge__gt=0)
     ).prefetch_related(
         'assigned_technicians', 'items', 'complaint_set'
     ).distinct().order_by('-created_at')
 
-    # 2. Capture Parameters
+    # Capture Parameters
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
     job_id = request.GET.get('job_id')
@@ -1825,7 +1825,7 @@ def all_overtime_tasks(request):
     building = request.GET.get('building')
     unit = request.GET.get('unit')
 
-    # 3. Apply String Filters
+    # Apply String Filters
     if job_id and job_id.strip():
         tasks = tasks.filter(job_id__icontains=job_id.strip())
     if user_query and user_query.strip():
@@ -1837,21 +1837,19 @@ def all_overtime_tasks(request):
     if unit and unit.strip():
         tasks = tasks.filter(unit__iexact=unit.strip())
 
-    # 4. Bulletproof Date Filters (Bypasses __date bug without timezone crashes)
+    # Date Filters
     if date_from and date_from.strip():
-        # Django automatically handles "YYYY-MM-DD" string limits safely
         tasks = tasks.filter(created_at__gte=date_from.strip())
 
     if date_to and date_to.strip():
         try:
             parsed_to = datetime.strptime(date_to.strip(), "%Y-%m-%d")
-            # Push to the exact start of the next day to include the full selected day
             next_day = parsed_to + timedelta(days=1)
             tasks = tasks.filter(created_at__lt=next_day)
         except ValueError:
             pass
 
-    # 5. Fetch Dropdowns
+    # Fetch Dropdowns
     buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building', flat=True).distinct()
     units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values_list('unit', flat=True).distinct()
 
@@ -1958,13 +1956,12 @@ def update_overtime_ajax(request, task_id):
             data = json.loads(request.body)
             task = get_object_or_404(Task, id=task_id)
 
-            # --- TRANSLATE HH.MM TO EXACT DECIMAL HOURS ---
             hours_input = str(data.get('hours') or '').strip()
             charge_input = str(data.get('charge') or '').strip()
 
-            # TRICK: If left blank or 0, save as 0.0001 so it stays on the Overtime Board
+            # --- TRANSLATE HH.MM EXACTLY (No Hacks Needed) ---
             if not hours_input or hours_input in ['0', '0.0', '0.00']:
-                decimal_hours = 0.0001
+                decimal_hours = 0.0
             else:
                 try:
                     if '.' in hours_input:
@@ -1979,13 +1976,14 @@ def update_overtime_ajax(request, task_id):
                     else:
                         decimal_hours = float(hours_input)
                 except ValueError:
-                    decimal_hours = 0.0001  # Fallback to trick
+                    decimal_hours = 0.0
 
             final_charge = float(charge_input) if charge_input else 0.0
 
-            # Store the mathematically accurate decimal
+            # Store the accurate math AND flip the permanent boolean flag
             task.overtime_hours = decimal_hours
             task.overtime_charge = final_charge
+            task.is_overtime = True  # <--- THIS KEEPS IT ON THE BOARD
             task.save()
 
             # Safely calculate response values
@@ -2008,7 +2006,6 @@ def update_overtime_ajax(request, task_id):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
     return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
-
 
 @login_required
 def get_assignable_overtime_tasks_ajax(request):
