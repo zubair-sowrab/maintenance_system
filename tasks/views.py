@@ -1958,27 +1958,34 @@ def update_overtime_ajax(request, task_id):
             data = json.loads(request.body)
             task = get_object_or_404(Task, id=task_id)
 
-            # --- TRANSLATE HH.MM (Pseudo-Decimal) TO EXACT DECIMAL HOURS ---
-            hours_str = str(data.get('hours') or '0').strip()
-            try:
-                if '.' in hours_str:
-                    h_part, m_part = hours_str.split('.', 1)
-                    # If user typed '6.1', assume they meant 10 mins ('6.10')
-                    if len(m_part) == 1:
-                        m_part += '0'
+            # --- TRANSLATE HH.MM TO EXACT DECIMAL HOURS ---
+            hours_input = str(data.get('hours') or '').strip()
+            charge_input = str(data.get('charge') or '').strip()
 
-                    h = int(h_part) if h_part else 0
-                    m = int(m_part[:2])  # Grab up to 2 decimal places
+            # TRICK: If left blank or 0, save as 0.0001 so it stays on the Overtime Board
+            if not hours_input or hours_input in ['0', '0.0', '0.00']:
+                decimal_hours = 0.0001
+            else:
+                try:
+                    if '.' in hours_input:
+                        h_part, m_part = hours_input.split('.', 1)
+                        if len(m_part) == 1:
+                            m_part += '0'
 
-                    decimal_hours = h + (m / 60.0)  # Convert to real hours for backend calculation
-                else:
-                    decimal_hours = float(hours_str)
-            except ValueError:
-                decimal_hours = 0.0
+                        h = int(h_part) if h_part else 0
+                        m = int(m_part[:2])
+
+                        decimal_hours = h + (m / 60.0)
+                    else:
+                        decimal_hours = float(hours_input)
+                except ValueError:
+                    decimal_hours = 0.0001  # Fallback to trick
+
+            final_charge = float(charge_input) if charge_input else 0.0
 
             # Store the mathematically accurate decimal
             task.overtime_hours = decimal_hours
-            task.overtime_charge = float(data.get('charge') or 0.00)
+            task.overtime_charge = final_charge
             task.save()
 
             # Safely calculate response values
