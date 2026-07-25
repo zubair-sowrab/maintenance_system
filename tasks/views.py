@@ -1954,19 +1954,53 @@ def overtime_reports(request):
 @login_required
 def update_overtime_ajax(request, task_id):
     if request.method == 'POST' and is_admin_strict(request.user):
-        data = json.loads(request.body)
-        task = get_object_or_404(Task, id=task_id)
+        try:
+            data = json.loads(request.body)
+            task = get_object_or_404(Task, id=task_id)
 
-        task.overtime_hours = float(data.get('hours') or 0.00)
-        task.overtime_charge = float(data.get('charge') or 0.00)
-        task.save()
+            # --- TRANSLATE HH.MM (Pseudo-Decimal) TO EXACT DECIMAL HOURS ---
+            hours_str = str(data.get('hours') or '0').strip()
+            try:
+                if '.' in hours_str:
+                    h_part, m_part = hours_str.split('.', 1)
+                    # If user typed '6.1', assume they meant 10 mins ('6.10')
+                    if len(m_part) == 1:
+                        m_part += '0'
 
-        return JsonResponse({
-            'status': 'success',
-            'total_service_charge': task.total_service_charge,
-            'total_work_time': task.total_work_time
-        })
-    return JsonResponse({'status': 'error'}, status=403)
+                    h = int(h_part) if h_part else 0
+                    m = int(m_part[:2])  # Grab up to 2 decimal places
+
+                    decimal_hours = h + (m / 60.0)  # Convert to real hours for backend calculation
+                else:
+                    decimal_hours = float(hours_str)
+            except ValueError:
+                decimal_hours = 0.0
+
+            # Store the mathematically accurate decimal
+            task.overtime_hours = decimal_hours
+            task.overtime_charge = float(data.get('charge') or 0.00)
+            task.save()
+
+            # Safely calculate response values
+            try:
+                tot_chg = task.total_service_charge
+            except AttributeError:
+                tot_chg = float(task.budget or 0) + task.overtime_charge
+
+            try:
+                tot_time = task.total_work_time
+            except AttributeError:
+                tot_time = str(task.time_taken)
+
+            return JsonResponse({
+                'status': 'success',
+                'total_service_charge': tot_chg,
+                'total_work_time': tot_time
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
 
 
 @login_required
@@ -2332,3 +2366,30 @@ def print_material_approval(request, req_id):
 
     return render(request, 'tasks/print_material_approval.html', {'req': mat_req})
 
+
+@login_required
+def bulk_print_overtime(request):
+    # Security: Only Superusers or Admins can access this
+    is_admin = request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'Admin')
+    if not is_admin:
+        raise PermissionDenied("Only administrators can print overtime reports.")
+
+    # Get the comma-separated IDs from the URL
+    task_ids_str = request.GET.get('ids', '')
+
+    # Safely convert to a list of integers
+    task_ids = [int(i) for i in task_ids_str.split(',') if i.isdigit()]
+
+    # Fetch tasks matching the selected IDs
+    tasks = Task.objects.filter(id__in=task_ids).order_by('-completed_at')
+
+    # Calculate the total overtime hours safely
+    total_ot_hours = sum(task.overtime_hours for task in tasks if task.overtime_hours)
+
+    context = {
+        'tasks': tasks,
+        'total_ot_hours': total_ot_hours,
+        'today': timezone.now().strftime('%d/%m/%Y'),
+    }
+
+    return render(request, 'tasks/bulk_overtime_print.html', context)

@@ -278,13 +278,20 @@ function loadOvertimeTasks() {
 }
 
 // 2. Open the input modal for a specific task
+// 2. Open the input modal for a specific task
 function openOTInputModal(id, hrs, chg) {
     document.getElementById('ot_modal_task_id').value = id;
     document.getElementById('ot_modal_hours').value = hrs > 0 ? hrs : '';
     document.getElementById('ot_modal_charge').value = chg > 0 ? chg : '';
 
-    // Hide list, show input
-    bootstrap.Modal.getInstance(document.getElementById('assignOvertimeModal')).hide();
+    // FIXED: Safely check if the assign modal is open before trying to hide it
+    const assignModalEl = document.getElementById('assignOvertimeModal');
+    const assignModalInst = bootstrap.Modal.getInstance(assignModalEl);
+    if (assignModalInst) {
+        assignModalInst.hide();
+    }
+
+    // Show the input modal
     new bootstrap.Modal(document.getElementById('setOvertimeSubModal')).show();
 }
 
