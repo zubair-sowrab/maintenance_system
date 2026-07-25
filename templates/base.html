@@ -247,7 +247,6 @@ function googleTranslateElementInit() {
         </div>
     </div>
 </div>
-
 <script>
 // 1. Fetch and list all tasks
 function loadOvertimeTasks() {
@@ -262,7 +261,7 @@ function loadOvertimeTasks() {
                 <tr>
                     <td class="fw-bold text-secondary">${task.job_id}</td>
                     <td class="fw-semibold">${task.title}</td>
-                     <td class="fw-semibold">{{ task.assigned_to_display|default:'Unassigned' }}</td>
+                     <td class="fw-semibold">${task.assigned_to || 'Unassigned'}</td>
                     <td><span class="badge ${badge}">${task.status}</span></td>
 
                     <td class="text-center">
@@ -278,17 +277,18 @@ function loadOvertimeTasks() {
 }
 
 // 2. Open the input modal for a specific task
-// 2. Open the input modal for a specific task
 function openOTInputModal(id, hrs, chg) {
     document.getElementById('ot_modal_task_id').value = id;
     document.getElementById('ot_modal_hours').value = hrs > 0 ? hrs : '';
     document.getElementById('ot_modal_charge').value = chg > 0 ? chg : '';
 
-    // FIXED: Safely check if the assign modal is open before trying to hide it
+    // Safely check if the assign modal exists/is open before hiding it
     const assignModalEl = document.getElementById('assignOvertimeModal');
-    const assignModalInst = bootstrap.Modal.getInstance(assignModalEl);
-    if (assignModalInst) {
-        assignModalInst.hide();
+    if (assignModalEl) {
+        const assignModal = bootstrap.Modal.getInstance(assignModalEl);
+        if (assignModal) {
+            assignModal.hide();
+        }
     }
 
     // Show the input modal
@@ -297,9 +297,20 @@ function openOTInputModal(id, hrs, chg) {
 
 // 3. Save it to the database via AJAX
 function saveNewOvertime() {
+    // FIX: Force the browser to drop focus from the clicked button to prevent the aria-hidden crash
+    if (document.activeElement) {
+        document.activeElement.blur();
+    }
+
     const id = document.getElementById('ot_modal_task_id').value;
     const hrs = document.getElementById('ot_modal_hours').value;
     const chg = document.getElementById('ot_modal_charge').value;
+
+    // Visual feedback while saving
+    const saveBtn = document.querySelector('#setOvertimeSubModal .btn-success');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    saveBtn.disabled = true;
 
     fetch(`/overtime/ajax/update/${id}/`, {
         method: 'POST',
@@ -308,11 +319,28 @@ function saveNewOvertime() {
     })
     .then(r => r.json())
     .then(data => {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+
         if (data.status === 'success') {
-            bootstrap.Modal.getInstance(document.getElementById('setOvertimeSubModal')).hide();
-            // Refresh the current page so the new task appears in the table
-            window.location.reload();
-        } else { alert("Error saving overtime."); }
+            const modalEl = document.getElementById('setOvertimeSubModal');
+            const modalInst = bootstrap.Modal.getInstance(modalEl);
+            if (modalInst) {
+                modalInst.hide();
+            }
+
+            // Wait a tiny fraction of a second for the modal to vanish before reloading
+            setTimeout(() => {
+                window.location.reload();
+            }, 300);
+        } else {
+            alert("Error saving overtime: " + data.message);
+        }
+    }).catch(err => {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+        console.error(err);
+        alert("A network error occurred. Check console for details.");
     });
 }
 </script>
