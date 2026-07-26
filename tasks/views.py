@@ -204,7 +204,7 @@ def create_task(request):
                         translated_subs.append(translator.translate(sub.strip()))
                     except Exception:
                         translated_subs.append(sub.strip())  # Fallback to original if translation fails
-                
+
 
                 # --- Translate Quantity / Details ---
                 clean_qty = str(raw_qty).strip()
