@@ -2482,6 +2482,6 @@ def unit_performance_report(request):
         unit_stats.append(unit)
 
     # Sort units by highest total spend
-    unit_stats.sort(key=lambda x: x['total_spend'], reverse=True)
+    unit_stats.sort(key=lambda x: (x['total_tasks'], x['total_spend']), reverse=True)
 
     return render(request, 'tasks/unit_performance_report.html', {'unit_stats': unit_stats})
