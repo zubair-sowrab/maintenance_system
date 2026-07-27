@@ -4,6 +4,50 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="h3 mb-0 text-gray-800">Unit Maintenance Performance & Cost Breakdown</h2>
+        <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCard">
+            <i class="bi bi-funnel"></i> Filters
+        </button>
+    </div>
+
+    <!-- FILTER SECTION -->
+    <div class="collapse mb-4 {% if start_date or end_date or selected_buildings %}show{% endif %}" id="filterCard">
+        <div class="card shadow-sm border-0">
+            <div class="card-body bg-light">
+                <form method="GET" action="{% url 'unit_performance_report' %}"> <!-- Ensure URL name matches urls.py -->
+                    <div class="row g-3">
+
+                        <!-- Building Multi-Select Filter -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Select Buildings</label>
+                            <select name="buildings" class="form-select" multiple size="3">
+                                {% for building in all_buildings %}
+                                    <option value="{{ building }}" {% if building in selected_buildings %}selected{% endif %}>
+                                        {{ building }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Hold Ctrl/Cmd to select multiple</small>
+                        </div>
+
+                        <!-- Date Filters -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">From Date</label>
+                            <input type="date" name="start_date" class="form-control" value="{{ start_date|default:'' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">To Date</label>
+                            <input type="date" name="end_date" class="form-control" value="{{ end_date|default:'' }}">
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="col-md-2 d-flex align-items-center mt-4 pt-2">
+                            <button type="submit" class="btn btn-success w-100 me-2">Apply</button>
+                            <a href="{% url 'unit_performance_report' %}" class="btn btn-outline-secondary w-100">Clear</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- MAIN TABLE -->
@@ -42,7 +86,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">No maintenance record data found.</td>
+                        <td colspan="6" class="text-center py-4 text-muted">No maintenance record data found for selected filters.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

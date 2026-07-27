@@ -2404,27 +2404,44 @@ def bulk_print_overtime(request):
 
 @login_required
 def unit_performance_report(request):
-    # Security: Restrict access to administrative roles
     is_admin = request.user.is_superuser or (
         hasattr(request.user, 'profile') and request.user.profile.role == 'Admin'
     )
     if not is_admin:
         return redirect('dashboard')
 
-    # Define strict maintenance work categories
     CATEGORIES = ['AC', 'Electric', 'Plumbing', 'Mason', 'Ceiling', 'Cleaning']
 
-    # Fetch tasks and prefetch subcategory items
+    # 1. Fetch available buildings for the filter dropdown
+    all_buildings = Task.objects.exclude(
+        Q(building__isnull=True) | Q(building='')
+    ).values_list('building', flat=True).distinct().order_by('building')
+
+    # 2. Get filter parameters from the request
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    selected_buildings = request.GET.getlist('buildings') # getlist handles multiple selections
+
+    # 3. Base Query
     tasks = Task.objects.exclude(
         Q(building__isnull=True) | Q(building='') | Q(unit__isnull=True) | Q(unit='')
     ).prefetch_related('items')
 
+    # 4. Apply Filters
+    if start_date:
+        # Replace 'created_at' with your actual date field name if different
+        tasks = tasks.filter(created_at__gte=start_date)
+    if end_date:
+        tasks = tasks.filter(created_at__lte=end_date)
+    if selected_buildings:
+        tasks = tasks.filter(building__in=selected_buildings)
+
+    # 5. Process the filtered tasks
     unit_dict = {}
 
     for task in tasks:
         key = f"{task.building}_{task.unit}"
 
-        # Initialize unit stats and category breakdown map
         if key not in unit_dict:
             unit_dict[key] = {
                 'building': task.building,
@@ -2437,10 +2454,8 @@ def unit_performance_report(request):
                     for cat in CATEGORIES
                 }
             }
-            # Fallback category for uncategorized tasks
             unit_dict[key]['breakdown']['Other'] = {'count': 0, 'spend': 0.0, 'tasks': []}
 
-        # Calculate spend for the task
         budget = float(task.budget or 0)
         overtime = float(task.overtime_charge or 0)
         task_spend = budget + overtime
@@ -2448,12 +2463,10 @@ def unit_performance_report(request):
         unit_dict[key]['total_tasks'] += 1
         unit_dict[key]['total_spend'] += task_spend
 
-        # Route task to category
         cat = task.project_type if task.project_type in unit_dict[key]['breakdown'] else 'Other'
         unit_dict[key]['breakdown'][cat]['count'] += 1
         unit_dict[key]['breakdown'][cat]['spend'] += task_spend
 
-        # Aggregate subcategories and materials
         sub_items = [
             f"{item.sub_category} (Qty: {item.quantity})"
             for item in task.items.all()
@@ -2461,7 +2474,6 @@ def unit_performance_report(request):
         ]
         sub_categories_str = ", ".join(sub_items) if sub_items else "No subcategories listed"
 
-        # Record task detail
         unit_dict[key]['breakdown'][cat]['tasks'].append({
             'title': task.title,
             'sub_categories': sub_categories_str,
@@ -2470,7 +2482,7 @@ def unit_performance_report(request):
             'status': task.status
         })
 
-    # Evaluate unit health ratings
+    # 6. Evaluate Health Status
     unit_stats = []
     for unit in unit_dict.values():
         if unit['total_spend'] >= 1500 or unit['total_tasks'] >= 6:
@@ -2481,7 +2493,16 @@ def unit_performance_report(request):
             unit['health'] = 'Good'
         unit_stats.append(unit)
 
-    # Sort units by highest total spend
+    # 7. Sort: Primary by total_tasks descending, Secondary by total_spend descending
     unit_stats.sort(key=lambda x: (x['total_tasks'], x['total_spend']), reverse=True)
 
-    return render(request, 'tasks/unit_performance_report.html', {'unit_stats': unit_stats})
+    # Context variables include filter state to keep form inputs populated
+    context = {
+        'unit_stats': unit_stats,
+        'all_buildings': all_buildings,
+        'selected_buildings': selected_buildings,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+
+    return render(request, 'tasks/unit_performance_report.html', context)
