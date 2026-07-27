@@ -2401,53 +2401,87 @@ def bulk_print_overtime(request):
     return render(request, 'tasks/bulk_overtime_print.html', context)
 
 
+
 @login_required
 def unit_performance_report(request):
-    # Security: Ensure only admins/supervisors can view financial analytics
-    is_admin = request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'Admin')
+    # Security: Restrict access to administrative roles
+    is_admin = request.user.is_superuser or (
+        hasattr(request.user, 'profile') and request.user.profile.role == 'Admin'
+    )
     if not is_admin:
         return redirect('dashboard')
 
-    # 1. Aggregate data grouped by Building and Unit
-    aggregated_units = Task.objects.exclude(
+    # Define strict maintenance work categories
+    CATEGORIES = ['AC', 'Electric', 'Plumbing', 'Mason', 'Ceiling', 'Cleaning']
+
+    # Fetch tasks and prefetch subcategory items
+    tasks = Task.objects.exclude(
         Q(building__isnull=True) | Q(building='') | Q(unit__isnull=True) | Q(unit='')
-    ).values('building', 'unit').annotate(
-        total_tasks=Count('id'),
-        total_budget=Coalesce(Sum('budget'), Decimal('0.00')),
-        total_ot=Coalesce(Sum('overtime_charge'), Decimal('0.00')),
-        ac_issues=Count('id', filter=Q(project_type='AC')),
-        plumbing_issues=Count('id', filter=Q(project_type='Plumbing')),
-        electric_issues=Count('id', filter=Q(project_type='Electric'))
-    )
+    ).prefetch_related('items')
 
-    # 2. Process custom logic for "Health Status" and Total Spent
-    unit_stats = []
-    for stat in aggregated_units:
-        # Calculate total exact cost combining standard budget and overtime
-        total_spent = float(stat['total_budget']) + float(stat['total_ot'])
-        total_tasks = stat['total_tasks']
+    unit_dict = {}
 
-        # 3. Define Thresholds for Good / Warning / Bad
-        # Adjust these thresholds based on your standard operational costs
-        if total_spent >= 1500 or total_tasks >= 6:
-            health_status = "Bad"
-        elif total_spent >= 500 or total_tasks >= 3:
-            health_status = "Warning"
-        else:
-            health_status = "Good"
+    for task in tasks:
+        key = f"{task.building}_{task.unit}"
 
-        unit_stats.append({
-            'building': stat['building'],
-            'unit': stat['unit'],
-            'total_tasks': total_tasks,
-            'total_spent': total_spent,
-            'ac_issues': stat['ac_issues'],
-            'plumbing_issues': stat['plumbing_issues'],
-            'electric_issues': stat['electric_issues'],
-            'health_status': health_status
+        # Initialize unit stats and category breakdown map
+        if key not in unit_dict:
+            unit_dict[key] = {
+                'building': task.building,
+                'unit': task.unit,
+                'total_tasks': 0,
+                'total_spend': 0.0,
+                'health': 'Good',
+                'breakdown': {
+                    cat: {'count': 0, 'spend': 0.0, 'tasks': []}
+                    for cat in CATEGORIES
+                }
+            }
+            # Fallback category for uncategorized tasks
+            unit_dict[key]['breakdown']['Other'] = {'count': 0, 'spend': 0.0, 'tasks': []}
+
+        # Calculate spend for the task
+        budget = float(task.budget or 0)
+        overtime = float(task.overtime_charge or 0)
+        task_spend = budget + overtime
+
+        unit_dict[key]['total_tasks'] += 1
+        unit_dict[key]['total_spend'] += task_spend
+
+        # Route task to category
+        cat = task.project_type if task.project_type in unit_dict[key]['breakdown'] else 'Other'
+        unit_dict[key]['breakdown'][cat]['count'] += 1
+        unit_dict[key]['breakdown'][cat]['spend'] += task_spend
+
+        # Aggregate subcategories and materials
+        sub_items = [
+            f"{item.sub_category} (Qty: {item.quantity})"
+            for item in task.items.all()
+            if hasattr(item, 'sub_category') and item.sub_category
+        ]
+        sub_categories_str = ", ".join(sub_items) if sub_items else "No subcategories listed"
+
+        # Record task detail
+        unit_dict[key]['breakdown'][cat]['tasks'].append({
+            'title': task.title,
+            'sub_categories': sub_categories_str,
+            'time_taken': task.time_taken or "N/A",
+            'spend': task_spend,
+            'status': task.status
         })
 
-    # 4. Sort the list so the most expensive/problematic units appear at the top
-    unit_stats.sort(key=lambda x: x['total_spent'], reverse=True)
+    # Evaluate unit health ratings
+    unit_stats = []
+    for unit in unit_dict.values():
+        if unit['total_spend'] >= 1500 or unit['total_tasks'] >= 6:
+            unit['health'] = 'Bad'
+        elif unit['total_spend'] >= 500 or unit['total_tasks'] >= 3:
+            unit['health'] = 'Warning'
+        else:
+            unit['health'] = 'Good'
+        unit_stats.append(unit)
+
+    # Sort units by highest total spend
+    unit_stats.sort(key=lambda x: x['total_spend'], reverse=True)
 
     return render(request, 'tasks/unit_performance_report.html', {'unit_stats': unit_stats})

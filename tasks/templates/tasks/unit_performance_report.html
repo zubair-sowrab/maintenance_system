@@ -1,69 +1,141 @@
 {% extends 'base.html' %}
-{% load static %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-3">
-        <div class="col-12">
-            <h2 class="fw-bold">Unit Performance & Health Report</h2>
-            <p class="text-muted">Identify high-cost units and recurring maintenance issues (e.g., repeating AC failures).</p>
-        </div>
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800">Unit Maintenance Performance & Cost Breakdown</h2>
     </div>
 
+    <!-- MAIN TABLE -->
     <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped align-middle mb-0">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Building</th>
-                            <th>Unit</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center">Total Requests</th>
-                            <th class="text-center">AC Issues</th>
-                            <th class="text-center">Plumbing</th>
-                            <th class="text-center">Electrical</th>
-                            <th class="text-end pe-4">Total Spent (AED)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for unit in unit_stats %}
-                        <tr>
-                            <td class="fw-bold">{{ unit.building }}</td>
-                            <td>{{ unit.unit }}</td>
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Building</th>
+                        <th>Unit Number</th>
+                        <th class="text-center">Total Tasks</th>
+                        <th class="text-center">Total Spend</th>
+                        <th class="text-center">Health Status</th>
+                        <th class="text-center">Detailed Breakdown</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- FIRST LOOP: Renders only the table rows -->
+                    {% for unit in unit_stats %}
+                    <tr>
+                        <td class="fw-bold">{{ unit.building }}</td>
+                        <td>Unit {{ unit.unit }}</td>
+                        <td class="text-center"><span class="badge bg-secondary rounded-pill">{{ unit.total_tasks }}</span></td>
+                        <td class="text-center fw-bold text-dark">{{ unit.total_spend|floatformat:2 }} AED</td>
+                        <td class="text-center">
+                            <span class="badge {% if unit.health == 'Bad' %}bg-danger{% elif unit.health == 'Warning' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                {{ unit.health }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <!-- Button triggers the corresponding modal -->
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#breakdownModal{{ forloop.counter }}">
+                                <i class="bi bi-list-nested me-1"></i> View Work Breakdown
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No maintenance record data found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-                            <td class="text-center">
-                                {% if unit.health_status == 'Bad' %}
-                                    <span class="badge bg-danger px-3 py-2">Needs Attention</span>
-                                {% elif unit.health_status == 'Warning' %}
-                                    <span class="badge bg-warning text-dark px-3 py-2">Monitor</span>
-                                {% else %}
-                                    <span class="badge bg-success px-3 py-2">Healthy</span>
-                                {% endif %}
-                            </td>
+<!-- SECOND LOOP: Renders the modals entirely outside the table -->
+{% for unit in unit_stats %}
+<div class="modal fade" id="breakdownModal{{ forloop.counter }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    Maintenance Breakdown: {{ unit.building }} - Unit {{ unit.unit }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light">
 
-                            <td class="text-center fw-bold">{{ unit.total_tasks }}</td>
+                <!-- Summary Category Badges -->
+                <div class="row g-2 mb-3">
+                    {% for category, data in unit.breakdown.items %}
+                        {% if data.count > 0 %}
+                        <div class="col-md-4 col-6">
+                            <div class="p-2 border rounded bg-white shadow-sm">
+                                <small class="text-muted d-block text-uppercase fw-bold">{{ category }}</small>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <span class="fw-bold text-primary">{{ data.spend|floatformat:2 }} AED</span>
+                                    <span class="badge bg-light text-dark border">{{ data.count }} task(s)</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
 
-                            <!-- Highlight AC issues in red if they are happening multiple times -->
-                            <td class="text-center {% if unit.ac_issues > 1 %}text-danger fw-bold{% endif %}">
-                                {{ unit.ac_issues }}
-                            </td>
-                            <td class="text-center">{{ unit.plumbing_issues }}</td>
-                            <td class="text-center">{{ unit.electric_issues }}</td>
+                <!-- Category Accordions -->
+                <div class="accordion" id="categoryAccordion{{ forloop.counter }}">
+                    {% for category, data in unit.breakdown.items %}
+                        {% if data.count > 0 %}
+                        <div class="accordion-item shadow-sm mb-2 border rounded">
+                            <h2 class="accordion-header" id="heading-{{ category }}-{{ forloop.parentloop.counter }}">
+                                <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ category }}-{{ forloop.parentloop.counter }}">
+                                    <div class="w-100 d-flex justify-content-between align-items-center me-3">
+                                        <span class="fw-bold">{{ category }} Work</span>
+                                        <div>
+                                            <span class="badge bg-info text-dark me-2">{{ data.count }} Tasks</span>
+                                            <span class="badge bg-success">{{ data.spend|floatformat:2 }} AED</span>
+                                        </div>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="collapse-{{ category }}-{{ forloop.parentloop.counter }}" class="accordion-collapse collapse" data-bs-parent="#categoryAccordion{{ forloop.parentloop.counter }}">
+                                <div class="accordion-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Task Title</th>
+                                                    <th>Subcategories & Items</th>
+                                                    <th>Duration / Time Taken</th>
+                                                    <th>Total Cost</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for t in data.tasks %}
+                                                <tr>
+                                                    <td class="fw-semibold">{{ t.title }}</td>
+                                                    <td><small class="text-muted">{{ t.sub_categories }}</small></td>
+                                                    <td><span class="badge bg-light text-dark border"><i class="bi bi-clock me-1"></i>{{ t.time_taken }}</span></td>
+                                                    <td class="fw-bold">{{ t.spend|floatformat:2 }} AED</td>
+                                                    <td><span class="badge bg-secondary">{{ t.status }}</span></td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
 
-                            <td class="text-end pe-4 fw-bold">
-                                {{ unit.total_spent|floatformat:2 }}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8" class="text-center py-4 text-muted">No maintenance records found.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
+{% endfor %}
 {% endblock %}
