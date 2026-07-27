@@ -5,6 +5,8 @@ from .models import Task, Complaint, SubTask, Notification
 from .forms import TaskForm
 from django.db.models import Sum
 from django.utils.decorators import method_decorator
+from django.db.models.functions import Coalesce
+from decimal import Decimal
 import json
 import logging
 from groq import Groq
@@ -2397,3 +2399,55 @@ def bulk_print_overtime(request):
     }
 
     return render(request, 'tasks/bulk_overtime_print.html', context)
+
+
+@login_required
+def unit_performance_report(request):
+    # Security: Ensure only admins/supervisors can view financial analytics
+    is_admin = request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'Admin')
+    if not is_admin:
+        return redirect('dashboard')
+
+    # 1. Aggregate data grouped by Building and Unit
+    aggregated_units = Task.objects.exclude(
+        Q(building__isnull=True) | Q(building='') | Q(unit__isnull=True) | Q(unit='')
+    ).values('building', 'unit').annotate(
+        total_tasks=Count('id'),
+        total_budget=Coalesce(Sum('budget'), Decimal('0.00')),
+        total_ot=Coalesce(Sum('overtime_charge'), Decimal('0.00')),
+        ac_issues=Count('id', filter=Q(project_type='AC')),
+        plumbing_issues=Count('id', filter=Q(project_type='Plumbing')),
+        electric_issues=Count('id', filter=Q(project_type='Electric'))
+    )
+
+    # 2. Process custom logic for "Health Status" and Total Spent
+    unit_stats = []
+    for stat in aggregated_units:
+        # Calculate total exact cost combining standard budget and overtime
+        total_spent = float(stat['total_budget']) + float(stat['total_ot'])
+        total_tasks = stat['total_tasks']
+
+        # 3. Define Thresholds for Good / Warning / Bad
+        # Adjust these thresholds based on your standard operational costs
+        if total_spent >= 1500 or total_tasks >= 6:
+            health_status = "Bad"
+        elif total_spent >= 500 or total_tasks >= 3:
+            health_status = "Warning"
+        else:
+            health_status = "Good"
+
+        unit_stats.append({
+            'building': stat['building'],
+            'unit': stat['unit'],
+            'total_tasks': total_tasks,
+            'total_spent': total_spent,
+            'ac_issues': stat['ac_issues'],
+            'plumbing_issues': stat['plumbing_issues'],
+            'electric_issues': stat['electric_issues'],
+            'health_status': health_status
+        })
+
+    # 4. Sort the list so the most expensive/problematic units appear at the top
+    unit_stats.sort(key=lambda x: x['total_spent'], reverse=True)
+
+    return render(request, 'tasks/unit_performance_report.html', {'unit_stats': unit_stats})
