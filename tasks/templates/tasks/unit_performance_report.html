@@ -16,18 +16,17 @@
                 <form method="GET" action="{% url 'unit_performance_report' %}"> <!-- Ensure URL name matches urls.py -->
                     <div class="row g-3">
 
-                        <!-- Building Multi-Select Filter -->
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Select Buildings</label>
-                            <select name="buildings" class="form-select" multiple size="3">
-                                {% for building in all_buildings %}
-                                    <option value="{{ building }}" {% if building in selected_buildings %}selected{% endif %}>
-                                        {{ building }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <small class="text-muted">Hold Ctrl/Cmd to select multiple</small>
-                        </div>
+                      <!-- Building Multi-Select Filter -->
+<div class="col-md-4">
+    <label class="form-label fw-bold">Select Buildings</label>
+    <select name="buildings" id="buildingSelect" class="form-select" multiple="multiple">
+        {% for building in all_buildings %}
+            <option value="{{ building }}" {% if building in selected_buildings %}selected{% endif %}>
+                {{ building }}
+            </option>
+        {% endfor %}
+    </select>
+</div>
 
                         <!-- Date Filters -->
                         <div class="col-md-3">
@@ -182,4 +181,23 @@
     </div>
 </div>
 {% endfor %}
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- 2. Select2 CSS & JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- 3. Initialize Select2 -->
+<script>
+    $(document).ready(function() {
+        $('#buildingSelect').select2({
+            placeholder: "Tap to select buildings...",
+            allowClear: true,
+            width: '100%', // Forces it to stay within the container, preventing side-scroll
+            theme: "classic" // Looks a bit cleaner inside Bootstrap forms
+        });
+    });
+</script>
 {% endblock %}
