@@ -2410,33 +2410,28 @@ def unit_performance_report(request):
     if not is_admin:
         return redirect('dashboard')
 
-    CATEGORIES = ['AC', 'Electric', 'Plumbing', 'Mason', 'Ceiling', 'Cleaning']
+    # UPDATED: Added 'Paint' and 'Carpenter'
+    CATEGORIES = ['AC', 'Electric', 'Plumbing', 'Mason', 'Ceiling', 'Cleaning', 'Paint', 'Carpenter']
 
-    # 1. Fetch available buildings for the filter dropdown
     all_buildings = Task.objects.exclude(
         Q(building__isnull=True) | Q(building='')
     ).values_list('building', flat=True).distinct().order_by('building')
 
-    # 2. Get filter parameters from the request
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
-    selected_buildings = request.GET.getlist('buildings') # getlist handles multiple selections
+    selected_buildings = request.GET.getlist('buildings')
 
-    # 3. Base Query
     tasks = Task.objects.exclude(
         Q(building__isnull=True) | Q(building='') | Q(unit__isnull=True) | Q(unit='')
     ).prefetch_related('items')
 
-    # 4. Apply Filters
     if start_date:
-        # Replace 'created_at' with your actual date field name if different
         tasks = tasks.filter(created_at__gte=start_date)
     if end_date:
         tasks = tasks.filter(created_at__lte=end_date)
     if selected_buildings:
         tasks = tasks.filter(building__in=selected_buildings)
 
-    # 5. Process the filtered tasks
     unit_dict = {}
 
     for task in tasks:
@@ -2482,7 +2477,6 @@ def unit_performance_report(request):
             'status': task.status
         })
 
-    # 6. Evaluate Health Status
     unit_stats = []
     for unit in unit_dict.values():
         if unit['total_spend'] >= 1500 or unit['total_tasks'] >= 6:
@@ -2493,10 +2487,8 @@ def unit_performance_report(request):
             unit['health'] = 'Good'
         unit_stats.append(unit)
 
-    # 7. Sort: Primary by total_tasks descending, Secondary by total_spend descending
     unit_stats.sort(key=lambda x: (x['total_tasks'], x['total_spend']), reverse=True)
 
-    # Context variables include filter state to keep form inputs populated
     context = {
         'unit_stats': unit_stats,
         'all_buildings': all_buildings,
