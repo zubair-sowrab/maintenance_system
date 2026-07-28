@@ -2,45 +2,56 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h3 mb-0 text-gray-800">Unit Maintenance Performance & Cost Breakdown</h2>
-        <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCard">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0 text-gray-800">Unit Performance Breakdown</h2>
+        <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCard">
             <i class="bi bi-funnel"></i> Filters
         </button>
+    </div>
+
+    <!-- HEALTH STATUS LEGEND -->
+    <div class="alert alert-light border shadow-sm d-flex flex-wrap gap-3 py-2 mb-4 align-items-center" role="alert">
+        <span class="fw-bold me-2 text-muted"><i class="bi bi-info-circle"></i> Health Legend:</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-danger">Bad</span>
+            <small class="text-muted">≥ 1,500 AED <strong>OR</strong> ≥ 6 tasks</small>
+        </div>
+        <div class="d-flex align-items-center gap-2 border-start ps-3">
+            <span class="badge bg-warning text-dark">Warning</span>
+            <small class="text-muted">≥ 500 AED <strong>OR</strong> ≥ 3 tasks</small>
+        </div>
+        <div class="d-flex align-items-center gap-2 border-start ps-3">
+            <span class="badge bg-success">Good</span>
+            <small class="text-muted">< 500 AED <strong>AND</strong> < 3 tasks</small>
+        </div>
     </div>
 
     <!-- FILTER SECTION -->
     <div class="collapse mb-4 {% if start_date or end_date or selected_buildings %}show{% endif %}" id="filterCard">
         <div class="card shadow-sm border-0">
             <div class="card-body bg-light">
-                <form method="GET" action="{% url 'unit_performance_report' %}"> <!-- Ensure URL name matches urls.py -->
+                <form method="GET" action="{% url 'unit_performance_report' %}">
                     <div class="row g-3">
-
-<!-- Building Multi-Select Filter -->
-<div class="col-md-4">
-    <label class="form-label fw-bold">Select Buildings</label>
-    <select name="buildings" id="buildingSelect" class="form-select" multiple="multiple">
-        {% for building in all_buildings %}
-            <option value="{{ building }}" {% if building in selected_buildings %}selected{% endif %}>
-                {{ building }}
-            </option>
-        {% endfor %}
-    </select>
-    Hold cmd/ctrl and click on buildings to select
-</div>
-                        <!-- Date Filters -->
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">From Date</label>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Select Buildings</label>
+                            <select name="buildings" id="buildingSelect" class="form-select" multiple="multiple">
+                                {% for building in all_buildings %}
+                                    <option value="{{ building }}" {% if building in selected_buildings %}selected{% endif %}>
+                                        {{ building }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <label class="form-label fw-bold">From</label>
                             <input type="date" name="start_date" class="form-control" value="{{ start_date|default:'' }}">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">To Date</label>
+                        <div class="col-md-3 col-6">
+                            <label class="form-label fw-bold">To</label>
                             <input type="date" name="end_date" class="form-control" value="{{ end_date|default:'' }}">
                         </div>
-
-                        <!-- Action Buttons -->
-                        <div class="col-md-2 d-flex align-items-center mt-4 pt-2">
-                            <button type="submit" class="btn btn-success w-100 me-2">Apply</button>
+                        <div class="col-md-2 d-flex flex-column justify-content-end gap-2">
+                            <button type="submit" class="btn btn-success w-100">Apply</button>
                             <a href="{% url 'unit_performance_report' %}" class="btn btn-outline-secondary w-100">Clear</a>
                         </div>
                     </div>
@@ -49,43 +60,47 @@
         </div>
     </div>
 
-    <!-- MAIN TABLE -->
+    <!-- MAIN COMPACT TABLE (MOBILE FRIENDLY) -->
     <div class="card shadow-sm border-0">
         <div class="card-body p-0 table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-dark">
                     <tr>
-                        <th>Building</th>
-                        <th>Unit Number</th>
-                        <th class="text-center">Total Tasks</th>
-                        <th class="text-center">Total Spend</th>
-                        <th class="text-center">Health Status</th>
-                        <th class="text-center">Detailed Breakdown</th>
+                        <th class="ps-3">Unit Details</th>
+                        <th class="text-center">Summary</th>
+                        <th class="text-end pe-3">Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- FIRST LOOP: Renders only the table rows -->
                     {% for unit in unit_stats %}
                     <tr>
-                        <td class="fw-bold">{{ unit.building }}</td>
-                        <td>Unit {{ unit.unit }}</td>
-                        <td class="text-center"><span class="badge bg-secondary rounded-pill">{{ unit.total_tasks }}</span></td>
-                        <td class="text-center fw-bold text-dark">{{ unit.total_spend|floatformat:2 }} AED</td>
-                        <td class="text-center">
-                            <span class="badge {% if unit.health == 'Bad' %}bg-danger{% elif unit.health == 'Warning' %}bg-warning text-dark{% else %}bg-success{% endif %}">
-                                {{ unit.health }}
-                            </span>
+                        <!-- Group 1: Building & Unit -->
+                        <td class="ps-3">
+                            <div class="fw-bold">{{ unit.building }}</div>
+                            <small class="text-muted">Unit {{ unit.unit }}</small>
                         </td>
+
+                        <!-- Group 2: Spend & Tasks Stacked -->
                         <td class="text-center">
-                            <!-- Button triggers the corresponding modal -->
-                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#breakdownModal{{ forloop.counter }}">
-                                <i class="bi bi-list-nested me-1"></i> View Work Breakdown
-                            </button>
+                            <div class="fw-bold text-dark">{{ unit.total_spend|floatformat:2 }} AED</div>
+                            <span class="badge bg-secondary" style="font-size: 0.75rem;">{{ unit.total_tasks }} Task(s)</span>
+                        </td>
+
+                        <!-- Group 3: Status & Action Button Stacked -->
+                        <td class="text-end pe-3">
+                            <div class="d-flex flex-column align-items-end justify-content-center gap-1">
+                                <span class="badge w-100 {% if unit.health == 'Bad' %}bg-danger{% elif unit.health == 'Warning' %}bg-warning text-dark{% else %}bg-success{% endif %}" style="max-width: 90px;">
+                                    {{ unit.health }}
+                                </span>
+                                <button class="btn btn-sm btn-outline-primary w-100" style="max-width: 90px; font-size: 0.8rem;" data-bs-toggle="modal" data-bs-target="#breakdownModal{{ forloop.counter }}">
+                                    Breakdown
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">No maintenance record data found for selected filters.</td>
+                        <td colspan="3" class="text-center py-4 text-muted">No maintenance record data found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -94,14 +109,14 @@
     </div>
 </div>
 
-<!-- SECOND LOOP: Renders the modals entirely outside the table -->
+<!-- MODALS LOOP -->
 {% for unit in unit_stats %}
 <div class="modal fade" id="breakdownModal{{ forloop.counter }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">
-                    Maintenance Breakdown: {{ unit.building }} - Unit {{ unit.unit }}
+                <h5 class="modal-title fs-6">
+                    {{ unit.building }} <br><small class="text-white-50">Unit {{ unit.unit }} Breakdown</small>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -111,20 +126,18 @@
                 <div class="row g-2 mb-3">
                     {% for category, data in unit.breakdown.items %}
                         {% if data.count > 0 %}
-                        <div class="col-md-4 col-6">
-                            <div class="p-2 border rounded bg-white shadow-sm">
-                                <small class="text-muted d-block text-uppercase fw-bold">{{ category }}</small>
-                                <div class="d-flex justify-content-between align-items-center mt-1">
-                                    <span class="fw-bold text-primary">{{ data.spend|floatformat:2 }} AED</span>
-                                    <span class="badge bg-light text-dark border">{{ data.count }} task(s)</span>
-                                </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-2 border rounded bg-white shadow-sm text-center">
+                                <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.7rem;">{{ category }}</small>
+                                <span class="fw-bold text-primary d-block">{{ data.spend|floatformat:2 }} AED</span>
+                                <span class="badge bg-light text-dark border">{{ data.count }} task(s)</span>
                             </div>
                         </div>
                         {% endif %}
                     {% endfor %}
                 </div>
 
-                <!-- Category Accordions -->
+                <!-- Category Accordions (Tables inside also made responsive) -->
                 <div class="accordion" id="categoryAccordion{{ forloop.counter }}">
                     {% for category, data in unit.breakdown.items %}
                         {% if data.count > 0 %}
@@ -132,40 +145,37 @@
                             <h2 class="accordion-header" id="heading-{{ category }}-{{ forloop.parentloop.counter }}">
                                 <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ category }}-{{ forloop.parentloop.counter }}">
                                     <div class="w-100 d-flex justify-content-between align-items-center me-3">
-                                        <span class="fw-bold">{{ category }} Work</span>
+                                        <span class="fw-bold">{{ category }}</span>
                                         <div>
-                                            <span class="badge bg-info text-dark me-2">{{ data.count }} Tasks</span>
                                             <span class="badge bg-success">{{ data.spend|floatformat:2 }} AED</span>
                                         </div>
                                     </div>
                                 </button>
                             </h2>
                             <div id="collapse-{{ category }}-{{ forloop.parentloop.counter }}" class="accordion-collapse collapse" data-bs-parent="#categoryAccordion{{ forloop.parentloop.counter }}">
-                                <div class="accordion-body p-0">
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-striped mb-0">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th>Task Title</th>
-                                                    <th>Subcategories & Items</th>
-                                                    <th>Duration / Time Taken</th>
-                                                    <th>Total Cost</th>
-                                                    <th>Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for t in data.tasks %}
-                                                <tr>
-                                                    <td class="fw-semibold">{{ t.title }}</td>
-                                                    <td><small class="text-muted">{{ t.sub_categories }}</small></td>
-                                                    <td><span class="badge bg-light text-dark border"><i class="bi bi-clock me-1"></i>{{ t.time_taken }}</span></td>
-                                                    <td class="fw-bold">{{ t.spend|floatformat:2 }} AED</td>
-                                                    <td><span class="badge bg-secondary">{{ t.status }}</span></td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                <div class="accordion-body p-0 table-responsive">
+                                    <table class="table table-sm table-striped mb-0" style="min-width: 500px;">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Task Title</th>
+                                                <th>Subcategories</th>
+                                                <th>Time Taken</th>
+                                                <th>Cost</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for t in data.tasks %}
+                                            <tr>
+                                                <td class="fw-semibold text-wrap" style="max-width: 150px;">{{ t.title }}</td>
+                                                <td class="text-wrap" style="max-width: 150px;"><small class="text-muted">{{ t.sub_categories }}</small></td>
+                                                <td><span class="badge bg-light text-dark border">{{ t.time_taken }}</span></td>
+                                                <td class="fw-bold">{{ t.spend|floatformat:2 }}</td>
+                                                <td><span class="badge bg-secondary">{{ t.status }}</span></td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -175,32 +185,24 @@
 
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
 {% endfor %}
 
-
-
-
-
-<!-- 1. jQuery (Required for Select2) -->
+<!-- Required Scripts for Select2 Filter -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- 2. Select2 CSS & JS -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-<!-- 3. Initialize Select2 -->
 <script>
     $(document).ready(function() {
         $('#buildingSelect').select2({
-            placeholder: "Tap to select buildings...",
+            placeholder: "Select buildings...",
             allowClear: true,
-            width: '100%', // Forces it to stay within the container, preventing side-scroll
-            theme: "classic" // Looks a bit cleaner inside Bootstrap forms
+            width: '100%',
+            theme: "classic"
         });
     });
 </script>
