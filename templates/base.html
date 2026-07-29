@@ -4,30 +4,31 @@
 {% load static %}
 <head>
     <!-- Flatpickr CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<!-- Flatpickr JS -->
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
     <link rel="stylesheet" href="{% static 'app/css/owl.carousel.min.css' %}">
     <link rel="stylesheet" href="{% static 'app/css/all.min.css' %}">
     <link rel="stylesheet" href="{% static 'app/css/style.css' %}">
-<link rel="icon" type="image/x-icon" href="{% static 'app/images/ENJAZ.png' %}">
+
+    <!-- Updated Favicon -->
+    <link rel="icon" type="image/png" href="{% static 'app/images/logo_etihad.png' %}">
     <title>Maintenance System{%block title%}{%endblock title%}</title>
 
-
-     <script type="text/javascript">
-function googleTranslateElementInit() {
-  new google.translate.TranslateElement({
-     pageLanguage: 'en',
-    includedLanguages: 'hi,ur,ar,bn,en,ml,ta,en',
-    multilanguage: true,
-    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-    autoDisplay: true
-  }, 'google_translate_element');
-}
-</script>
-<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+         pageLanguage: 'en',
+        includedLanguages: 'hi,ur,ar,bn,en,ml,ta,en',
+        multilanguage: true,
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: true
+      }, 'google_translate_element');
+    }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
 </head>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -35,18 +36,16 @@ function googleTranslateElementInit() {
 <script>
     // Force reset the Google Translate cookie to English on page load
     document.cookie = "googtrans=/auto/en; domain=127.0.0.1; path=/";
-    // If you are using ngrok, add this line too:
-    // document.cookie = "googtrans=/auto/en; domain=.ngrok-free.app; path=/";
 </script>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div id="google_translate_element" class="ms-lg-3"></div>
+    <div id="google_translate_element" class="ms-lg-3"></div>
 
     <div class="container">
-
-        <a class="navbar-brand" href="/">
-            <img src="{% static 'app/images/enjaztechwork.png' %}"
+        <!-- NO BACKGROUND OR BORDERS AROUND LOGO -->
+        <a class="navbar-brand me-4" href="/">
+            <img src="{% static 'app/images/etihad_logo.png' %}"
                  class="img-fluid"
-                 style="max-height:120px;">
+                 style="max-height:100px; object-fit: contain;" alt="ETIHAD Construction">
         </a>
 
         <button class="navbar-toggler"
@@ -60,77 +59,68 @@ function googleTranslateElementInit() {
             <div class="ms-auto d-flex flex-column flex-lg-row gap-2 align-items-lg-center">
 
             {% if user.is_authenticated %}
-<a href="{% url 'approved_materials_list' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
-    Approved Materials
-    <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">المواد المعتمدة</small>
-</a>
-                   <a href="{% url 'task_list' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
-                        Tasks
-                        <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">المهام</small>
-                    </a>
-{% if user.profile.role == 'Admin' %}
+                <a href="{% url 'approved_materials_list' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
+                    Approved Materials
+                    <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">المواد المعتمدة</small>
+                </a>
+                <a href="{% url 'task_list' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
+                    Tasks
+                    <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">المهام</small>
+                </a>
+
+                {% if user.profile.role == 'Admin' %}
                     <a href="{% url 'reports' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
                         Reports
                         <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">التقارير</small>
                     </a>
-
-
                     <a href="/admin/" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
                         Admin Panel
                         <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">لوحة المسؤول</small>
                     </a>
-
-
                 {% endif %}
 
                 <a href="{% url 'create_task' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
                     Create Task
                     <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">إنشاء مهمة</small>
                 </a>
+
                 {% if user.profile.role == 'Admin' %}
-<a href="{% url 'material_approvals' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
-    Approvals
-    <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">الموافقات</small>
-</a>
-{% endif %}
+                    <a href="{% url 'material_approvals' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
+                        Approvals
+                        <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">الموافقات</small>
+                    </a>
+                {% endif %}
 
 
-          {% if user.profile.role == 'Admin' or user.is_superuser %}
-<li class="nav-item dropdown px-1" style="list-style: none;">
-    <a class="nav-link  btn btn-light btn-sm mb-2 mb-lg-0 text-center " href="#" id="overtimeDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 140px;">
-        <div class="d-flex flex-column align-items-center" style="line-height: 1.2;">
-            <span class="fw-bold align-items-center mt-2 ">
-                <i class="bi bi-clock-history"></i> Overtime⏷
-            </span>
-            <small class="opacity-75 text-dark mb-2" style="font-size: 0.70rem;">الوقت الإضافي<br></small>
-        </div>
-        </a>
+                {% if user.profile.role == 'Admin' or user.is_superuser %}
+                <li class="nav-item dropdown px-1" style="list-style: none;">
+                    <a class="nav-link btn btn-light btn-sm mb-2 mb-lg-0 text-center " href="#" id="overtimeDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 140px;">
+                        <div class="d-flex flex-column align-items-center" style="line-height: 1.2;">
+                            <span class="fw-bold align-items-center mt-2 text-dark">
+                                <i class="bi bi-clock-history"></i> Overtime⏷
+                            </span>
+                            <small class="opacity-75 text-dark mb-2" style="font-size: 0.70rem;">الوقت الإضافي<br></small>
+                        </div>
+                    </a>
 
-    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 rounded-3" aria-labelledby="overtimeDropdown">
-        <li>
-            <a class="dropdown-item fw-semibold py-2 d-flex align-items-center" href="{% url 'all_overtime_tasks' %}">
-                <i class="bi bi-list-task text-primary me-2 fs-5"></i> All Overtime Tasks
-            </a>
-        </li>
-        <li>
-            <a class="dropdown-item fw-bold text-success py-2 d-flex align-items-center" href="#" data-bs-toggle="modal" data-bs-target="#assignOvertimeModal" onclick="loadOvertimeTasks()">
-                <i class="bi bi-plus-circle-fill me-2 fs-5"></i> Add Task to Overtime
-            </a>
-        </li>
-
-
-    </ul>
-</li>
-{% endif %}
-
-
-
-
-
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 rounded-3" aria-labelledby="overtimeDropdown">
+                        <li>
+                            <a class="dropdown-item fw-semibold py-2 d-flex align-items-center" href="{% url 'all_overtime_tasks' %}">
+                                <i class="bi bi-list-task text-primary me-2 fs-5"></i> All Overtime Tasks
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item fw-bold text-success py-2 d-flex align-items-center" href="#" data-bs-toggle="modal" data-bs-target="#assignOvertimeModal" onclick="loadOvertimeTasks()">
+                                <i class="bi bi-plus-circle-fill me-2 fs-5"></i> Add Task to Overtime
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% endif %}
 
                 <form action="{% url 'logout' %}" method="POST" class="d-inline mb-2 mb-lg-0">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger btn-sm w-100 text-center">
+                    <button type="submit" class="btn btn-primary btn-sm w-100 text-center">
                         Logout
                         <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">تسجيل الخروج</small>
                     </button>
@@ -181,183 +171,162 @@ function googleTranslateElementInit() {
     {% endblock %}
 </main>
 
-<footer class="bg-dark text-center text-white py-3 mt-auto">
-
-
-
-
-
-
-
-
-
+<footer class="bg-dark text-center text-white py-4 mt-auto">
 
     {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
-<div class="modal fade" id="assignOvertimeModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-white p-3">
-                <h6 class="modal-title fw-bold"><i class="bi bi-search me-2"></i> Select Task to Set Overtime</h6>
-                <button type="button" class="btn-close btn-close-white small" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body bg-light p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 bg-white" style="font-size: 0.85rem;">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Job ID</th>
-                                <th>Task Title</th>
-                                <th>Assigned To:</th>
-                                <th>Status</th>
-                                <th class="text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="otSelectionTableBody">
-                            <tr><td colspan="4" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div> Loading tasks...</td></tr>
-                        </tbody>
-                    </table>
+    <div class="modal fade" id="assignOvertimeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white p-3">
+                    <h6 class="modal-title fw-bold"><i class="bi bi-search me-2"></i> Select Task to Set Overtime</h6>
+                    <button type="button" class="btn-close btn-close-white small" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 bg-white" style="font-size: 0.85rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Job ID</th>
+                                    <th>Task Title</th>
+                                    <th>Assigned To:</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="otSelectionTableBody">
+                                <tr><td colspan="4" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div> Loading tasks...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="modal fade" id="setOvertimeSubModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content shadow">
-            <div class="modal-header bg-success text-white p-3">
-                <h6 class="modal-title fw-bold">Set Overtime</h6>
-                <button type="button" class="btn-close btn-close-white small" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="ot_modal_task_id">
-                <div class="mb-3">
-                    <label class="form-label fw-bold text-secondary small">Overtime Hours</label>
-                    <input type="number" step="0.5" class="form-control" id="ot_modal_hours" placeholder="0.0">
+    <div class="modal fade" id="setOvertimeSubModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content shadow">
+                <div class="modal-header bg-success text-white p-3">
+                    <h6 class="modal-title fw-bold">Set Overtime</h6>
+                    <button type="button" class="btn-close btn-close-white small" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold text-secondary small">Overtime Charge (AED)</label>
-                    <input type="number" step="1" class="form-control text-success fw-bold" id="ot_modal_charge" placeholder="0">
+                <div class="modal-body">
+                    <input type="hidden" id="ot_modal_task_id">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-secondary small">Overtime Hours</label>
+                        <input type="number" step="0.5" class="form-control" id="ot_modal_hours" placeholder="0.0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-secondary small">Overtime Charge (AED)</label>
+                        <input type="number" step="1" class="form-control text-success fw-bold" id="ot_modal_charge" placeholder="0">
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer p-2 bg-light">
-                <button type="button" class="btn btn-outline-secondary btn-sm fw-bold" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success btn-sm fw-bold" onclick="saveNewOvertime()">Save</button>
+                <div class="modal-footer p-2 bg-light">
+                    <button type="button" class="btn btn-outline-secondary btn-sm fw-bold" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success btn-sm fw-bold" onclick="saveNewOvertime()">Save</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-<script>
-// 1. Fetch and list all tasks
-function loadOvertimeTasks() {
-    fetch("{% url 'get_assignable_overtime_tasks_ajax' %}")
-    .then(r => r.json())
-    .then(data => {
-        const tbody = document.getElementById('otSelectionTableBody');
-        tbody.innerHTML = '';
-        data.tasks.forEach(task => {
-            let badge = task.status.includes('Completed') ? 'bg-success' : 'bg-primary';
-            tbody.innerHTML += `
-                <tr>
-                    <td class="fw-bold text-secondary">${task.job_id}</td>
-                    <td class="fw-semibold">${task.title}</td>
-                     <td class="fw-semibold">${task.assigned_to || 'Unassigned'}</td>
-                    <td><span class="badge ${badge}">${task.status}</span></td>
-                    <td class="text-center">
-                        <button class="btn btn-sm btn-outline-success fw-bold"
-                                onclick="openOTInputModal('${task.id}', '${task.current_ot_hours}', '${task.current_ot_charge}')">
-                            <i class="bi bi-clock-fill me-1"></i> Setup
-                        </button>
-                    </td>
-                </tr>
-            `;
+
+    <script>
+    function loadOvertimeTasks() {
+        fetch("{% url 'get_assignable_overtime_tasks_ajax' %}")
+        .then(r => r.json())
+        .then(data => {
+            const tbody = document.getElementById('otSelectionTableBody');
+            tbody.innerHTML = '';
+            data.tasks.forEach(task => {
+                let badge = task.status.includes('Completed') ? 'bg-success' : 'bg-primary';
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold text-secondary">${task.job_id}</td>
+                        <td class="fw-semibold">${task.title}</td>
+                         <td class="fw-semibold">${task.assigned_to || 'Unassigned'}</td>
+                        <td><span class="badge ${badge}">${task.status}</span></td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-success fw-bold"
+                                    onclick="openOTInputModal('${task.id}', '${task.current_ot_hours}', '${task.current_ot_charge}')">
+                                <i class="bi bi-clock-fill me-1"></i> Setup
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
         });
-    });
-}
-
-// 2. Open the input modal for a specific task safely
-function openOTInputModal(id, hrs, chg) {
-    // Force browser to drop focus to prevent the aria-hidden crash
-    if (document.activeElement) {
-        document.activeElement.blur();
     }
 
-    document.getElementById('ot_modal_task_id').value = id;
-    document.getElementById('ot_modal_hours').value = parseFloat(hrs) > 0 ? hrs : '';
-    document.getElementById('ot_modal_charge').value = parseFloat(chg) > 0 ? chg : '';
-
-    // Safely hide the assign modal if it's open, forcefully removing aria-hidden first
-    const assignModalEl = document.getElementById('assignOvertimeModal');
-    if (assignModalEl) {
-        assignModalEl.removeAttribute('aria-hidden'); // Bypass the browser block
-        const assignModal = bootstrap.Modal.getInstance(assignModalEl);
-        if (assignModal) {
-            assignModal.hide();
+    function openOTInputModal(id, hrs, chg) {
+        if (document.activeElement) {
+            document.activeElement.blur();
         }
+
+        document.getElementById('ot_modal_task_id').value = id;
+        document.getElementById('ot_modal_hours').value = parseFloat(hrs) > 0 ? hrs : '';
+        document.getElementById('ot_modal_charge').value = parseFloat(chg) > 0 ? chg : '';
+
+        const assignModalEl = document.getElementById('assignOvertimeModal');
+        if (assignModalEl) {
+            assignModalEl.removeAttribute('aria-hidden');
+            const assignModal = bootstrap.Modal.getInstance(assignModalEl);
+            if (assignModal) {
+                assignModal.hide();
+            }
+        }
+
+        setTimeout(() => {
+            new bootstrap.Modal(document.getElementById('setOvertimeSubModal')).show();
+        }, 150);
     }
 
-    // Add a tiny delay to let the first modal close before opening the second
-    setTimeout(() => {
-        new bootstrap.Modal(document.getElementById('setOvertimeSubModal')).show();
-    }, 150);
-}
+    function saveNewOvertime() {
+        if (document.activeElement) document.activeElement.blur();
 
-// 3. Save it to the database via AJAX
-function saveNewOvertime() {
-    // Drop focus immediately
-    if (document.activeElement) document.activeElement.blur();
+        const id = document.getElementById('ot_modal_task_id').value;
+        const hrs = document.getElementById('ot_modal_hours').value;
+        const chg = document.getElementById('ot_modal_charge').value;
 
-    const id = document.getElementById('ot_modal_task_id').value;
-    const hrs = document.getElementById('ot_modal_hours').value;
-    const chg = document.getElementById('ot_modal_charge').value;
+        const saveBtn = document.querySelector('#setOvertimeSubModal .btn-success');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        saveBtn.disabled = true;
 
-    const saveBtn = document.querySelector('#setOvertimeSubModal .btn-success');
-    const originalText = saveBtn.innerHTML;
-    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-    saveBtn.disabled = true;
-
-    fetch(`/overtime/ajax/update/${id}/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-        body: JSON.stringify({ hours: hrs, charge: chg })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.status === 'success') {
-            // DO NOT call modal.hide() here.
-            // Just instantly reload the page to apply the changes safely.
-            window.location.reload();
-        } else {
+        fetch(`/overtime/ajax/update/${id}/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ hours: hrs, charge: chg })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+                alert("Error saving overtime: " + data.message);
+            }
+        }).catch(err => {
             saveBtn.innerHTML = originalText;
             saveBtn.disabled = false;
-            alert("Error saving overtime: " + data.message);
-        }
-    }).catch(err => {
-        saveBtn.innerHTML = originalText;
-        saveBtn.disabled = false;
-        console.error(err);
-        alert("A network error occurred. Check console for details.");
-    });
-}
-</script>
-{% endif %}
+            console.error(err);
+            alert("A network error occurred. Check console for details.");
+        });
+    }
+    </script>
+    {% endif %}
 
+    <!-- ALIGNED FOOTER LOGO AND TEXT -->
+    <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3">
+        <img src="{% static 'app/images/etihad_logo.png' %}"
+             class="img-fluid"
+             style="max-height: 65px; object-fit: contain;"
+             alt="ETIHAD Construction">
 
-
-
-
-
-
-
-    <div> <img src="{% static 'app/images/ENJAZ.png' %}"
-                 class="img-fluid"
-                 style="max-height:50px;">
-        </a>Copyright : 2026 || ENJAZ Technical Works L.L.C. - Ajman</div>
-    <small class="text-muted d-block mt-1">إنجاز للخدمات الفنية ذ.م.م - عجمان</small>
-
-
-
-
+        <div class="text-center text-md-start" style="line-height: 1.4;">
+            <div class="fw-bold text-white">Copyright : 2026 || ETIHAD Construction L.L.C. - Ajman</div>
+            <small class="text-white opacity-75 d-block mt-1">إتحاد للإنشاءات ذ.م.م - عجمان</small>
+        </div>
+    </div>
 
 </footer>
 
@@ -370,25 +339,6 @@ function saveNewOvertime() {
 <script src="{% static 'app/js/myscript.js' %}"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 <script>
 function toggleMore(id, btn){
@@ -403,86 +353,69 @@ function toggleMore(id, btn){
     }
 }
 </script>
-
-
 <style>
-    /* 1. Apply the Gradient to Header and Footer */
+    /* 1. Reversed gradient so Blue is on the left (behind the logo) and Red is on the right */
     .navbar-dark.bg-dark,
     footer.bg-dark {
-        background: linear-gradient(90deg, #2D0F3F 0%, #4B0082 50%, #007BFF 100%) !important;
+        background: linear-gradient(90deg, #1B57A6 0%, #F57F20 60%, #E22128 100%) !important;
+        border: none;
     }
 
-    /* 2. Ensure Text remains readable (setting to a light purple/grey instead of white) */
+    /* 2. Ensure Text remains readable over the gradient */
     .navbar-dark .navbar-nav .nav-link,
     .navbar-brand,
     footer div {
-        color: #E0E0E0 !important;
+        color: #FFFFFF !important;
     }
 
-    /* 3. Logo adjustment: If the logo has a transparent background,
-       this keeps it looking clean without needing a white background box. */
-    .navbar-brand img, footer img {
-        filter: brightness(1.2) contrast(1.1);
-    }
-
-    /* 4. Ensure buttons contrast well against the new gradient */
+    /* 3. Ensure buttons contrast well against the new gradient */
     .btn-light {
-        background-color: #E0E0E0 !important;
-        color: #2D0F3F !important;
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        color: #1B57A6 !important; /* Matches Etihad Blue */
         border: none !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .btn-light:hover {
+        background-color: #FFFFFF !important;
+        color: #E22128 !important; /* Matches Etihad Red */
     }
 
     .btn-danger {
-        background-color: #FF4D4D !important; /* Soft Red instead of harsh black/white */
+        background-color: #E22128 !important;
         border: none !important;
     }
 
-    /* Force the element to be visible */
+    /* Force the Google Translate element to be visible */
     #google_translate_element {
-        display: block !important;
+        display: flex !important;
+        align-items: center;
+        padding-right: 15px;
         visibility: visible !important;
     }
+
     /* Fix for Bootstrap navbar overlap */
     .goog-te-gadget {
         color: transparent !important;
-    }
-    .goog-te-gadget .goog-te-combo {
-        padding: 5px;
-        background-color: #212529 !important;
-        color: white !important;
-        border: 1px solid #444 !important;
-        border-radius: 4px;
+        font-size: 0px !important;
     }
 
+    .goog-te-combo {
+        background-color: #FFFFFF !important;
+        color: #1B57A6 !important;
+        border: none !important;
+        padding: 5px 10px !important;
+        border-radius: 4px !important;
+        font-size: 14px !important;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
 
+    .goog-te-combo:hover {
+        background-color: #F8F9FA !important;
+    }
 
     .goog-logo-link, .goog-te-gadget .goog-te-combo {
         font-family: inherit !important;
     }
     .goog-logo-link { display: none !important; }
-
-    /* 2. Container styling */
-    #google_translate_element {
-        display: flex !important;
-        align-items: center;
-        padding-right: 15px;
-    }
-
-    /* 3. Style the Dropdown box to look like a Bootstrap button */
-    .goog-te-gadget {
-        color: transparent !important;
-        font-size: 0px !important;
-    }
-    .goog-te-combo {
-        background-color: #2c3034 !important;
-        color: #ffffff !important;
-        border: 1px solid #495057 !important;
-        padding: 5px 10px !important;
-        border-radius: 4px !important;
-        font-size: 14px !important;
-        cursor: pointer;
-    }
-    .goog-te-combo:hover {
-        background-color: #3e444a !important;
-    }
 </style>
