@@ -2563,3 +2563,26 @@ def bulk_print_material_approvals(request):
         'today': timezone.now().strftime('%d-%m-%Y'),
     }
     return render(request, 'tasks/bulk_material_approval_print.html', context)
+
+
+@login_required
+@require_POST
+def delete_material_request_ajax(request, req_id, req_type):
+    # Security: Ensure only admins can delete records
+    is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
+    if not is_admin:
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+
+    try:
+        if req_type == 'task':
+            req_obj = get_object_or_404(MaterialRequest, id=req_id)
+            req_obj.delete()
+        elif req_type == 'general':
+            req_obj = get_object_or_404(GeneralMaterialRequest, id=req_id)
+            req_obj.delete()
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Invalid request type'}, status=400)
+
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

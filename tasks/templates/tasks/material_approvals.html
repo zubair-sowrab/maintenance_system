@@ -111,6 +111,10 @@
                     {% else %}
                     <span class="text-muted">Processed</span>
                     {% endif %}
+                    <!-- NEW DELETE BUTTON -->
+    <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteMaterialRequest({{ gen.id }}, 'general')">
+        ❌
+    </button>
                 </td>
             </tr>
             {% empty %}
@@ -155,6 +159,10 @@
                     <button class="btn btn-sm btn-dark fw-bold" onclick="openAdminMaterialsModal({{ req.task.id }})">
                         Review
                     </button>
+                    <!-- NEW DELETE BUTTON -->
+    <button class="btn btn-sm btn-outline-danger fw-bold ms-1" onclick="deleteMaterialRequest({{ req.id }}, 'task')">
+        ❌
+    </button>
                 </td>
             </tr>
             {% empty %}
@@ -287,6 +295,32 @@
             filterUnits();
         }
     });
+
+
+
+    function deleteMaterialRequest(reqId, reqType) {
+    if(confirm('Are you sure you want to permanently delete this material request? This action cannot be undone.')) {
+        fetch(`/materials/delete/${reqId}/${reqType}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'success') {
+                location.reload(); // Refresh to remove the row from the UI
+            } else {
+                alert('Deletion Failed: ' + data.message);
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('A network error occurred.');
+        });
+    }
+}
 </script>
 
 
