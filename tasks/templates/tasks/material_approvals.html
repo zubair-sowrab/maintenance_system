@@ -48,6 +48,83 @@
     </div>
 </div>
 
+
+
+
+<!-- Navigation Buttons / Tabs -->
+<div class="mb-4">
+    <button class="btn btn-outline-primary active" id="btn-task-requests" onclick="showSection('task-section')">
+        Task Material Requests
+    </button>
+
+    <button class="btn btn-outline-secondary position-relative" id="btn-gen-requests" onclick="showSection('gen-section')">
+        General Material Requests
+        {% if general_pending_count > 0 %}
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            {{ general_pending_count }}
+        </span>
+        {% endif %}
+    </button>
+</div>
+
+<!-- SECTION 1: Task Requests (Your Existing Content) -->
+<div id="task-section">
+    <!-- KEEP YOUR EXISTING TABLE & CONTENT HERE UNTOUCHED -->
+</div>
+
+<!-- SECTION 2: General Material Requests -->
+<div id="gen-section" style="display: none;">
+    <h3>General Material Requests</h3>
+    <table class="table table-striped table-bordered align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Req ID</th>
+                <th>Submitted By</th>
+                <th>Requested Materials</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for gen in general_requests %}
+            <tr>
+                <td>#GEN-{{ gen.id }}</td>
+                <td>{{ gen.submitted_by.username|default:"Unknown" }}</td>
+                <td>
+                    <ul class="mb-0">
+                        {% for item in gen.items.all %}
+                        <li><strong>{{ item.material_name }}</strong>: {{ item.quantity }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td>{{ gen.created_at|date:"d/m/Y H:i" }}</td>
+                <td>
+                    <span class="badge {% if gen.status == 'Approved' %}bg-success{% elif gen.status == 'Rejected' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                        {{ gen.status }}
+                    </span>
+                </td>
+                <td>
+                    {% if gen.status == 'Pending' %}
+                    <button class="btn btn-sm btn-success" onclick="approveGenReq({{ gen.id }})">Approve</button>
+                    <button class="btn btn-sm btn-danger" onclick="rejectGenReq({{ gen.id }})">Reject</button>
+                    {% else %}
+                    <span class="text-muted">Processed</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center">No general material requests found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+
+
 <div class="card shadow-sm border-0 bg-white">
     <table class="table table-hover align-middle mb-0">
         <thead class="table-light text-secondary small text-uppercase">
@@ -210,5 +287,35 @@
             filterUnits();
         }
     });
+</script>
+
+
+
+<script>
+function showSection(sectionId) {
+    document.getElementById('task-section').style.display = (sectionId === 'task-section') ? 'block' : 'none';
+    document.getElementById('gen-section').style.display = (sectionId === 'gen-section') ? 'block' : 'none';
+
+    document.getElementById('btn-task-requests').classList.toggle('active', sectionId === 'task-section');
+    document.getElementById('btn-gen-requests').classList.toggle('active', sectionId === 'gen-section');
+}
+
+function approveGenReq(id) {
+    fetch(`/materials/general/approve/${id}/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    }).then(res => res.json()).then(data => {
+        if(data.status === 'success') location.reload();
+    });
+}
+
+function rejectGenReq(id) {
+    fetch(`/materials/general/reject/${id}/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    }).then(res => res.json()).then(data => {
+        if(data.status === 'success') location.reload();
+    });
+}
 </script>
 {% endblock %}

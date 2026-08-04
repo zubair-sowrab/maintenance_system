@@ -5,6 +5,11 @@
         <h4 class="fw-bold text-dark mb-1"><i class="bi bi-file-earmark-check-fill text-success me-2"></i> My Approved Materials</h4>
         <p class="text-muted small mb-0">Authorized material requests ready for PDF generation.</p>
     </div>
+    <div>
+        <button id="bulkPrintBtn" class="btn btn-dark fw-bold shadow-sm" disabled>
+            <i class="bi bi-printer-fill me-1"></i> Bulk Print Selected
+        </button>
+    </div>
 </div>
 
 <div class="card shadow-sm border-0 mb-3 bg-light">
@@ -40,8 +45,8 @@
                     <input type="text" name="date_to" class="form-control form-control-sm flatpickr-date" placeholder="To" value="{{ request.GET.date_to }}">
                 </div>
                 <div class="col-12 col-md-2 d-flex gap-1">
-                    <button type="submit" class="btn btn-dark btn-sm w-100 fw-bold text-light">Filter<i class="bi bi-search"></i></button>
-                    <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm w-100 text-dark">Reset<i class="bi bi-arrow-counterclockwise"></i></a>
+                    <button type="submit" class="btn btn-dark btn-sm w-100 fw-bold text-light">Filter <i class="bi bi-search"></i></button>
+                    <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm w-100 text-dark">Reset <i class="bi bi-arrow-counterclockwise"></i></a>
                 </div>
             </div>
         </form>
@@ -52,14 +57,24 @@
     <table class="table table-hover align-middle mb-0">
         <thead class="table-light text-secondary small text-uppercase">
             <tr>
-                <th style="width: 50%;" class="px-3">Task Details</th>
+                <!-- NEW: Select All Checkbox -->
+                <th style="width: 5%;" class="px-3">
+                    <input type="checkbox" id="selectAllCheckbox" class="form-check-input shadow-sm">
+                </th>
+                <th style="width: 45%;" class="px-3">Request Details</th>
                 <th style="width: 25%;">Approval Status</th>
                 <th style="width: 25%;" class="text-end px-3">Action</th>
             </tr>
         </thead>
-        <tbody>
-            {% for req in requests %}
+      <tbody>
+    {% for req in combined_requests %}
+
+        {% if not req.is_general %}
+            <!-- Task-Based Row -->
             <tr>
+                <td class="px-3">
+                    <input type="checkbox" class="form-check-input request-checkbox" value="{{ req.id }}">
+                </td>
                 <td class="px-3">
                     <span class="d-block small text-muted fw-bold">{{ req.task.job_id }}</span>
                     <a href="{% url 'task_detail' req.task.id %}" class="text-decoration-none fw-bold text-primary">{{ req.task.title }}</a>
@@ -76,15 +91,39 @@
                     </a>
                 </td>
             </tr>
-            {% empty %}
+
+        {% else %}
+            <!-- General Material Row -->
             <tr>
-                <td colspan="3" class="text-center py-5 text-muted">
-                    <i class="bi bi-folder-x fs-1 d-block mb-2 opacity-50"></i>
-                    No approved materials found matching filters.
+                <td class="px-3">
+                    <input type="checkbox" class="form-check-input request-checkbox" value="{{ req.id }}">
+                </td>
+                <td class="px-3">
+                    <span class="d-block small text-muted fw-bold">GENERAL INVENTORY</span>
+                    <span class="fw-bold text-dark">General Request #{{ req.id }}</span>
+                    <div class="small text-muted mt-1"><i class="bi bi-person-fill me-1"></i>Submitted by: {{ req.submitted_by.username }}</div>
+                </td>
+                <td>
+                    <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Approved</span>
+                    <div class="text-muted mt-1" style="font-size: 0.7rem;">{{ req.approved_at|date:"d/m/Y H:i" }}</div>
+                </td>
+                <td class="text-end px-3">
+                    <a href="{% url 'print_general_material_approval' req.id %}" target="_blank" class="btn btn-sm btn-dark fw-bold shadow-sm">
+                        <i class="bi bi-printer-fill me-1"></i> PDF
+                    </a>
                 </td>
             </tr>
-            {% endfor %}
-        </tbody>
+        {% endif %}
+
+    {% empty %}
+        <tr>
+            <td colspan="4" class="text-center py-5 text-muted">
+                <i class="bi bi-folder-x fs-1 d-block mb-2 opacity-50"></i>
+                No approved materials found matching filters.
+            </td>
+        </tr>
+    {% endfor %}
+</tbody>
     </table>
 </div>
 
@@ -104,7 +143,7 @@
                     allUnitOptions.forEach(opt => opt.hidden = false);
                 } else {
                     allUnitOptions.filter(opt => opt.getAttribute('data-building') === selectedBuilding)
-                                  .forEach(opt => opt.hidden = false);
+                                .forEach(opt => opt.hidden = false);
                 }
             }
             buildingSelect.addEventListener('change', function() {
@@ -112,6 +151,80 @@
                 filterUnits();
             });
             filterUnits();
+        }
+    });
+</script>
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Your existing flatpickr and filter code...
+        flatpickr(".flatpickr-date", { dateFormat: "Y-m-d" });
+
+        const buildingSelect = document.getElementById('buildingSelect');
+        const unitSelect = document.getElementById('unitSelect');
+
+        if (buildingSelect && unitSelect) {
+            const allUnitOptions = Array.from(unitSelect.querySelectorAll('option[data-building]'));
+            function filterUnits() {
+                const selectedBuilding = buildingSelect.value;
+                allUnitOptions.forEach(opt => opt.hidden = true);
+                if (selectedBuilding === "") {
+                    allUnitOptions.forEach(opt => opt.hidden = false);
+                } else {
+                    allUnitOptions.filter(opt => opt.getAttribute('data-building') === selectedBuilding)
+                                .forEach(opt => opt.hidden = false);
+                }
+            }
+            buildingSelect.addEventListener('change', function() {
+                unitSelect.value = "";
+                filterUnits();
+            });
+            filterUnits();
+        }
+
+        // --- NEW: BULK PRINT LOGIC ---
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const checkboxes = document.querySelectorAll('.request-checkbox');
+        const bulkPrintBtn = document.getElementById('bulkPrintBtn');
+
+        // Toggle the button state based on selections
+        function updateBulkPrintBtn() {
+            const checkedBoxes = document.querySelectorAll('.request-checkbox:checked');
+            if (bulkPrintBtn) {
+                bulkPrintBtn.disabled = checkedBoxes.length === 0;
+            }
+        }
+
+        // Handle "Select All" click
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                checkboxes.forEach(cb => {
+                    cb.checked = selectAllCheckbox.checked;
+                });
+                updateBulkPrintBtn();
+            });
+        }
+
+        // Handle individual row clicks
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateBulkPrintBtn);
+        });
+
+        // Handle Bulk Print submission
+        if (bulkPrintBtn) {
+            bulkPrintBtn.addEventListener('click', function() {
+                const checkedBoxes = document.querySelectorAll('.request-checkbox:checked');
+                // Create a comma-separated list of IDs to send to the backend
+                const ids = Array.from(checkedBoxes).map(cb => cb.value).join(',');
+
+                if (ids) {
+                    // Opens your existing bulk print view in a new tab
+                    const printUrl = `{% url 'bulk_print_material_approvals' %}?ids=${ids}`;
+                    window.open(printUrl, '_blank');
+                }
+            });
         }
     });
 </script>

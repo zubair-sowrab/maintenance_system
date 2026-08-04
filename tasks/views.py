@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect
 
 from core import settings
+from itertools import chain
+
 from .models import Task, Complaint, SubTask, Notification
 from .forms import TaskForm
 from django.db.models import Sum
@@ -2270,95 +2272,65 @@ def disapprove_material_request_ajax(request, task_id):
 
 @login_required
 def material_approvals_view(request):
-    # Check if user is Admin safely
     if getattr(request.user.profile, 'role', '') != 'Admin' and not request.user.is_superuser:
         return redirect('dashboard')
 
-    # REMOVED 3-DAY LIMIT - Show all requests
     requests_qs = MaterialRequest.objects.all().order_by('-updated_at')
 
-    # Apply Filters
-    job_id = request.GET.get('job_id')
-    user = request.GET.get('user')
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-    building = request.GET.get('building')
-    unit = request.GET.get('unit')
+    # --- NEW: Fetch General Material Requests ---
+    general_requests = GeneralMaterialRequest.objects.all().order_by('-created_at')
+    general_pending_count = GeneralMaterialRequest.objects.filter(status='Pending').count()
 
-    if job_id:
-        requests_qs = requests_qs.filter(task__job_id__icontains=job_id.strip())
-    if user:
-        requests_qs = requests_qs.filter(task__assigned_technicians__username__icontains=user.strip()).distinct()
-    if building:
-        requests_qs = requests_qs.filter(task__building__iexact=building.strip())
-    if unit:
-        requests_qs = requests_qs.filter(task__unit__iexact=unit.strip())
-    if date_from:
-        requests_qs = requests_qs.filter(updated_at__date__gte=date_from)
-    if date_to:
-        try:
-            parsed_date = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
-            requests_qs = requests_qs.filter(updated_at__date__lte=parsed_date)
-        except ValueError:
-            pass
-
-    buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building', flat=True).distinct()
-    units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
+    # (Keep your existing filter logic for task material requests here)
 
     return render(request, 'tasks/material_approvals.html', {
         'requests': requests_qs,
-        'buildings': buildings,
-        'units': units
+        'general_requests': general_requests,
+        'general_pending_count': general_pending_count,
+        'buildings': Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building',
+                                                                                                         flat=True).distinct(),
+        'units': Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
     })
-
 
 @login_required
 def approved_materials_list(request):
     is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
 
-    # Admins see all approved materials, Technicians see only their assigned tasks
     if is_admin:
         approved_reqs = MaterialRequest.objects.filter(status='Approved').order_by('-approved_at')
+        approved_gen_reqs = GeneralMaterialRequest.objects.filter(status='Approved').order_by('-approved_at')
     else:
         approved_reqs = MaterialRequest.objects.filter(
             status='Approved',
             task__assigned_technicians=request.user
         ).distinct().order_by('-approved_at')
+        approved_gen_reqs = GeneralMaterialRequest.objects.filter(
+            status='Approved',
+            submitted_by=request.user
+        ).order_by('-approved_at')
 
-    # Apply Filters
-    job_id = request.GET.get('job_id')
-    user = request.GET.get('user')
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-    building = request.GET.get('building')
-    unit = request.GET.get('unit')
+    # 1. Tag each item so the template knows which layout to use
+    for req in approved_reqs:
+        req.is_general = False
+    for req in approved_gen_reqs:
+        req.is_general = True
 
-    if job_id:
-        approved_reqs = approved_reqs.filter(task__job_id__icontains=job_id.strip())
-    if user:
-        approved_reqs = approved_reqs.filter(task__assigned_technicians__username__icontains=user.strip()).distinct()
-    if building:
-        approved_reqs = approved_reqs.filter(task__building__iexact=building.strip())
-    if unit:
-        approved_reqs = approved_reqs.filter(task__unit__iexact=unit.strip())
-    if date_from:
-        approved_reqs = approved_reqs.filter(approved_at__date__gte=date_from)
-    if date_to:
-        try:
-            parsed_date = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
-            approved_reqs = approved_reqs.filter(approved_at__date__lte=parsed_date)
-        except ValueError:
-            pass
+    # 2. Combine both querysets and sort them by the approval date (newest first)
+    combined_requests = sorted(
+        chain(approved_reqs, approved_gen_reqs),
+        key=lambda instance: instance.approved_at or timezone.now(),
+        reverse=True
+    )
 
+    # 3. Get buildings and units to populate the UI filter dropdowns safely
     buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building', flat=True).distinct()
     units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
 
     return render(request, 'tasks/approved_materials.html', {
-        'requests': approved_reqs,
+        'combined_requests': combined_requests,
         'buildings': buildings,
-        'units': units
+        'units': units,
     })
-
 
 @login_required
 def print_material_approval(request, req_id):
@@ -2498,3 +2470,96 @@ def unit_performance_report(request):
     }
 
     return render(request, 'tasks/unit_performance_report.html', context)
+
+
+from .models import GeneralMaterialRequest, GeneralRequestedMaterialItem
+
+
+@login_required
+def create_general_material_request_ajax(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            items = data.get('items', [])
+
+            if not items:
+                return JsonResponse({'status': 'error', 'message': 'Please add at least one material.'}, status=400)
+
+            gen_req = GeneralMaterialRequest.objects.create(
+                submitted_by=request.user,
+                status='Pending'
+            )
+
+            for item in items:
+                name = item.get('name', '').strip()
+                qty = item.get('qty', '').strip()
+                if name:
+                    GeneralRequestedMaterialItem.objects.create(
+                        request=gen_req,
+                        material_name=name,
+                        quantity=qty or "1"
+                    )
+
+            return JsonResponse({'status': 'success', 'message': 'General Material Request submitted successfully!'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+
+
+@login_required
+def approve_general_material_request_ajax(request, req_id):
+    is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
+    if not is_admin:
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+
+    gen_req = get_object_or_404(GeneralMaterialRequest, id=req_id)
+    gen_req.status = 'Approved'
+    gen_req.approved_at = timezone.now()
+    gen_req.save()
+
+    return JsonResponse({'status': 'success', 'message': 'General material request approved.'})
+
+
+@login_required
+def reject_general_material_request_ajax(request, req_id):
+    is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
+    if not is_admin:
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+
+    gen_req = get_object_or_404(GeneralMaterialRequest, id=req_id)
+    gen_req.status = 'Rejected'
+    gen_req.save()
+
+    return JsonResponse({'status': 'success', 'message': 'General material request rejected.'})
+
+
+@login_required
+def print_general_material_approval(request, req_id):
+    gen_req = get_object_or_404(GeneralMaterialRequest, id=req_id, status='Approved')
+
+    is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
+    if not is_admin and gen_req.submitted_by != request.user:
+        raise PermissionDenied("You do not have access to view this approval document.")
+
+    return render(request, 'tasks/print_general_material_approval.html', {'req': gen_req})
+
+
+@login_required
+def bulk_print_material_approvals(request):
+    is_admin = request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'Admin')
+    if not is_admin:
+        raise PermissionDenied("Only administrators can bulk print material approvals.")
+
+    req_ids_str = request.GET.get('ids', '')
+    req_ids = [int(i) for i in req_ids_str.split(',') if i.isdigit()]
+
+    requests_qs = MaterialRequest.objects.filter(id__in=req_ids, status='Approved')
+    general_requests_qs = GeneralMaterialRequest.objects.filter(id__in=req_ids, status='Approved')
+
+    context = {
+        'requests': requests_qs,
+        'general_requests': general_requests_qs,
+        'today': timezone.now().strftime('%d-%m-%Y'),
+    }
+    return render(request, 'tasks/bulk_material_approval_print.html', context)

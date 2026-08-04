@@ -714,3 +714,27 @@ class RequestedMaterialItem(models.Model):
     material_name = models.CharField(max_length=250, blank=True, null=True)
     quantity = models.CharField(max_length=100, blank=True, null=True)
 
+
+
+class GeneralMaterialRequest(models.Model):
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    submitted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"General Material Request #{self.id} ({self.status})"
+
+class GeneralRequestedMaterialItem(models.Model):
+    request = models.ForeignKey(GeneralMaterialRequest, on_delete=models.CASCADE, related_name='items')
+    material_name = models.CharField(max_length=250)
+    quantity = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.material_name} - {self.quantity}"
