@@ -149,215 +149,129 @@ def task_list(request):
 @login_required
 def create_task(request):
     user = request.user
-    tech_ids = []
     user_role = getattr(user.profile, 'role', None)
-    # Simplified role check
     is_admin = user.is_superuser or user.groups.filter(name="Admin").exists()
 
     if request.method == 'POST':
-        # 1. Create a mutable copy of the POST data
         post_data = request.POST.copy()
 
-        # 2. Check role and set priority if it's missing or if it's a technician
-        # Assuming you determine role via user.profile.role
-        user_role = getattr(user.profile, 'role', None)
-
+        # Set default priority if missing or if user is a Technician
         if user_role == 'Technician' or not post_data.get('priority'):
             post_data['priority'] = 'Medium'
+
         form = TaskForm(post_data, request.FILES)
 
         if form.is_valid():
             task = form.save(commit=False)
+            now = timezone.now()
 
             if task.status == 'In Progress' and not task.started_at:
-                task.started_at = timezone.now()
+                task.started_at = now
 
-            # Set the dates directly on the object
-            now = timezone.now()
             task.start_date = now
-
             if not task.deadline:
                 task.deadline = now + timedelta(days=4)
 
+            # Translation block
             translator = GoogleTranslator(source='auto', target='en')
-
-            # Translate Description if it exists
             if task.description:
                 try:
                     task.description = translator.translate(task.description)
                 except Exception as e:
-                    print(f"Translation error: {e}")
+                    print(f"Description translation error: {e}")
 
-            # 1. AUTO-TITLE GENERATION (Updated to use first tech instead of old assigned_to)
-            project_type = request.GET.get('project_type')
-            # 1. EXTRACT ARRAYS
             sub_categories = request.POST.getlist('sub_category[]')
             quantities = request.POST.getlist('quantity[]')
-
             translated_subs = []
             translated_qtys = []
 
-            # 2. SAFELY LOOP AND TRANSLATE BOTH ARRAYS
+            # Translate dynamic arrays safely
             for i, sub in enumerate(sub_categories):
-                # Safely get the corresponding quantity, default to "0" if missing
                 raw_qty = quantities[i] if i < len(quantities) else "0"
 
-                # --- Translate Sub-Category ---
                 if sub and sub.strip():
                     try:
                         translated_subs.append(translator.translate(sub.strip()))
                     except Exception:
-                        translated_subs.append(sub.strip())  # Fallback to original if translation fails
+                        translated_subs.append(sub.strip())
 
-
-                # --- Translate Quantity / Details ---
                 clean_qty = str(raw_qty).strip()
                 if clean_qty and not clean_qty.isdigit():
-                    # Only translate if it contains text (e.g., "مترين" or "2 doors")
                     try:
                         translated_qtys.append(translator.translate(clean_qty))
                     except Exception:
                         translated_qtys.append(clean_qty)
                 else:
-                    # If it's just a number like "2" or empty, skip the translator to prevent API errors
                     translated_qtys.append(clean_qty if clean_qty else "0")
 
-            first_sub = next((s for s in sub_categories if s and s.strip()), "General")
-            first_qty = next((q for q, s in zip(quantities, sub_categories) if s and s.strip()), "0")
-
-            loc_parts = [str(task.building), str(task.unit)]
-            location = "-".join([p for p in loc_parts if p]) or "No Location"
-
-            # Use the first assigned technician's username for the title
+            # Determine Technician assignments
             tech_ids = request.POST.getlist('technicians')
-            first_tech = User.objects.filter(id__in=tech_ids).first()
-            # assigned_name = first_tech.username if first_tech else "Unassigned"
-
-            # task.title = f"{location}-{first_sub}({first_qty})"[:200]
-
-            # 1. AUTO-TITLE GENERATION (Updated to location-project_type)
-            # Ensure we grab the selected project_type from POST (or fallback to form/GET if empty)
-            project_type_val = request.POST.get('project_type') or request.GET.get('project_type') or getattr(task,
-                                                                                                              'project_type',
-                                                                                                              'General')
-
-            # If project_type is a tuple choice or object, ensure it's converted cleanly to its string name
-            if project_type_val:
-                project_type_str = str(project_type_val).strip()
-            else:
-                project_type_str = "General"
-
-            loc_parts = [str(task.building), str(task.unit)]
-            location = "-".join([p for p in loc_parts if p]) or "No Location"
-
-            # Use the first assigned technician's username for the title check
-            tech_ids = request.POST.getlist('technicians')
-
-            project_type_val = request.POST.get('project_type') or request.GET.get('project_type') or getattr(task,
-                                                                                                              'project_type',
-                                                                                                              'General')
-
-            # If project_type is a tuple choice or object, ensure it's converted cleanly to its string name
-            if project_type_val:
-                project_type_str = str(project_type_val).strip()
-            else:
-                project_type_str = "General"
-
-            loc_parts = [str(task.building), str(task.unit)]
-            location = "-".join([p for p in loc_parts if p]) or "No Location"
-
-            # Use the first assigned technician's username for the title check
-            tech_ids = request.POST.getlist('technicians')
-
-            # � Update title format to: location-project_type
-            if not tech_ids:
-                task.title = f"{location}-{project_type_str} - [UNASSIGNED]"[:200]
-            else:
-                task.title = f"{location}-{project_type_str}"[:200]
-
-            first_sub = translated_subs[0] if translated_subs else "General"
-            tech_ids = request.POST.getlist('technicians')
-
-            # If the user is a technician and they didn't select anyone,
-            # auto-assign to self (optional safety)
-            if not tech_ids and hasattr(user, 'profile') and user.profile.role == 'Technician':
+            if not tech_ids and user_role == 'Technician':
                 tech_ids = [user.id]
-            # Save task and M2M
+
+            # ---------------------------------------------------------
+            # AUTO-TITLE GENERATION
+            # Format: subcategory-quantity-location-unit-assigned to
+            # ---------------------------------------------------------
+            first_sub = translated_subs[0] if translated_subs else "General"
+            first_qty = translated_qtys[0] if translated_qtys else "0"
+            building = str(task.building) if task.building else "No Building"
+            unit = str(task.unit) if task.unit else "No Unit"
+
+            first_tech = User.objects.filter(id__in=tech_ids).first()
+            assigned_to = first_tech.username if first_tech else "Unassigned"
+
+            # Extract project_type from POST, GET, or existing task attribute
+            project_type_val = request.POST.get('project_type') or request.GET.get('project_type') or getattr(task,
+                                                                                                              'project_type',
+                                                                                                              'General')
+            project_type = str(project_type_val).strip() if project_type_val else "General"
+
+            task.title = f"{building}-{unit}-{project_type}"[:200]
+
+            # Save the task and the ManyToMany relationships
             task.save()
-            task.assigned_technicians.set(tech_ids)  # Correctly save ManyToMany
+            task.assigned_technicians.set(tech_ids)
 
-            uploaded_images = request.FILES.getlist('task_images')
-            for img in uploaded_images:
-                TaskAttachment.objects.create(
-                    task=task,
-                    image=img,
-                    uploaded_by=request.user
-                )
-            # ==========================================
+            # Save uploaded images once
+            for img in request.FILES.getlist('task_images'):
+                TaskAttachment.objects.create(task=task, image=img, uploaded_by=user)
 
-            for tech in task.assigned_technicians.all():
-                if tech.profile.telegram_chat_id:
-                    msg = f"New Task: {task.title}\nBuilding: {task.building}\nCheck your dashboard."
-                    send_telegram_msg(tech.profile.telegram_chat_id, msg)
-
-            # Save items
+            # Save task items
             for sub, qty in zip(translated_subs, translated_qtys):
                 if sub:
                     TaskItem.objects.create(task=task, sub_category=sub, quantity=qty)
 
+            # Send Telegram Notifications
+            for tech in task.assigned_technicians.all():
+                if hasattr(tech, 'profile') and tech.profile.telegram_chat_id:
+                    msg = f"New Task: {task.title}\nBuilding: {building}\nCheck your dashboard."
+                    try:
+                        send_telegram_msg(tech.profile.telegram_chat_id, msg)
+                    except Exception as e:
+                        print(f"Telegram sending error: {e}")
+
             messages.success(request, "Task saved successfully.")
             return redirect('dashboard')
 
-
         else:
-            print("Form Errors:", form.errors)
+            print("❌ FORM ERRORS:", form.errors)
+
     else:
+        # GET request handling
         dubai_tz = pytz.timezone('Asia/Dubai')
         now_dubai = timezone.now().astimezone(dubai_tz)
-
-        # 2. Add 60 days to the UAE time
         deadline_dubai = now_dubai + timedelta(days=4)
 
-        # 3. Format it for the HTML input
-        initial_data = {
+        form = TaskForm(initial={
             'start_date': now_dubai.strftime('%Y-%m-%dT%H:%M'),
             'deadline': deadline_dubai.strftime('%Y-%m-%dT%H:%M')
-        }
-        form = TaskForm(initial=initial_data)
+        })
 
-    # Pass the technicians list to the template for the dropdown
-    all_maintenance_items = MaintenanceWorkItem.objects.all()
+    # Pass context data to the template
     technicians = User.objects.filter(profile__role='Technician')
-    if request.method == 'POST':
-        # Create a mutable copy of the POST data
-        post_data = request.POST.copy()
+    all_maintenance_items = MaintenanceWorkItem.objects.all()
 
-        # If 'priority' is missing or empty, set it to default
-        if not post_data.get('priority'):
-            post_data['priority'] = 'Medium'
-
-        if form.is_valid():
-            task = form.save(commit=False)
-
-            task.save()
-            task.assigned_technicians.set(tech_ids)
-            # ... rest of code
-
-            # ==============================
-            # NEW: Process Multi-Image Upload
-            # ==============================
-            uploaded_images = request.FILES.getlist('task_images')
-            for img in uploaded_images:
-                TaskAttachment.objects.create(
-                    task=task,
-                    image=img,
-                    uploaded_by=user  # Or request.user
-                )
-            # ==============================
-        else:
-            # THIS IS CRITICAL
-            print("❌ FORM ERRORS:", form.errors)
-            # If you are in development, return an error page or print to logs
     return render(request, 'tasks/create_task.html', {
         'form': form,
         'technicians': technicians,
