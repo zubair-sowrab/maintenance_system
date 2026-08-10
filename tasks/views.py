@@ -409,6 +409,9 @@ def end_task(request, task_id):
 
 @login_required
 def dashboard(request):
+    # Intercept the specific user
+    if request.user.username == 'approval_admin':
+        return redirect('approved_materials_list')
     user = request.user
     project_types = MaintenanceWorkItem.PROJECT_TYPE_CHOICES
 

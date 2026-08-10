@@ -77,7 +77,13 @@
                 </td>
                 <td class="px-3">
                     <span class="d-block small text-muted fw-bold">{{ req.task.job_id }}</span>
-                    <a href="{% url 'task_detail' req.task.id %}" class="text-decoration-none fw-bold text-primary">{{ req.task.title }}</a>
+                    {% if request.user.username == 'approval_admin' %}
+        <!-- Text only, no link -->
+        <span class="fw-bold text-primary">{{ req.task.title }}</span>
+    {% else %}
+        <!-- Normal link -->
+        <a href="{% url 'task_detail' req.task.id %}" class="text-decoration-none fw-bold text-primary">{{ req.task.title }}</a>
+    {% endif %}
                     <div class="small text-muted mt-1"><i class="bi bi-geo-alt-fill me-1"></i>{{ req.task.building }} - {{ req.task.unit }}</div>
                     <div class="small text-primary fw-bold"><i class="bi bi-person-fill me-1"></i>{{ req.task.assigned_to_display|default:"Unassigned" }}</div>
                 </td>

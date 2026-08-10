@@ -58,74 +58,95 @@
         <div class="collapse navbar-collapse" id="mainNavbar">
             <div class="ms-auto d-flex flex-column flex-lg-row gap-2 align-items-lg-center">
 
-            {% if user.is_authenticated %}
-                <a href="{% url 'approved_materials_list' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
-                    Approved Materials
-                    <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">المواد المعتمدة</small>
-                </a>
-                <a href="{% url 'task_list' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
+           {% if user.is_authenticated %}
+
+                {% if request.user.username == 'approval_admin' %}
+                    <!-- ========================================== -->
+                    <!-- APPROVAL_ADMIN RESTRICTED VIEW             -->
+                    <!-- ========================================== -->
+                    <form action="{% url 'logout' %}" method="POST" class="d-inline mb-2 mb-lg-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-sm w-100 text-center">
+                            Logout
+                            <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">تسجيل الخروج</small>
+                        </button>
+                    </form>
+
+                {% else %}
+                    <!-- ========================================== -->
+                    <!-- NORMAL USER VIEW                           -->
+                    <!-- ========================================== -->
+                    <a href="{% url 'approved_materials_list' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
+                        Approved Materials
+                        <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">المواد المعتمدة</small>
+                    </a>
+                    <a href="{% url 'task_list' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
                     Tasks
                     <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">المهام</small>
                 </a>
 
-                {% if user.profile.role == 'Admin' %}
-                    <a href="{% url 'reports' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
-                        Reports
-                        <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">التقارير</small>
-                    </a>
-                    <a href="/admin/" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
-                        Admin Panel
-                        <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">لوحة المسؤول</small>
-                    </a>
-                {% endif %}
+                    {% if user.profile.role == 'Admin' %}
+                        <a href="{% url 'reports' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
+                            Reports
+                            <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">التقارير</small>
+                        </a>
+                        <a href="/admin/" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
+                            Admin Panel
+                            <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">لوحة المسؤول</small>
+                        </a>
+                    {% endif %}
 
-                <a href="{% url 'create_task' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
-                    Create Task
-                    <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">إنشاء مهمة</small>
-                </a>
-
-                {% if user.profile.role == 'Admin' %}
-                    <a href="{% url 'material_approvals' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
-                        Approvals
-                        <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">الموافقات</small>
-                    </a>
-                {% endif %}
-
-
-                {% if user.profile.role == 'Admin' or user.is_superuser %}
-                <li class="nav-item dropdown px-1" style="list-style: none;">
-                    <a class="nav-link btn btn-light btn-sm mb-2 mb-lg-0 text-center " href="#" id="overtimeDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 140px;">
-                        <div class="d-flex flex-column align-items-center" style="line-height: 1.2;">
-                            <span class="fw-bold align-items-center mt-2 text-dark">
-                                <i class="bi bi-clock-history"></i> Overtime⏷
-                            </span>
-                            <small class="opacity-75 text-dark mb-2" style="font-size: 0.70rem;">الوقت الإضافي<br></small>
-                        </div>
+                    <a href="{% url 'create_task' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
+                        Create Task
+                        <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">إنشاء مهمة</small>
                     </a>
 
-                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 rounded-3" aria-labelledby="overtimeDropdown">
-                        <li>
-                            <a class="dropdown-item fw-semibold py-2 d-flex align-items-center" href="{% url 'all_overtime_tasks' %}">
-                                <i class="bi bi-list-task text-primary me-2 fs-5"></i> All Overtime Tasks
+                    {% if user.profile.role == 'Admin' %}
+                        <a href="{% url 'material_approvals' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
+                            Approvals
+                            <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">الموافقات</small>
+                        </a>
+                    {% endif %}
+
+                    {% if user.profile.role == 'Admin' or user.is_superuser %}
+                        <li class="nav-item dropdown px-1" style="list-style: none;">
+                            <a class="nav-link btn btn-light btn-sm mb-2 mb-lg-0 text-center " href="#" id="overtimeDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 140px;">
+                                <div class="d-flex flex-column align-items-center" style="line-height: 1.2;">
+                                    <span class="fw-bold align-items-center mt-2 text-dark">
+                                        <i class="bi bi-clock-history"></i> Overtime⏷
+                                    </span>
+                                    <small class="opacity-75 text-dark mb-2" style="font-size: 0.70rem;">الوقت الإضافي<br></small>
+                                </div>
                             </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item fw-bold text-success py-2 d-flex align-items-center" href="#" data-bs-toggle="modal" data-bs-target="#assignOvertimeModal" onclick="loadOvertimeTasks()">
-                                <i class="bi bi-plus-circle-fill me-2 fs-5"></i> Add Task to Overtime
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                {% endif %}
 
-                <form action="{% url 'logout' %}" method="POST" class="d-inline mb-2 mb-lg-0">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-primary btn-sm w-100 text-center">
-                        Logout
-                        <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">تسجيل الخروج</small>
-                    </button>
-                </form>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 rounded-3" aria-labelledby="overtimeDropdown">
+                                <li>
+                                    <a class="dropdown-item fw-semibold py-2 d-flex align-items-center" href="{% url 'all_overtime_tasks' %}">
+                                        <i class="bi bi-list-task text-primary me-2 fs-5"></i> All Overtime Tasks
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item fw-bold text-success py-2 d-flex align-items-center" href="#" data-bs-toggle="modal" data-bs-target="#assignOvertimeModal" onclick="loadOvertimeTasks()">
+                                        <i class="bi bi-plus-circle-fill me-2 fs-5"></i> Add Task to Overtime
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% endif %}
+
+                    <form action="{% url 'logout' %}" method="POST" class="d-inline mb-2 mb-lg-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-sm w-100 text-center">
+                            Logout
+                            <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">تسجيل الخروج</small>
+                        </button>
+                    </form>
+                {% endif %} <!-- FIX: THIS ENDIF WAS MISSING -->
+
             {% else %}
+                <!-- ========================================== -->
+                <!-- GUEST VIEW                                 -->
+                <!-- ========================================== -->
                 <div class="d-flex align-items-center justify-content-center">
                     <li class="nav-item mx-2">
                         <a href="/admin/" class="btn btn-warning btn-sm mt-lg-0 text-center">
@@ -136,13 +157,15 @@
                 </div>
                 <hr class="d-lg-none text-white">
             {% endif %}
-
             </div>
         </div>
     </div>
 </nav>
 
 {% if user.is_authenticated %}
+
+
+
     {% if user.profile.role == 'Admin' %}
         <h3 class="text-center mt-4 mb-4">
             Admin Dashboard - {{ request.user.username }}
