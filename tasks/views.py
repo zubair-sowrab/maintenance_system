@@ -2209,37 +2209,78 @@ def material_approvals_view(request):
         'units': Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
     })
 
+
+
 @login_required
 def approved_materials_list(request):
     is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
 
+    # 1. Base Querysets
     if is_admin:
-        approved_reqs = MaterialRequest.objects.filter(status='Approved').order_by('-approved_at')
-        approved_gen_reqs = GeneralMaterialRequest.objects.filter(status='Approved').order_by('-approved_at')
+        approved_reqs = MaterialRequest.objects.filter(status='Approved')
+        approved_gen_reqs = GeneralMaterialRequest.objects.filter(status='Approved')
     else:
         approved_reqs = MaterialRequest.objects.filter(
             status='Approved',
             task__assigned_technicians=request.user
-        ).distinct().order_by('-approved_at')
+        ).distinct()
         approved_gen_reqs = GeneralMaterialRequest.objects.filter(
             status='Approved',
             submitted_by=request.user
-        ).order_by('-approved_at')
+        )
 
-    # 1. Tag each item so the template knows which layout to use
+    # 2. Capture Filters from URL
+    job_id = request.GET.get('job_id')
+    user_query = request.GET.get('user')
+    building = request.GET.get('building')
+    unit = request.GET.get('unit')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+
+    # 3. Apply Filters
+    if job_id and job_id.strip():
+        approved_reqs = approved_reqs.filter(task__job_id__icontains=job_id.strip())
+        approved_gen_reqs = approved_gen_reqs.filter(id__icontains=job_id.strip()) # Filter General by ID
+
+    if user_query and user_query.strip():
+        approved_reqs = approved_reqs.filter(task__assigned_technicians__username__icontains=user_query.strip()).distinct()
+        approved_gen_reqs = approved_gen_reqs.filter(submitted_by__username__icontains=user_query.strip())
+
+    if building and building.strip():
+        approved_reqs = approved_reqs.filter(task__building__iexact=building.strip())
+        approved_gen_reqs = approved_gen_reqs.none() # General requests don't have buildings
+
+    if unit and unit.strip():
+        approved_reqs = approved_reqs.filter(task__unit__iexact=unit.strip())
+        approved_gen_reqs = approved_gen_reqs.none() # General requests don't have units
+
+    if date_from and date_from.strip():
+        approved_reqs = approved_reqs.filter(approved_at__date__gte=date_from)
+        approved_gen_reqs = approved_gen_reqs.filter(approved_at__date__gte=date_from)
+
+    if date_to and date_to.strip():
+        try:
+            parsed_date_to = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
+            next_day = parsed_date_to + timedelta(days=1)
+            approved_reqs = approved_reqs.filter(approved_at__lt=next_day)
+            approved_gen_reqs = approved_gen_reqs.filter(approved_at__lt=next_day)
+        except ValueError:
+            pass
+
+    # 4. Tag each item so the template knows which layout to use
     for req in approved_reqs:
         req.is_general = False
     for req in approved_gen_reqs:
         req.is_general = True
 
-    # 2. Combine both querysets and sort them by the approval date (newest first)
+    # 5. Combine both querysets and sort them by the approval date (newest first)
     combined_requests = sorted(
         chain(approved_reqs, approved_gen_reqs),
         key=lambda instance: instance.approved_at or timezone.now(),
         reverse=True
     )
 
-    # 3. Get buildings and units to populate the UI filter dropdowns safely
+    # 6. Get buildings and units to populate the UI filter dropdowns safely
     buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building', flat=True).distinct()
     units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
 
@@ -2248,6 +2289,8 @@ def approved_materials_list(request):
         'buildings': buildings,
         'units': units,
     })
+
+
 
 @login_required
 def print_material_approval(request, req_id):
