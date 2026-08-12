@@ -90,7 +90,7 @@
             {% for gen in general_requests %}
             <tr>
                 <td>#GEN-{{ gen.id }}</td>
-                <td>{{ gen.submitted_by.username|default:"Unknown" }}</td>
+                <td>{{ gen.custom_name|default:gen.submitted_by.username }}</td>
                 <td>
                     <ul class="mb-0">
                         {% for item in gen.items.all %}

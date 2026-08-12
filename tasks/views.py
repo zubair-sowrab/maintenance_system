@@ -2546,3 +2546,48 @@ def delete_material_request_ajax(request, req_id, req_type):
         return JsonResponse({'status': 'success'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+
+
+@login_required
+def create_general_material_request_with_name_ajax(request):
+    # Admin-only security check
+    is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
+    if not is_admin:
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized. Admins only.'}, status=403)
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            items = data.get('items', [])
+            custom_name = data.get('custom_name', '').strip()
+
+            if not items:
+                return JsonResponse({'status': 'error', 'message': 'Please add at least one material.'}, status=400)
+
+            if not custom_name:
+                return JsonResponse({'status': 'error', 'message': 'Please enter a name for the order.'}, status=400)
+
+            # Create the general material request with the custom override name
+            gen_req = GeneralMaterialRequest.objects.create(
+                submitted_by=request.user,
+                custom_name=custom_name,
+                status='Pending'
+            )
+
+            for item in items:
+                name = item.get('name', '').strip()
+                qty = item.get('qty', '').strip()
+                if name:
+                    GeneralRequestedMaterialItem.objects.create(
+                        request=gen_req,
+                        material_name=name,
+                        quantity=qty or "1"
+                    )
+
+            return JsonResponse({'status': 'success', 'message': 'General Material Request submitted successfully!'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)

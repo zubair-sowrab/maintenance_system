@@ -77,6 +77,12 @@
     <i class="bi bi-box-seam"></i> Add General Materials
 </button>
 
+{% if request.user.profile.role == 'Admin' or request.user.is_superuser %}
+<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#generalMatWithNameModal">
+    Add General Materials with Name
+</button>
+{% endif %}
+
 <!-- General Materials Modal -->
 <div class="modal fade" id="generalMaterialModal" tabindex="-1" aria-labelledby="generalMaterialModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
@@ -110,6 +116,36 @@
       </div>
     </div>
   </div>
+</div>
+
+
+
+
+<div class="modal fade" id="generalMatWithNameModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add General Materials (Custom Name)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Extra field for entering the custom name -->
+                <div class="mb-3">
+                    <label for="genMatCustomName" class="form-label">**Enter Name:**</label>
+                    <input type="text" class="form-control" id="genMatCustomName" placeholder="Enter name for the order...">
+                </div>
+
+                <div id="genMatWithNameRowsContainer">
+                    <!-- Dynamic material rows populated via JS -->
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="addGenMatWithNameRow">+ Add Material Item</button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitGenMatWithNameBtn">Submit Request</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 
@@ -851,6 +887,87 @@ document.getElementById('submit-gen-mat-btn').addEventListener('click', function
             alert('Error: ' + data.message);
         }
     });
+});
+
+
+
+
+
+
+document.getElementById('submitGenMatWithNameBtn').addEventListener('click', function() {
+    const customName = document.getElementById('genMatCustomName').value.trim();
+    const rows = document.querySelectorAll('.gen-mat-row'); // Adjust selector based on your form rows
+    const items = [];
+
+    rows.forEach(row => {
+        const name = row.querySelector('.material-name-input').value.trim();
+        const qty = row.querySelector('.material-qty-input').value.trim();
+        if (name) {
+            items.push({ name: name, qty: qty });
+        }
+    });
+
+    if (!customName) {
+        alert('Please enter a name.');
+        return;
+    }
+
+    fetch("{% url 'create_general_material_request_with_name_ajax' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ custom_name: customName, items: items })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert(data.message || 'Error submitting request.');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    const addRowBtn = document.getElementById('addGenMatWithNameRow');
+    const container = document.getElementById('genMatWithNameRowsContainer');
+
+    // Function to add a new material input row
+    function createMaterialRow() {
+        const row = document.createElement('div');
+        row.className = 'row g-2 mb-2 gen-mat-row';
+        row.innerHTML = `
+            <div class="col-6">
+                <input type="text" class="form-control material-name-input" placeholder="Material Name" required>
+            </div>
+            <div class="col-4">
+                <input type="text" class="form-control material-qty-input" placeholder="Quantity (e.g., 5 pcs)">
+            </div>
+            <div class="col-2">
+                <button type="button" class="btn btn-outline-danger w-100 remove-row-btn">&times;</button>
+            </div>
+        `;
+
+        // Remove row event listener
+        row.querySelector('.remove-row-btn').addEventListener('click', function () {
+            row.remove();
+        });
+
+        container.appendChild(row);
+    }
+
+    // Add row when + Add Material button is clicked
+    if (addRowBtn) {
+        addRowBtn.addEventListener('click', createMaterialRow);
+    }
+
+    // Automatically add one initial blank row when page loads
+    if (container && container.children.length === 0) {
+        createMaterialRow();
+    }
 });
 </script>
 

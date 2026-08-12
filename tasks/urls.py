@@ -131,4 +131,10 @@ path('materials/general/create/', views.create_general_material_request_ajax, na
 path('materials/general-print/<int:req_id>/', views.print_general_material_approval, name='print_general_material_approval'),
 path('materials/bulk-print/', views.bulk_print_material_approvals, name='bulk_print_material_approvals'),
 path('materials/delete/<int:req_id>/<str:req_type>/', views.delete_material_request_ajax, name='delete_material_request_ajax'),
+
+path(
+    'materials/general/create-with-name/',
+    views.create_general_material_request_with_name_ajax,
+    name='create_general_material_request_with_name_ajax'
+),
 ]

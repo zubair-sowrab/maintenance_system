@@ -727,6 +727,7 @@ class GeneralMaterialRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     approved_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+    custom_name = models.CharField(max_length=255, blank=True, null=True)  # <-- Added field
 
     def __str__(self):
         return f"General Material Request #{self.id} ({self.status})"

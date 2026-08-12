@@ -111,7 +111,7 @@
                 <td class="px-3">
                     <span class="d-block small text-muted fw-bold">GENERAL INVENTORY</span>
                     <span class="fw-bold text-dark">General Request #{{ req.id }}</span>
-                    <div class="small text-muted mt-1"><i class="bi bi-person-fill me-1"></i>Submitted by: {{ req.submitted_by.username }}</div>
+                    <div class="small text-muted mt-1"><i class="bi bi-person-fill me-1"></i>Submitted by: {{ req.custom_name|default:req.submitted_by.username }}</div>
                 </td>
                 <td>
                     <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Approved</span>

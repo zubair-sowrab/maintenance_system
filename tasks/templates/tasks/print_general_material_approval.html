@@ -48,7 +48,7 @@
     <div class="info-grid">
         <div>
             <strong>Request Reference:</strong> GEN-#{{ req.id }}<br>
-            <strong>Submitted By:</strong> {{ req.submitted_by.username }}<br>
+            <strong>Submitted By:</strong> {{ req.custom_name|default:req.submitted_by.username }}<br>
             <strong>Submission Date:</strong> {{ req.created_at|date:"d M Y, H:i" }}<br>
             <strong>Department:</strong> General Inventory
         </div>
