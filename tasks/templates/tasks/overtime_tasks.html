@@ -47,6 +47,8 @@
                       <option value="Electric" {% if request.GET.project_type == 'Electric' %}selected{% endif %}>Electric</option>
                       <option value="Plumbing" {% if request.GET.project_type == 'Plumbing' %}selected{% endif %}>Plumbing</option>
                       <option value="AC" {% if request.GET.project_type == 'AC' %}selected{% endif %}>AC</option>
+                      <option value="Plumbing and Electric" {% if request.GET.project_type == 'Plumbing and Electric' %}selected{% endif %}>Plumbing and Electric</option>
+
                   </select>
               </div>
               <div class="col-12 mt-3 d-flex justify-content-end gap-2">

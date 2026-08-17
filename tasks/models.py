@@ -19,7 +19,8 @@ class Task(models.Model):
       ('Carpenter', 'Carpenter(نجارة)'),
       ('AC', 'AC(تكييف)'),
       ('Mason', 'Mason(بناء)'),
-      ('Ceiling', 'Ceiling(سقف)')
+      ('Ceiling', 'Ceiling(سقف)'),
+      ('Plumbing and Electric','Plumbing and Electric')
   ]
 
 
@@ -392,8 +393,10 @@ class MaintenanceWorkItem(models.Model):
       ('Carpenter', 'Carpenter(نجارة)'),
       ('AC', 'AC(تكييف)'),
       ('Mason', 'Mason(بناء)'),
-      ('Ceiling', 'Ceiling(سقف)')
+      ('Ceiling', 'Ceiling(سقف)'),
+      ('Plumbing and Electric','Plumbing and Electric')
   ]
+
 
 
 
@@ -705,6 +708,15 @@ class MaterialRequest(models.Model):
     submitted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     approved_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+    SUPPLIER_CHOICES = [
+        ('Hyper', 'Hyper'),
+        ('other', 'Other'),
+    ]
+    supplier = models.CharField(
+        max_length=20,
+        choices=SUPPLIER_CHOICES,
+        default='other'
+    )
 
     def __str__(self):
         return f"Materials for {self.task.job_id} - {self.status}"

@@ -124,7 +124,6 @@ path('overtime/technicians/details/<int:tech_id>/', views.get_tech_overtime_deta
 path('materials/approved-list/', views.approved_materials_list, name='approved_materials_list'),
 path('materials/print-voucher/<int:req_id>/', views.print_material_approval, name='print_material_approval'),
 path('overtime/bulk-print/', views.bulk_print_overtime, name='bulk_print_overtime'),
-path('reports/unit-performance/', views.unit_performance_report, name='unit_performance_report'),
 path('materials/general/create/', views.create_general_material_request_ajax, name='create_general_material_request_ajax'),
     path('materials/general/approve/<int:req_id>/', views.approve_general_material_request_ajax, name='approve_general_material_request_ajax'),
     path('materials/general/reject/<int:req_id>/', views.reject_general_material_request_ajax, name='reject_general_material_request_ajax'),

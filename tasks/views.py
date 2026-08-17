@@ -667,6 +667,8 @@ def reports(request):
         'AC': get_cost('AC'), 'Carpenter': get_cost('Carpenter'),
         'Mason': get_cost('Mason') or get_cost('Mason(بناء)'),
         'Ceiling': get_cost('Ceiling') or get_cost('Ceiling(سقف)'),
+        'Plumbing and Electric': get_cost('Plumbing and Electric') or get_cost('Plumbing and Electric'),
+
     }
     total_expenses = sum(cost_data.values())
 
@@ -2210,86 +2212,48 @@ def material_approvals_view(request):
     })
 
 
-
 @login_required
 def approved_materials_list(request):
-    is_admin = getattr(request.user.profile, 'role', '') == 'Admin' or request.user.is_superuser
+    user = request.user
+    user_role = getattr(user.profile, 'role', '') if hasattr(user, 'profile') else ''
+    is_admin = user.is_superuser or user_role == 'Admin'
 
-    # 1. Base Querysets
+    # 1. Base Querysets Filtered by User Role
     if is_admin:
         approved_reqs = MaterialRequest.objects.filter(status='Approved')
         approved_gen_reqs = GeneralMaterialRequest.objects.filter(status='Approved')
+    elif user.username == 'approval_admin' or user_role == 'approval_admin':
+        # Restrict approval admin (e.g., filter specific supplier if model has supplier field)
+        approved_reqs = MaterialRequest.objects.filter(status='Approved')
+        approved_gen_reqs = GeneralMaterialRequest.objects.filter(status='Approved')
     else:
+        # Technicians only view materials for their assigned tasks or personal submissions
         approved_reqs = MaterialRequest.objects.filter(
             status='Approved',
-            task__assigned_technicians=request.user
+            task__assigned_technicians=user
         ).distinct()
         approved_gen_reqs = GeneralMaterialRequest.objects.filter(
             status='Approved',
-            submitted_by=request.user
+            submitted_by=user
         )
 
-    # 2. Capture Filters from URL
-    job_id = request.GET.get('job_id')
-    user_query = request.GET.get('user')
-    building = request.GET.get('building')
-    unit = request.GET.get('unit')
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-
-    # 3. Apply Filters
-    if job_id and job_id.strip():
-        approved_reqs = approved_reqs.filter(task__job_id__icontains=job_id.strip())
-        approved_gen_reqs = approved_gen_reqs.filter(id__icontains=job_id.strip()) # Filter General by ID
-
-    if user_query and user_query.strip():
-        approved_reqs = approved_reqs.filter(task__assigned_technicians__username__icontains=user_query.strip()).distinct()
-        approved_gen_reqs = approved_gen_reqs.filter(submitted_by__username__icontains=user_query.strip())
-
-    if building and building.strip():
-        approved_reqs = approved_reqs.filter(task__building__iexact=building.strip())
-        approved_gen_reqs = approved_gen_reqs.none() # General requests don't have buildings
-
-    if unit and unit.strip():
-        approved_reqs = approved_reqs.filter(task__unit__iexact=unit.strip())
-        approved_gen_reqs = approved_gen_reqs.none() # General requests don't have units
-
-    if date_from and date_from.strip():
-        approved_reqs = approved_reqs.filter(approved_at__date__gte=date_from)
-        approved_gen_reqs = approved_gen_reqs.filter(approved_at__date__gte=date_from)
-
-    if date_to and date_to.strip():
-        try:
-            parsed_date_to = datetime.strptime(date_to.strip(), "%Y-%m-%d").date()
-            next_day = parsed_date_to + timedelta(days=1)
-            approved_reqs = approved_reqs.filter(approved_at__lt=next_day)
-            approved_gen_reqs = approved_gen_reqs.filter(approved_at__lt=next_day)
-        except ValueError:
-            pass
-
-    # 4. Tag each item so the template knows which layout to use
+    # 2. Tag and Combine both Querysets into a Single Timeline
     for req in approved_reqs:
         req.is_general = False
     for req in approved_gen_reqs:
         req.is_general = True
 
-    # 5. Combine both querysets and sort them by the approval date (newest first)
     combined_requests = sorted(
         chain(approved_reqs, approved_gen_reqs),
         key=lambda instance: instance.approved_at or timezone.now(),
         reverse=True
     )
 
-    # 6. Get buildings and units to populate the UI filter dropdowns safely
-    buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building', flat=True).distinct()
-    units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
-
     return render(request, 'tasks/approved_materials.html', {
         'combined_requests': combined_requests,
-        'buildings': buildings,
-        'units': units,
+        'buildings': Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building', flat=True).distinct(),
+        'units': Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
     })
-
 
 
 @login_required
@@ -2333,103 +2297,6 @@ def bulk_print_overtime(request):
     return render(request, 'tasks/bulk_overtime_print.html', context)
 
 
-
-@login_required
-def unit_performance_report(request):
-    is_admin = request.user.is_superuser or (
-        hasattr(request.user, 'profile') and request.user.profile.role == 'Admin'
-    )
-    if not is_admin:
-        return redirect('dashboard')
-
-    # UPDATED: Added 'Paint' and 'Carpenter'
-    CATEGORIES = ['AC', 'Electric', 'Plumbing', 'Mason', 'Ceiling', 'Cleaning', 'Paint', 'Carpenter']
-
-    all_buildings = Task.objects.exclude(
-        Q(building__isnull=True) | Q(building='')
-    ).values_list('building', flat=True).distinct().order_by('building')
-
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    selected_buildings = request.GET.getlist('buildings')
-
-    tasks = Task.objects.exclude(
-        Q(building__isnull=True) | Q(building='') | Q(unit__isnull=True) | Q(unit='')
-    ).prefetch_related('items')
-
-    if start_date:
-        tasks = tasks.filter(created_at__gte=start_date)
-    if end_date:
-        tasks = tasks.filter(created_at__lte=end_date)
-    if selected_buildings:
-        tasks = tasks.filter(building__in=selected_buildings)
-
-    unit_dict = {}
-
-    for task in tasks:
-        key = f"{task.building}_{task.unit}"
-
-        if key not in unit_dict:
-            unit_dict[key] = {
-                'building': task.building,
-                'unit': task.unit,
-                'total_tasks': 0,
-                'total_spend': 0.0,
-                'health': 'Good',
-                'breakdown': {
-                    cat: {'count': 0, 'spend': 0.0, 'tasks': []}
-                    for cat in CATEGORIES
-                }
-            }
-            unit_dict[key]['breakdown']['Other'] = {'count': 0, 'spend': 0.0, 'tasks': []}
-
-        budget = float(task.budget or 0)
-        overtime = float(task.overtime_charge or 0)
-        task_spend = budget + overtime
-
-        unit_dict[key]['total_tasks'] += 1
-        unit_dict[key]['total_spend'] += task_spend
-
-        cat = task.project_type if task.project_type in unit_dict[key]['breakdown'] else 'Other'
-        unit_dict[key]['breakdown'][cat]['count'] += 1
-        unit_dict[key]['breakdown'][cat]['spend'] += task_spend
-
-        sub_items = [
-            f"{item.sub_category} (Qty: {item.quantity})"
-            for item in task.items.all()
-            if hasattr(item, 'sub_category') and item.sub_category
-        ]
-        sub_categories_str = ", ".join(sub_items) if sub_items else "No subcategories listed"
-
-        unit_dict[key]['breakdown'][cat]['tasks'].append({
-            'title': task.title,
-            'sub_categories': sub_categories_str,
-            'time_taken': task.time_taken or "N/A",
-            'spend': task_spend,
-            'status': task.status
-        })
-
-    unit_stats = []
-    for unit in unit_dict.values():
-        if unit['total_spend'] >= 1500 or unit['total_tasks'] >= 6:
-            unit['health'] = 'Bad'
-        elif unit['total_spend'] >= 500 or unit['total_tasks'] >= 3:
-            unit['health'] = 'Warning'
-        else:
-            unit['health'] = 'Good'
-        unit_stats.append(unit)
-
-    unit_stats.sort(key=lambda x: (x['total_tasks'], x['total_spend']), reverse=True)
-
-    context = {
-        'unit_stats': unit_stats,
-        'all_buildings': all_buildings,
-        'selected_buildings': selected_buildings,
-        'start_date': start_date,
-        'end_date': end_date,
-    }
-
-    return render(request, 'tasks/unit_performance_report.html', context)
 
 
 from .models import GeneralMaterialRequest, GeneralRequestedMaterialItem
