@@ -667,8 +667,6 @@ def reports(request):
         'AC': get_cost('AC'), 'Carpenter': get_cost('Carpenter'),
         'Mason': get_cost('Mason') or get_cost('Mason(بناء)'),
         'Ceiling': get_cost('Ceiling') or get_cost('Ceiling(سقف)'),
-        'Plumbing and Electric': get_cost('Plumbing and Electric') or get_cost('Plumbing and Electric'),
-
     }
     total_expenses = sum(cost_data.values())
 
@@ -2223,7 +2221,6 @@ def approved_materials_list(request):
         approved_reqs = MaterialRequest.objects.filter(status='Approved')
         approved_gen_reqs = GeneralMaterialRequest.objects.filter(status='Approved')
     elif user.username == 'approval_admin' or user_role == 'approval_admin':
-        # Restrict approval admin (e.g., filter specific supplier if model has supplier field)
         approved_reqs = MaterialRequest.objects.filter(status='Approved')
         approved_gen_reqs = GeneralMaterialRequest.objects.filter(status='Approved')
     else:
@@ -2237,7 +2234,54 @@ def approved_materials_list(request):
             submitted_by=user
         )
 
-    # 2. Tag and Combine both Querysets into a Single Timeline
+    # -------------------------------------------------------------------
+    # 2. NEW: Capture URL Parameters and Apply Filters
+    # -------------------------------------------------------------------
+    job_id = request.GET.get('job_id')
+    technician = request.GET.get('user')
+    building = request.GET.get('building')
+    unit = request.GET.get('unit')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+
+    # Apply filters to Task-based Material Requests
+    if job_id and job_id.strip():
+        approved_reqs = approved_reqs.filter(task__job_id__icontains=job_id.strip())
+
+    if technician and technician.strip():
+        approved_reqs = approved_reqs.filter(
+            task__assigned_technicians__username__icontains=technician.strip()).distinct()
+
+    if building and building.strip():
+        approved_reqs = approved_reqs.filter(task__building__iexact=building.strip())
+
+    if unit and unit.strip():
+        approved_reqs = approved_reqs.filter(task__unit__iexact=unit.strip())
+
+    if date_from and date_from.strip():
+        approved_reqs = approved_reqs.filter(approved_at__date__gte=date_from)
+
+    if date_to and date_to.strip():
+        approved_reqs = approved_reqs.filter(approved_at__date__lte=date_to)
+
+    # Apply filters to General Material Requests
+    if technician and technician.strip():
+        approved_gen_reqs = approved_gen_reqs.filter(submitted_by__username__icontains=technician.strip())
+
+    if date_from and date_from.strip():
+        approved_gen_reqs = approved_gen_reqs.filter(approved_at__date__gte=date_from)
+
+    if date_to and date_to.strip():
+        approved_gen_reqs = approved_gen_reqs.filter(approved_at__date__lte=date_to)
+
+    # If a user is specifically searching by Job ID, Building, or Unit,
+    # General requests shouldn't show up because they don't have these attributes.
+    if job_id or building or unit:
+        approved_gen_reqs = approved_gen_reqs.none()
+
+    # -------------------------------------------------------------------
+    # 3. Tag and Combine both Querysets into a Single Timeline
+    # -------------------------------------------------------------------
     for req in approved_reqs:
         req.is_general = False
     for req in approved_gen_reqs:
@@ -2251,7 +2295,8 @@ def approved_materials_list(request):
 
     return render(request, 'tasks/approved_materials.html', {
         'combined_requests': combined_requests,
-        'buildings': Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building', flat=True).distinct(),
+        'buildings': Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building',
+                                                                                                         flat=True).distinct(),
         'units': Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
     })
 
