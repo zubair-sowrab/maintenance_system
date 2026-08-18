@@ -223,7 +223,7 @@
         .then(r => r.json())
         .then(data => {
             tbody.innerHTML = '';
-            for(let i=0; i<15; i++) {
+            for(let i=0; i<100; i++) {
                 let name = data.items[i] ? data.items[i].name : '';
                 let qty = data.items[i] ? data.items[i].qty : '';
                 tbody.innerHTML += `
@@ -241,7 +241,7 @@
         const qtys = document.querySelectorAll('.mat-qty');
         let items = [];
 
-        for(let i=0; i<15; i++) {
+        for(let i=0; i<names.length; i++) {
             if(names[i].value.trim() !== '' || qtys[i].value.trim() !== '') {
                 items.push({ name: names[i].value, qty: qtys[i].value });
             }

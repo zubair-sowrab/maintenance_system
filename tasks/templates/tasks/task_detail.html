@@ -1783,7 +1783,7 @@ document.getElementById("deleteTaskBtn").addEventListener("click", function () {
             tbody.innerHTML = '';
             const fetchedItems = data.items || [];
 
-            for(let i = 0; i < 15; i++) {
+            for(let i = 0; i < 100; i++) {
                 let name = fetchedItems[i] ? fetchedItems[i].name : '';
                 let qty = fetchedItems[i] ? fetchedItems[i].qty : '';
                 tbody.innerHTML += `
@@ -1811,7 +1811,7 @@ document.getElementById("deleteTaskBtn").addEventListener("click", function () {
         const qtys = document.querySelectorAll('.mat-qty');
         let items = [];
 
-        for(let i = 0; i < 15; i++) {
+        for(let i = 0; i < names.length; i++) {
             if(names[i].value.trim() !== '' || qtys[i].value.trim() !== '') {
                 items.push({ name: names[i].value, qty: qtys[i].value });
             }
