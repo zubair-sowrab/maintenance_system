@@ -751,3 +751,19 @@ class GeneralRequestedMaterialItem(models.Model):
 
     def __str__(self):
         return f"{self.material_name} - {self.quantity}"
+
+
+
+# Add this to the bottom of your models.py
+class BlacklistedUnit(models.Model):
+    building = models.CharField(max_length=150)
+    unit = models.CharField(max_length=150)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('building', 'unit')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.building} - {self.unit}"

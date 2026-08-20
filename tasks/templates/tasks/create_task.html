@@ -77,6 +77,89 @@
 
 
 
+
+
+
+
+
+<!-- Blacklist Action Buttons -->
+<div class="container mt-4">
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#addBlacklistModal">
+            <i class="bi bi-slash-circle me-1"></i> Blacklist Unit
+        </button>
+        <button type="button" class="btn btn-outline-dark" onclick="fetchBlacklist()" data-bs-toggle="modal" data-bs-target="#viewBlacklistModal">
+            <i class="bi bi-eye me-1"></i> See Blacklist
+        </button>
+    </div>
+</div>
+
+<!-- Modal: Add to Blacklist -->
+<div class="modal fade" id="addBlacklistModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-slash-circle me-2"></i>Blacklist a Unit</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Select Building</label>
+                    <select id="bl-building-select" class="form-select">
+                        <option value="">-- Select Building --</option>
+                        <!-- Options will be cloned from the main form via JS -->
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Select Unit</label>
+                    <select id="bl-unit-select" class="form-select">
+                        <option value="">-- Select Unit First --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="submitBlacklist()">Blacklist</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: View Blacklist -->
+<div class="modal fade" id="viewBlacklistModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-eye me-2"></i>Blacklisted Units</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Building</th>
+                                <th>Unit</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="blacklist-table-body">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-12 col-md-10 col-lg-8">
@@ -883,6 +966,205 @@ function addNewRow() {
     initSelect2(newRow.find('select'));
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// --- BLACKLIST SYSTEM ---
+let activeBlacklist = [];
+
+// 1. Fetch Blacklist on Load
+function loadBlacklistCache() {
+    fetch("{% url 'list_blacklist_ajax' %}")
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                activeBlacklist = data.blacklist;
+            }
+        });
+}
+loadBlacklistCache();
+
+// 2. Main Form Interceptor (The Error Dialog)
+const mainUnitSelect = document.querySelector('select[name="unit"]');
+const mainBuildingSelect = document.querySelector('select[name="building"]');
+
+if (mainUnitSelect && mainBuildingSelect) {
+    mainUnitSelect.addEventListener('change', function() {
+        const selectedBuilding = mainBuildingSelect.value;
+        const selectedUnit = this.value;
+
+        const isBlacklisted = activeBlacklist.some(
+            item => item.building === selectedBuilding && item.unit === selectedUnit
+        );
+
+        if (isBlacklisted) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Unit is Blacklisted!',
+                text: 'This flat is in the blacklist. If you wish to select this unit, remove it from the blacklist first.',
+                confirmButtonColor: '#dc3545'
+            });
+            this.value = ""; // Instantly clear the invalid selection
+        }
+    });
+}
+
+// 3. Clone Building Options into the Blacklist Modal
+document.getElementById('addBlacklistModal').addEventListener('show.bs.modal', function () {
+    const blBuildingSelect = document.getElementById('bl-building-select');
+    if (blBuildingSelect.options.length <= 1) {
+        blBuildingSelect.innerHTML = mainBuildingSelect.innerHTML; // Clone main form options
+    }
+});
+// 4. Handle Blacklist Modal Unit Population
+document.getElementById('bl-building-select').addEventListener('change', function() {
+    const blUnitSelect = document.getElementById('bl-unit-select');
+    blUnitSelect.innerHTML = '<option value="">-- Select Unit --</option>';
+
+    // Rebuild the units list locally so the modal can access it
+    const buildModalUnitsList = () => {
+        let list = [];
+        list.push("None (لا ينطبق)");
+        for (let i = 1; i <= 7; i++) { let num = String(i).padStart(2, '0'); list.push(`Shop S${num} (محل S${num})`); }
+        for (let i = 1; i <= 20; i++) { let num = String(i).padStart(2, '0'); list.push(`Unit G${num} (شقة G${num})`); }
+        for (let i = 1; i <= 10; i++) { let num = String(i).padStart(2, '0'); list.push(`Unit M${num} (شقة M${num})`); }
+        for (let floor = 1; floor <= 9; floor++) {
+            for (let unit = 1; unit <= 11; unit++) {
+                let unitNum = `${floor}${String(unit).padStart(2, '0')}`;
+                list.push(`Flat ${unitNum} (شقة ${unitNum})`);
+            }
+        }
+        list.push("Service Area (منطقة الخدمات)");
+        list.push("Other (آخر)");
+        return list;
+    };
+
+    const modalUnits = buildModalUnitsList();
+
+    if (this.value && this.value !== 'Other (آخر)') {
+        modalUnits.forEach(unitItem => {
+            if(unitItem !== "Other (آخر)") {
+                const opt = document.createElement('option');
+                opt.value = unitItem;
+                opt.textContent = unitItem;
+                blUnitSelect.appendChild(opt);
+            }
+        });
+    }
+});
+
+// 5. Submit Blacklist Entry
+function submitBlacklist() {
+    const building = document.getElementById('bl-building-select').value;
+    const unit = document.getElementById('bl-unit-select').value;
+
+    if(!building || !unit) {
+        Swal.fire('Error', 'Please select both a building and a unit.', 'warning');
+        return;
+    }
+
+    fetch("{% url 'add_blacklist_ajax' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({building: building, unit: unit})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'success') {
+            Swal.fire('Blacklisted!', 'Unit has been blacklisted.', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('addBlacklistModal')).hide();
+            loadBlacklistCache(); // Refresh Cache
+
+            // Clear inputs
+            document.getElementById('bl-building-select').value = "";
+            document.getElementById('bl-unit-select').innerHTML = '<option value="">-- Select Unit First --</option>';
+        } else {
+            Swal.fire('Error', data.message, 'error');
+        }
+    });
+}
+
+// 6. View Blacklist Data
+function fetchBlacklist() {
+    const tbody = document.getElementById('blacklist-table-body');
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center">Loading...</td></tr>';
+
+    fetch("{% url 'list_blacklist_ajax' %}")
+        .then(res => res.json())
+        .then(data => {
+            tbody.innerHTML = '';
+            if(data.status === 'success' && data.blacklist.length > 0) {
+                data.blacklist.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${item.building}</td>
+                            <td>${item.unit}</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeFromBlacklist(${item.id})">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No blacklisted units found.</td></tr>';
+            }
+        });
+}
+
+// 7. Remove from Blacklist
+function removeFromBlacklist(itemId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This unit will be allowed to receive tasks again.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#198754',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, remove it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/api/blacklist/remove/${itemId}/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'}
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    fetchBlacklist(); // Refresh modal table
+                    loadBlacklistCache(); // Refresh main form interceptor cache
+                }
+            });
+        }
+    });
+}
 </script>
 
 <style>

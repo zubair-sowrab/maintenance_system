@@ -2504,3 +2504,51 @@ def create_general_material_request_with_name_ajax(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+import json
+from .models import BlacklistedUnit
+
+
+@login_required
+def list_blacklist_ajax(request):
+    blacklist = BlacklistedUnit.objects.all().values('id', 'building', 'unit')
+    return JsonResponse({'status': 'success', 'blacklist': list(blacklist)})
+
+
+@login_required
+@require_POST
+def add_blacklist_ajax(request):
+    try:
+        data = json.loads(request.body)
+        building = data.get('building')
+        unit = data.get('unit')
+
+        if not building or not unit:
+            return JsonResponse({'status': 'error', 'message': 'Building and Unit are required.'}, status=400)
+
+        obj, created = BlacklistedUnit.objects.get_or_create(
+            building=building,
+            unit=unit,
+            defaults={'added_by': request.user}
+        )
+        if not created:
+            return JsonResponse({'status': 'error', 'message': 'This unit is already blacklisted.'}, status=400)
+
+        return JsonResponse({'status': 'success', 'message': 'Unit blacklisted successfully.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def remove_blacklist_ajax(request, item_id):
+    try:
+        item = BlacklistedUnit.objects.get(id=item_id)
+        item.delete()
+        return JsonResponse({'status': 'success', 'message': 'Removed from blacklist.'})
+    except BlacklistedUnit.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Item not found.'}, status=404)
