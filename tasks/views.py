@@ -128,11 +128,19 @@ def task_list(request):
     if project_type:
         tasks = tasks.filter(project_type=project_type)
 
-    pending_tasks = tasks.filter(Q(status='Pending') | Q(status='Pending(قيد الانتظار)')).order_by('-created_at')
-    active_tasks = tasks.filter(Q(status='In Progress') | Q(status='قيد التنفيذ')).order_by('-created_at')
-    completed_tasks = tasks.filter(Q(status='Completed') | Q(status='مكتمل')).order_by('-completed_at')
-    overdue_tasks = tasks.filter(status='Overdue').order_by(
-        '-deadline')  # Assuming you want the closest deadline or oldest overdue
+    pending_tasks = tasks.filter(
+        Q(status__in=['Pending', 'Pending(قيد الانتظار)']) |
+        (Q(status='Overdue') & Q(started_at__isnull=True))
+    ).distinct().order_by('-created_at')
+
+    active_tasks = tasks.filter(
+        Q(status__in=['In Progress', 'قيد التنفيذ']) |
+        (Q(status='Overdue') & Q(started_at__isnull=False))
+    ).distinct().order_by('-created_at')
+
+    completed_tasks = tasks.filter(Q(status='Completed') | Q(status='مكتمل')).distinct().order_by('-completed_at')
+
+    overdue_tasks = tasks.filter(status='Overdue').distinct().order_by('-deadline')
 
     context = {
         'project_types': project_types,
