@@ -667,6 +667,7 @@ def reports(request):
         'AC': get_cost('AC'), 'Carpenter': get_cost('Carpenter'),
         'Mason': get_cost('Mason') or get_cost('Mason(بناء)'),
         'Ceiling': get_cost('Ceiling') or get_cost('Ceiling(سقف)'),
+        'Plumbing and Electric': get_cost('Plumbing and Electric') or get_cost('Plumbing and Electric'),
     }
     total_expenses = sum(cost_data.values())
 
