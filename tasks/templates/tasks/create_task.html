@@ -81,7 +81,7 @@
 
 
 
-
+{% if user.is_superuser or user.profile.role == 'Admin' %}
 <!-- Blacklist Action Buttons -->
 <div class="container mt-4">
     <div class="d-flex justify-content-end gap-2">
@@ -93,6 +93,7 @@
         </button>
     </div>
 </div>
+{% endif %}
 
 <!-- Modal: Add to Blacklist -->
 <div class="modal fade" id="addBlacklistModal" tabindex="-1" aria-hidden="true">
