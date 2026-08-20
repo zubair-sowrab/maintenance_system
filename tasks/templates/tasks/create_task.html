@@ -1016,6 +1016,7 @@ function loadBlacklistCache() {
 loadBlacklistCache();
 
 // 2. Main Form Interceptor (The Error Dialog)
+// 2. Main Form Interceptor (The Error Dialog)
 const mainUnitSelect = document.querySelector('select[name="unit"]');
 const mainBuildingSelect = document.querySelector('select[name="building"]');
 
@@ -1024,15 +1025,22 @@ if (mainUnitSelect && mainBuildingSelect) {
         const selectedBuilding = mainBuildingSelect.value;
         const selectedUnit = this.value;
 
-        const isBlacklisted = activeBlacklist.some(
+        // Use .find() instead of .some() so we get the actual item data
+        const blacklistedItem = activeBlacklist.find(
             item => item.building === selectedBuilding && item.unit === selectedUnit
         );
 
-        if (isBlacklisted) {
+        if (blacklistedItem) {
+            // Check if a reason was provided, otherwise default to a fallback message
+            const reasonText = blacklistedItem.reason ? blacklistedItem.reason : "No reason provided.";
+
             Swal.fire({
                 icon: 'error',
                 title: 'Unit is Blacklisted!',
-                text: 'This flat is in the blacklist. If you wish to select this unit, remove it from the blacklist first.',
+                // Use 'html' instead of 'text' to allow bolding and line breaks
+                html: `This flat is in the blacklist.<br><br>
+                       <strong>Reason:</strong> ${reasonText}<br><br>
+                       <span style="font-size: 0.9em; color: #6c757d;">If you wish to select this unit, remove it from the blacklist first.</span>`,
                 confirmButtonColor: '#dc3545'
             });
             this.value = ""; // Instantly clear the invalid selection
