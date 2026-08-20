@@ -754,10 +754,10 @@ class GeneralRequestedMaterialItem(models.Model):
 
 
 
-# Add this to the bottom of your models.py
 class BlacklistedUnit(models.Model):
     building = models.CharField(max_length=150)
     unit = models.CharField(max_length=150)
+    reason = models.TextField(blank=True, null=True, help_text="Optional reason for blacklisting") # <-- ADD THIS LINE
     added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

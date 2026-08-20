@@ -2515,7 +2515,7 @@ from .models import BlacklistedUnit
 
 @login_required
 def list_blacklist_ajax(request):
-    blacklist = BlacklistedUnit.objects.all().values('id', 'building', 'unit')
+    blacklist = BlacklistedUnit.objects.all().values('id', 'building', 'unit', 'reason')
     return JsonResponse({'status': 'success', 'blacklist': list(blacklist)})
 
 
@@ -2526,6 +2526,7 @@ def add_blacklist_ajax(request):
         data = json.loads(request.body)
         building = data.get('building')
         unit = data.get('unit')
+        reason = data.get('reason', '').strip()  # <-- CAPTURE REASON
 
         if not building or not unit:
             return JsonResponse({'status': 'error', 'message': 'Building and Unit are required.'}, status=400)
@@ -2533,7 +2534,8 @@ def add_blacklist_ajax(request):
         obj, created = BlacklistedUnit.objects.get_or_create(
             building=building,
             unit=unit,
-            defaults={'added_by': request.user}
+            # INCLUDE REASON in defaults
+            defaults={'added_by': request.user, 'reason': reason}
         )
         if not created:
             return JsonResponse({'status': 'error', 'message': 'This unit is already blacklisted.'}, status=400)

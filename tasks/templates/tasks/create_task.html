@@ -116,6 +116,12 @@
                         <option value="">-- Select Unit First --</option>
                     </select>
                 </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Reason (Optional)</label>
+                    <input type="text" id="bl-reason-input" class="form-control" placeholder="Why is this unit being blacklisted?">
+                </div>
+
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -140,6 +146,7 @@
                             <tr>
                                 <th>Building</th>
                                 <th>Unit</th>
+                                <th>Reason</th>
                                 <th class="text-end">Action</th>
                             </tr>
                         </thead>
@@ -1075,11 +1082,11 @@ document.getElementById('bl-building-select').addEventListener('change', functio
         });
     }
 });
-
 // 5. Submit Blacklist Entry
 function submitBlacklist() {
     const building = document.getElementById('bl-building-select').value;
     const unit = document.getElementById('bl-unit-select').value;
+    const reason = document.getElementById('bl-reason-input').value; // <-- GRAB REASON
 
     if(!building || !unit) {
         Swal.fire('Error', 'Please select both a building and a unit.', 'warning');
@@ -1092,28 +1099,30 @@ function submitBlacklist() {
             'Content-Type': 'application/json',
             'X-CSRFToken': '{{ csrf_token }}'
         },
-        body: JSON.stringify({building: building, unit: unit})
+        body: JSON.stringify({building: building, unit: unit, reason: reason}) // <-- SEND REASON
     })
     .then(res => res.json())
     .then(data => {
         if(data.status === 'success') {
             Swal.fire('Blacklisted!', 'Unit has been blacklisted.', 'success');
             bootstrap.Modal.getInstance(document.getElementById('addBlacklistModal')).hide();
-            loadBlacklistCache(); // Refresh Cache
+            loadBlacklistCache();
 
             // Clear inputs
             document.getElementById('bl-building-select').value = "";
             document.getElementById('bl-unit-select').innerHTML = '<option value="">-- Select Unit First --</option>';
+            document.getElementById('bl-reason-input').value = ""; // <-- CLEAR REASON
         } else {
             Swal.fire('Error', data.message, 'error');
         }
     });
 }
 
+
 // 6. View Blacklist Data
 function fetchBlacklist() {
     const tbody = document.getElementById('blacklist-table-body');
-    tbody.innerHTML = '<tr><td colspan="3" class="text-center">Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Loading...</td></tr>';
 
     fetch("{% url 'list_blacklist_ajax' %}")
         .then(res => res.json())
@@ -1121,10 +1130,14 @@ function fetchBlacklist() {
             tbody.innerHTML = '';
             if(data.status === 'success' && data.blacklist.length > 0) {
                 data.blacklist.forEach(item => {
+                    // Check if reason exists, otherwise show muted text
+                    const reasonText = item.reason ? item.reason : '<span class="text-muted small">No reason provided</span>';
+
                     tbody.innerHTML += `
                         <tr>
                             <td>${item.building}</td>
                             <td>${item.unit}</td>
+                            <td>${reasonText}</td> <!-- INJECT REASON -->
                             <td class="text-end">
                                 <button class="btn btn-sm btn-outline-danger" onclick="removeFromBlacklist(${item.id})">
                                     <i class="bi bi-trash"></i> Delete
@@ -1134,10 +1147,11 @@ function fetchBlacklist() {
                     `;
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No blacklisted units found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No blacklisted units found.</td></tr>';
             }
         });
 }
+
 
 // 7. Remove from Blacklist
 function removeFromBlacklist(itemId) {
