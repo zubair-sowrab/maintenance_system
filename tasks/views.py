@@ -2554,3 +2554,24 @@ def remove_blacklist_ajax(request, item_id):
         return JsonResponse({'status': 'success', 'message': 'Removed from blacklist.'})
     except BlacklistedUnit.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Item not found.'}, status=404)
+
+@login_required
+@require_POST
+def reset_active_task_ajax(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+
+    # Permission check: Only Admin or the assigned Technician can reset it
+    is_admin = request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'Admin')
+
+    if not is_admin and request.user.profile.role == 'Technician':
+        if not task.assigned_technicians.filter(id=request.user.id).exists():
+            return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+
+    # Allow resetting if the task is "In Progress" OR if it's "Overdue" but already started
+    if task.status in ['In Progress', 'قيد التنفيذ'] or (task.status == 'Overdue' and task.started_at is not None):
+        task.status = 'Pending'
+        task.started_at = None
+        task.save() # The model's save() method will automatically keep it as Overdue if the deadline has passed, but it will now be "Pending Overdue"
+        return JsonResponse({'status': 'success', 'message': 'Task reset to pending.'})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only active tasks can be reset.'}, status=400)

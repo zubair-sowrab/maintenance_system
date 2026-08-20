@@ -7,6 +7,14 @@
             <div class="card shadow-sm border-0 mb-2">
                 <div class="card-body p-3 p-md-4">
 <div class="text-end">
+    <!-- NEW: Reset Task Button (Only shows if task is In Progress) -->
+   {% if task.status == 'In Progress' or 'قيد التنفيذ' in task.status or task.status == 'Overdue' and task.started_at %}
+    <button type="button" onclick="resetActiveTask({{ task.id }})" class="btn btn-warning btn-sm fw-bold shadow-sm me-1">
+        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Start
+    </button>
+    {% endif %}
+
+
     <button type="button" id="openMaterialsBtn" data-task-id="{{ task.id }}" class="btn btn-dark btn-sm fw-bold shadow-sm">
     <i class="bi bi-box-seam me-1"></i> Add Materials
 </button>
@@ -1852,6 +1860,55 @@ document.getElementById("deleteTaskBtn").addEventListener("click", function () {
             Swal.fire('Error', 'Network error occurred.', 'error');
         });
     }
+
+
+
+
+
+
+    // Add this anywhere inside a <script> tag in task_detail.html
+function resetActiveTask(taskId) {
+    Swal.fire({
+        title: 'Reset Task?',
+        text: "This will undo the start time and send the task back to Pending.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ffc107',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, Reset',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/tasks/reset-active-ajax/${taskId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        title: 'Reset!',
+                        text: data.message,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Error', 'Network error occurred.', 'error');
+            });
+        }
+    });
+}
 </script>
 
 

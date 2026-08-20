@@ -142,4 +142,5 @@ path(
 path('api/blacklist/list/', views.list_blacklist_ajax, name='list_blacklist_ajax'),
 path('api/blacklist/add/', views.add_blacklist_ajax, name='add_blacklist_ajax'),
 path('api/blacklist/remove/<int:item_id>/', views.remove_blacklist_ajax, name='remove_blacklist_ajax'),
+path('tasks/reset-active-ajax/<int:task_id>/', views.reset_active_task_ajax, name='reset_active_task_ajax'),
 ]
