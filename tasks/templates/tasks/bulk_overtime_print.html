@@ -95,7 +95,14 @@
                             1
                         {% endfor %}
                     </td>
-<td>{{task.time_taken}}</td>                </tr>
+<td style="text-align:center;">
+    {% if task.overtime_hours > 0 %}
+        <span class="ot-print-cell" data-raw="{{ task.overtime_hours }}"></span> Hrs
+    {% else %}
+        {{ task.time_taken }}
+    {% endif %}
+</td>
+                </tr>
             </tbody>
         </table>
 

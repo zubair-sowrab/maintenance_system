@@ -156,11 +156,13 @@
            class="form-control form-control-sm fw-bold border-0 shadow-sm ot-hrs-input"
            data-raw-val="{{ task.overtime_hours|default:'' }}"
            placeholder="0.00"></div>
-<div class="flex-grow-1">
+
+                      <!--
+                      <div class="flex-grow-1">
     <label class="small text-muted fw-bold" style="font-size:0.7rem;">AED Charge</label>
-    <!-- Changed to type="text" with inputmode="decimal" for free typing -->
+
     <input type="text" inputmode="decimal" id="ot-chg-{{ task.id }}" class="form-control form-control-sm fw-bold text-success border-0 shadow-sm" value="{{ task.overtime_charge|default:'' }}" placeholder="0.00">
-</div>
+</div>!-->
                       <div class="w-100 mt-2 d-flex gap-2">
                           <button type="button" class="btn btn-outline-dark btn-sm flex-grow-1 fw-bold" onclick="printSingleOvertime({{ task.id }})">
                               <i class="bi bi-printer me-1"></i> Print
@@ -219,8 +221,7 @@ document.addEventListener("DOMContentLoaded", function() {
         button.addEventListener('click', function() {
             const taskId = this.getAttribute('data-task-id');
             const hrs = document.getElementById(`ot-hrs-${taskId}`).value;
-            const chg = document.getElementById(`ot-chg-${taskId}`).value;
-
+            const chg = 0;
             const original = this.innerHTML;
             this.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
             this.disabled = true;
@@ -270,7 +271,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 cleanStr("{{ task.title|escapejs }}"),
                 "{{ task.assigned_to_display|escapejs }}",
                 cleanStr("{{ task.location|escapejs }}"),
-                ot_str + " Hrs ({{ task.overtime_charge|default:'0' }} AED)",
+                (raw_ot > 0) ? ot_str + " Hrs" : "{{ task.time_taken }}",
                 "{{ task.total_service_charge }} AED",
                 "{{ task.total_work_time }}"
             ];
