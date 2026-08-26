@@ -53,8 +53,14 @@ class Task(models.Model):
       help_text="Flag to explicitly pin this task to the Overtime board"
   )
 
-
-
+  created_by = models.ForeignKey(
+      User,
+      on_delete=models.SET_NULL,
+      null=True,
+      blank=True,
+      related_name='created_tasks',
+      help_text="The user account that generated this task"
+  )
 
 
 

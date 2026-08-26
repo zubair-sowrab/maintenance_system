@@ -171,6 +171,7 @@ def create_task(request):
 
         if form.is_valid():
             task = form.save(commit=False)
+            task.created_by = request.user
             now = timezone.now()
 
             if task.status == 'In Progress' and not task.started_at:

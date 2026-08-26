@@ -27,11 +27,24 @@
                             </span>
                             <span class="fs-4">
                                 {{ task.title }}
+
+
                                 {% if task.assigned_technicians.all %}
                                     - <span class="fs-5 text-secondary">
                                         {% for tech in task.assigned_technicians.all %}{{ tech.username }}{% if not forloop.last %}, {% endif %}{% endfor %}
                                     </span>
                                 {% endif %}
+
+
+
+                        <!--        {% if user.profile.role == 'Admin' and task.created_by %}
+<span class="fs-5 text-secondary">
+    <br><small><b>Created By: {{ task.created_by.username }}</b></small>
+</span>
+{% endif %}-->
+
+
+
                             </span>
 
                             {% if task.status == 'Overdue' or task.is_overdue %}

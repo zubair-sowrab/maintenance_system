@@ -249,7 +249,9 @@
                        </td>
                        <td>{{ task.project_type }}</td>
                        <td><span class="badge bg-warning text-dark">{{ task.status }}</span></td>
-                       <td>{{ task.assigned_to_display }}</td>
+                       <td>{{ task.assigned_to_display }}
+
+                       </td>
                        <td>{{ task.location }}</td>
                        <td>{{ task.budget }}</td>
                        <td>{{ task.complaint_set.last.message|default:"No complaint" }}</td>
@@ -280,7 +282,8 @@
                    <div class="row g-1" style="font-size: 0.8rem;">
                        <div class="col-6"><strong>ID:</strong> {{ task.job_id }}</div>
                        <div class="col-6"><strong>Fee:</strong> {{ task.budget }}</div>
-                       <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
+                       <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}
+                       </div>
                        <div class="col-12"><strong>Loc:</strong> {{ task.location }}</div>
                        <div class="col-12"><strong>Type:</strong> {{ task.project_type }}</div>
                    </div>
@@ -338,7 +341,8 @@
                        </td>
                        <td><span class="badge bg-primary">{{ task.status }}</span></td>
                        <td>{{ task.project_type}}</td>
-                       <td>{{ task.assigned_to_display }}</td>
+                       <td>{{ task.assigned_to_display }}
+                       </td>
                        <td>{{ task.location }}</td>
                        <td>{{ task.budget }}</td>
                        <td>{{ task.complaint_set.last.message|default:"None" }}</td>
@@ -372,7 +376,8 @@
                    <div class="row g-1" style="font-size: 0.8rem;">
                        <div class="col-6"><strong>ID:</strong> {{ task.job_id }}</div>
                        <div class="col-6"><strong>Fee:</strong> {{ task.budget }}</div>
-                       <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
+                       <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}
+                       </div>
                        <div class="col-12"><strong>Loc:</strong> {{ task.location }}</div>
                        <div class="col-12"><strong>Type:</strong> {{ task.project_type }}</div>
                    </div>
@@ -428,7 +433,8 @@
         </td>
         <td><span class="badge {% if task.is_overdue %}bg-danger{% else %}bg-success{% endif %}">{{ task.status }}</span></td>
         <td>{{ task.project_type }}</td>
-        <td>{{ task.assigned_to_display }}</td>
+        <td>{{ task.assigned_to_display }}
+        </td>
         <td>{{ task.completed_at|date:"Y-m-d H:i" }}</td>
         <td>{{ task.location }}</td>
         <td>{{ task.budget }}</td>
@@ -461,7 +467,8 @@
            {% if task.is_overdue %}
                <span class="text-danger fw-bold">({{ task.work_delay }} delay)</span>
            {% endif %}
-           <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
+           <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}
+           </div>
        </div>
    </div>
    {% endfor %}
@@ -517,7 +524,8 @@
                                </td>
                                <td><span class="badge bg-danger">{{ task.status }}</span></td>
                                <td>{{task.project_type}}</td>
-                               <td>{{task.assigned_to_display}}</td>
+                               <td>{{task.assigned_to_display}}
+                               </td>
                                <td class="text-danger fw-bold">{{ task.work_delay }}</td>
                                <td><a href="{% url 'start_task' task.id %}" class="btn btn-warning btn-sm text-dark fw-bold w-100" onclick="return confirm('Start task?')">Start</a></td>
                            </tr>
@@ -533,7 +541,8 @@
                        <div class="card-body p-2" style="font-size: 0.8rem;">
                           <strong><a href="{% url 'task_detail' task.id %}" class="text-danger">{{ task.title }}</a></strong>
                           <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">OVERDUE</span><br>
-                          <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
+                          <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}
+                          </div>
                           <div class="col-12"><strong>Type:</strong> {{ task.project_type }}</div>
                           Delay: <span class="text-danger fw-bold">{{ task.work_delay }}</span><br>
                           <a href="{% url 'start_task' task.id %}" class="btn btn-warning text-dark fw-bold btn-sm mt-1 w-100" onclick="return confirm('Start task?')">Start Task</a>
@@ -563,7 +572,8 @@
                                </td>
                                <td><span class="badge bg-danger">{{ task.status }}</span></td>
                                <td>{{task.project_type}}</td>
-                               <td>{{task.assigned_to_display}}</td>
+                               <td>{{task.assigned_to_display}}
+                               </td>
                                <td class="text-danger fw-bold">{{ task.work_delay }}</td>
                                <td>
                                    <button type="button" class="btn btn-primary btn-sm fw-bold w-100" data-bs-toggle="modal" data-bs-target="#endTaskModal" onclick="setTaskUrl('{{ task.id }}')">End</button>
@@ -581,7 +591,8 @@
                        <div class="card-body p-2" style="font-size: 0.8rem;">
                           <strong><a href="{% url 'task_detail' task.id %}" class="text-danger">{{ task.title }}</a></strong>
                           <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">OVERDUE</span><br>
-                          <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}</div>
+                          <div class="col-12"><strong>Who:</strong> {{ task.assigned_to_display }}
+                          </div>
                           <div class="col-12"><strong>Type:</strong> {{ task.project_type }}</div>
                           Delay: <span class="text-danger fw-bold">{{ task.work_delay }}</span><br>
                           <button type="button" class="btn btn-primary fw-bold btn-sm mt-1 w-100" data-bs-toggle="modal" data-bs-target="#endTaskModal" onclick="setTaskUrl('{{ task.id }}')">End Task</button>

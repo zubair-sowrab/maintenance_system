@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'tasks',
 'rest_framework',
 'import_export',
+'django.contrib.humanize'
 
 
 ]
