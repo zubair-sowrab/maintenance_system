@@ -60,6 +60,22 @@ from deep_translator import GoogleTranslator
 from .notifications import send_telegram_msg
 
 
+def safe_translate(text):
+    if not text or not str(text).strip():
+        return text
+    try:
+        translator = GoogleTranslator(source='auto', target='en')
+        result = translator.translate(str(text).strip())
+
+        # If Google blocks the IP, fallback to the original text
+        if result and "Error 500 (Server Error)" in result:
+            return text
+
+        return result
+    except Exception:
+        return text
+
+
 def translate_to_english(text):
     if not text or not text.strip():
         return text
@@ -182,12 +198,8 @@ def create_task(request):
                 task.deadline = now + timedelta(days=4)
 
             # Translation block
-            translator = GoogleTranslator(source='auto', target='en')
             if task.description:
-                try:
-                    task.description = translator.translate(task.description)
-                except Exception as e:
-                    print(f"Description translation error: {e}")
+                task.description = safe_translate(task.description)
 
             sub_categories = request.POST.getlist('sub_category[]')
             quantities = request.POST.getlist('quantity[]')
@@ -199,17 +211,11 @@ def create_task(request):
                 raw_qty = quantities[i] if i < len(quantities) else "0"
 
                 if sub and sub.strip():
-                    try:
-                        translated_subs.append(translator.translate(sub.strip()))
-                    except Exception:
-                        translated_subs.append(sub.strip())
+                    translated_subs.append(safe_translate(sub.strip()))
 
                 clean_qty = str(raw_qty).strip()
                 if clean_qty and not clean_qty.isdigit():
-                    try:
-                        translated_qtys.append(translator.translate(clean_qty))
-                    except Exception:
-                        translated_qtys.append(clean_qty)
+                    translated_qtys.append(safe_translate(clean_qty))
                 else:
                     translated_qtys.append(clean_qty if clean_qty else "0")
 
@@ -557,12 +563,10 @@ def submit_complaint(request, task_id):
             complaint = form.save(commit=False)
             complaint.task = task
             # Assuming your Complaint model has a technician field
-            try:
-                complaint.message = GoogleTranslator(source='auto', target='en').translate(complaint.message)
-            except:
-                pass
+            complaint.message = safe_translate(complaint.message)
             complaint.technician = request.user
             complaint.save()
+
             if task.status == "Completed":
                 send_task_to_google_sheet(task)
             messages.success(request, "Complaint submitted.")
@@ -1261,13 +1265,7 @@ def update_description_ajax(request, task_id):
 
         # --- TRANSLATION INTEGRATION ---
         if description:
-            try:
-                translator = GoogleTranslator(source='auto', target='en')
-                task.description = translator.translate(description)
-            except Exception as e:
-                # Fallback to the original text if the translation API experiences an outage
-                print(f"Translation failed: {e}")
-                task.description = description
+            task.description = safe_translate(description)
         else:
             task.description = description
 
@@ -1316,26 +1314,15 @@ def add_task_item_detail(request, task_id):
         sub = request.POST.get('sub_category', '').strip()
         qty = request.POST.get('quantity', '').strip()
 
-        translator = GoogleTranslator(source='auto', target='en')
-
         # --- 1. Translate Sub-Category ---
-        if sub:
-            try:
-                translated_sub = translator.translate(sub)
-            except Exception:
-                translated_sub = sub  # Fallback to original if API drops out
-        else:
-            translated_sub = "General"
+        translated_sub = safe_translate(sub) if sub else "General"
 
         # --- 2. Translate Quantity / Details ---
         if qty:
             if qty.isdigit():
                 translated_qty = qty  # Skip translator entirely for pure numbers
             else:
-                try:
-                    translated_qty = translator.translate(qty)
-                except Exception:
-                    translated_qty = qty  # Fallback
+                translated_qty = safe_translate(qty)
         else:
             translated_qty = "0"
 
