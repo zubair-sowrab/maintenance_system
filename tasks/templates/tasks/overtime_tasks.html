@@ -48,7 +48,6 @@
                       <option value="Plumbing" {% if request.GET.project_type == 'Plumbing' %}selected{% endif %}>Plumbing</option>
                       <option value="AC" {% if request.GET.project_type == 'AC' %}selected{% endif %}>AC</option>
                       <option value="Plumbing and Electric" {% if request.GET.project_type == 'Plumbing and Electric' %}selected{% endif %}>Plumbing and Electric</option>
-
                   </select>
               </div>
               <div class="col-12 mt-3 d-flex justify-content-end gap-2">
@@ -79,11 +78,11 @@
                 <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Columns to Copy</li>
                 <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="0" checked id="c0"><label class="form-check-label" for="c0">Job ID</label></div></li>
                 <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="1" checked id="c1"><label class="form-check-label" for="c1">Title</label></div></li>
-                <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="2" checked id="c2"><label class="form-check-label fw-bold text-primary" for="c2">Assigned To</label></div></li>
-                <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="3" checked id="c3"><label class="form-check-label" for="c3">Location</label></div></li>
-                <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="4" checked id="c4"><label class="form-check-label fw-bold text-success" for="c4">Overtime (Hrs/AED)</label></div></li>
-                <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="5" checked id="c5"><label class="form-check-label" for="c5">Total Pay</label></div></li>
-                <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="6" checked id="c6"><label class="form-check-label" for="c6">Total Work Time</label></div></li>
+                <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="2" checked id="c2"><label class="form-check-label" for="c2">Start Date</label></div></li>
+                <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="3" checked id="c3"><label class="form-check-label" for="c3">Completion Date</label></div></li>
+                <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="4" checked id="c4"><label class="form-check-label" for="c4">Location</label></div></li>
+                <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="5" checked id="c5"><label class="form-check-label fw-bold text-primary" for="c5">Assigned To</label></div></li>
+                <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="6" checked id="c6"><label class="form-check-label fw-bold text-success" for="c6">Overtime Hours</label></div></li>
             </ul>
         </div>
         <div class="btn-group shadow-sm">
@@ -93,11 +92,11 @@
                 <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Export Columns</li>
                 <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="0" checked id="e0"><label class="form-check-label" for="e0">Job ID</label></div></li>
                 <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="1" checked id="e1"><label class="form-check-label" for="e1">Title</label></div></li>
-                <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="2" checked id="e2"><label class="form-check-label fw-bold text-primary" for="e2">Assigned To</label></div></li>
-                <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="e3"><label class="form-check-label" for="e3">Location</label></div></li>
-                <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="4" checked id="e4"><label class="form-check-label fw-bold text-success" for="e4">Overtime (Hrs/AED)</label></div></li>
-                <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="5" checked id="e5"><label class="form-check-label" for="e5">Total Pay</label></div></li>
-                <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="6" checked id="e6"><label class="form-check-label" for="e6">Total Work Time</label></div></li>
+                <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="2" checked id="e2"><label class="form-check-label" for="e2">Start Date</label></div></li>
+                <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="e3"><label class="form-check-label" for="e3">Completion Date</label></div></li>
+                <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="4" checked id="e4"><label class="form-check-label" for="e4">Location</label></div></li>
+                <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="5" checked id="e5"><label class="form-check-label fw-bold text-primary" for="e5">Assigned To</label></div></li>
+                <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="6" checked id="e6"><label class="form-check-label fw-bold text-success" for="e6">Overtime Hours</label></div></li>
             </ul>
         </div>
     </div>
@@ -116,6 +115,8 @@
 
                   <div class="d-flex flex-wrap gap-2 mb-2 mt-2">
                       <span class="badge bg-light text-dark border"><i class="bi bi-hash text-muted"></i> {{ task.job_id }}</span>
+                      <span class="badge bg-light text-dark border"><i class="bi bi-hash text-muted"></i> {{ task.started_at|default:"-" }}</span>
+                      <span class="badge bg-light text-dark border"><i class="bi bi-hash text-muted"></i> {{ task.completed_at|default:"-" }}</span>
                       <span class="badge bg-light text-dark border">{{ task.project_type }}</span>
                       <span class="badge {% if 'Completed' in task.status %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ task.status }}</span>
                   </div>
@@ -134,35 +135,28 @@
                   </div>
                   <div class="d-flex justify-content-between">
                       <span class="small fw-bold text-muted">Start Time:</span>
-                      <span class="fw-bold text-info small" >{{ task.started_at }}</span>
+                      <span class="fw-bold text-info small" >{{ task.started_at|default:"-" }}</span>
                   </div>
                   <div class="d-flex justify-content-between">
                       <span class="small fw-bold text-muted">End Time:</span>
-                      <span class="fw-bold text-info small" >{{ task.completed_at }}</span>
+                      <span class="fw-bold text-info small" >{{ task.completed_at|default:"-" }}</span>
                   </div>
                   <div class="d-flex justify-content-between">
                       <span class="small fw-bold text-muted">Total Time Logged:</span>
                       <span class="fw-bold text-info small">{{ task.time_taken }}</span>
                   </div>
-
               </div>
 
               <div class="col-12 col-md-4 ps-md-4">
                   <label class="small text-muted fw-bold mb-2 text-uppercase letter-spacing-1">Update Overtime</label>
                   <div class="d-flex align-items-center gap-2 bg-light p-2 rounded flex-wrap">
                       <div class="flex-grow-1">
-  <label class="small text-muted fw-bold" style="font-size:0.7rem;">Hours (HH.MM)</label>
-    <input type="text" inputmode="decimal" id="ot-hrs-{{ task.id }}"
-           class="form-control form-control-sm fw-bold border-0 shadow-sm ot-hrs-input"
-           data-raw-val="{{ task.overtime_hours|default:'' }}"
-           placeholder="0.00"></div>
-
-                      <!--
-                      <div class="flex-grow-1">
-    <label class="small text-muted fw-bold" style="font-size:0.7rem;">AED Charge</label>
-
-    <input type="text" inputmode="decimal" id="ot-chg-{{ task.id }}" class="form-control form-control-sm fw-bold text-success border-0 shadow-sm" value="{{ task.overtime_charge|default:'' }}" placeholder="0.00">
-</div>!-->
+                          <label class="small text-muted fw-bold" style="font-size:0.7rem;">Hours (HH.MM)</label>
+                          <input type="text" inputmode="decimal" id="ot-hrs-{{ task.id }}"
+                                 class="form-control form-control-sm fw-bold border-0 shadow-sm ot-hrs-input"
+                                 data-raw-val="{{ task.overtime_hours|default:'' }}"
+                                 placeholder="0.00">
+                      </div>
                       <div class="w-100 mt-2 d-flex gap-2">
                           <button type="button" class="btn btn-outline-dark btn-sm flex-grow-1 fw-bold" onclick="printSingleOvertime({{ task.id }})">
                               <i class="bi bi-printer me-1"></i> Print
@@ -185,9 +179,6 @@
   <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i> <span class="fw-bold text-dark">Copied to clipboard!</span>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 // --- UTILITY TO FORMAT DECIMAL MATH BACK TO HH.MM ---
@@ -251,13 +242,20 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
- const headersList = ["Job ID", "Title", "Assigned To", "Location", "Overtime (Hrs / AED)", "Total Pay", "Total Work Time"];
+    const headersList = [
+        "Job ID",
+        "Title",
+        "Start Date",
+        "Completion Date",
+        "Location",
+        "Assigned To",
+        "Overtime Hours"
+    ];
 
     function getMatrixData(checkboxClass) {
         // 1. Check which task rows are selected
         const selectedTaskCheckboxes = document.querySelectorAll('.ot-checkbox:checked');
         if (selectedTaskCheckboxes.length === 0) {
-            // Changed to a standard alert to prevent dependency crashes
             alert("Please select at least one task using the checkboxes to copy or export.");
             return null; // Stop execution if nothing is selected
         }
@@ -272,7 +270,7 @@ document.addEventListener("DOMContentLoaded", function() {
         let rows = [activeIndices.map(idx => headersList[idx])];
         const cleanStr = (val) => val ? val.replace(/[\t\n\r]/g, " ").trim() : "";
 
-        {% for task in tasks %}
+      {% for task in tasks %}
         (function() {
             // 3. ONLY process this row if its Task ID is in the selected list
             if (selectedTaskIds.includes("{{ task.id }}")) {
@@ -282,11 +280,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 let fullRow = [
                     "{{ task.job_id|escapejs }}",
                     cleanStr("{{ task.title|escapejs }}"),
-                    "{{ task.assigned_to_display|escapejs }}",
+                    cleanStr("{{ task.started_at|default:'-'|escapejs }}"),
+                    cleanStr("{{ task.completed_at|default:'-'|escapejs }}"),
                     cleanStr("{{ task.location|escapejs }}"),
-                    (raw_ot > 0) ? ot_str + " Hrs" : "{{ task.time_taken }}",
-                    "{{ task.total_service_charge }} AED",
-                    "{{ task.total_work_time }}"
+                    "{{ task.assigned_to_display|escapejs }}",
+                    // Added + " Hrs" right here:
+                    (raw_ot > 0) ? ot_str + " Hrs" : cleanStr("{{ task.time_taken|escapejs }}")
                 ];
                 rows.push(activeIndices.map(idx => fullRow[idx]));
             }
@@ -322,7 +321,7 @@ document.addEventListener("DOMContentLoaded", function() {
         document.body.removeChild(link);
     });
 
-}); // <--- THIS WAS THE MISSING BRACKET THAT BROKE THE SCRIPT
+});
 
 window.bulkPrintOvertime = function() {
     const checkboxes = document.querySelectorAll('.ot-checkbox:checked');
@@ -332,11 +331,6 @@ window.bulkPrintOvertime = function() {
     }
     const ids = Array.from(checkboxes).map(cb => cb.value).join(',');
     const printUrl = `{% url 'bulk_print_overtime' %}?ids=${ids}`;
-    window.open(printUrl, '_blank');
-};
-
-window.printSingleOvertime = function(taskId) {
-    const printUrl = `{% url 'bulk_print_overtime' %}?ids=${taskId}`;
     window.open(printUrl, '_blank');
 };
 
