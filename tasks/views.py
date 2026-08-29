@@ -1757,13 +1757,15 @@ def all_overtime_tasks(request):
 
     # Date Filters
     if date_from and date_from.strip():
-        tasks = tasks.filter(created_at__gte=date_from.strip())
+        # Changed from created_at to completed_at__date
+        tasks = tasks.filter(completed_at__date__gte=date_from.strip())
 
     if date_to and date_to.strip():
         try:
             parsed_to = datetime.strptime(date_to.strip(), "%Y-%m-%d")
             next_day = parsed_to + timedelta(days=1)
-            tasks = tasks.filter(created_at__lt=next_day)
+            # Changed from created_at to completed_at
+            tasks = tasks.filter(completed_at__lt=next_day)
         except ValueError:
             pass
 

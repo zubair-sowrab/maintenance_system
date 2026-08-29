@@ -251,9 +251,21 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    const headersList = ["Job ID", "Title", "Assigned To", "Location", "Overtime (Hrs / AED)", "Total Pay", "Total Work Time"];
+ const headersList = ["Job ID", "Title", "Assigned To", "Location", "Overtime (Hrs / AED)", "Total Pay", "Total Work Time"];
 
     function getMatrixData(checkboxClass) {
+        // 1. Check which task rows are selected
+        const selectedTaskCheckboxes = document.querySelectorAll('.ot-checkbox:checked');
+        if (selectedTaskCheckboxes.length === 0) {
+            // Changed to a standard alert to prevent dependency crashes
+            alert("Please select at least one task using the checkboxes to copy or export.");
+            return null; // Stop execution if nothing is selected
+        }
+
+        // Get an array of the selected task IDs
+        const selectedTaskIds = Array.from(selectedTaskCheckboxes).map(cb => cb.value);
+
+        // 2. Check which columns the user wants to copy/export
         let activeIndices = [];
         document.querySelectorAll(`.${checkboxClass}:checked`).forEach(cb => activeIndices.push(parseInt(cb.value)));
 
@@ -262,20 +274,22 @@ document.addEventListener("DOMContentLoaded", function() {
 
         {% for task in tasks %}
         (function() {
-            // Apply formatter for copy/paste export
-            let raw_ot = parseFloat("{{ task.overtime_hours|default:'0' }}");
-            let ot_str = formatDecimalToHHMM(raw_ot) || "0";
+            // 3. ONLY process this row if its Task ID is in the selected list
+            if (selectedTaskIds.includes("{{ task.id }}")) {
+                let raw_ot = parseFloat("{{ task.overtime_hours|default:'0' }}");
+                let ot_str = formatDecimalToHHMM(raw_ot) || "0";
 
-            let fullRow = [
-                "{{ task.job_id|escapejs }}",
-                cleanStr("{{ task.title|escapejs }}"),
-                "{{ task.assigned_to_display|escapejs }}",
-                cleanStr("{{ task.location|escapejs }}"),
-                (raw_ot > 0) ? ot_str + " Hrs" : "{{ task.time_taken }}",
-                "{{ task.total_service_charge }} AED",
-                "{{ task.total_work_time }}"
-            ];
-            rows.push(activeIndices.map(idx => fullRow[idx]));
+                let fullRow = [
+                    "{{ task.job_id|escapejs }}",
+                    cleanStr("{{ task.title|escapejs }}"),
+                    "{{ task.assigned_to_display|escapejs }}",
+                    cleanStr("{{ task.location|escapejs }}"),
+                    (raw_ot > 0) ? ot_str + " Hrs" : "{{ task.time_taken }}",
+                    "{{ task.total_service_charge }} AED",
+                    "{{ task.total_work_time }}"
+                ];
+                rows.push(activeIndices.map(idx => fullRow[idx]));
+            }
         })();
         {% endfor %}
 
@@ -283,7 +297,10 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     document.getElementById("btnQuickClipboardCopy").addEventListener("click", function() {
-        const matrixString = getMatrixData("copy-col-check").map(row => row.join("\t")).join("\n");
+        const data = getMatrixData("copy-col-check");
+        if (!data) return; // Stop if no tasks were selected
+
+        const matrixString = data.map(row => row.join("\t")).join("\n");
         navigator.clipboard.writeText(matrixString).then(() => {
             const toast = document.getElementById("copyToastNotification");
             toast.classList.remove('d-none');
@@ -292,7 +309,10 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     document.getElementById('btnExportCSV').addEventListener('click', function() {
-        const csvString = "\uFEFF" + getMatrixData("export-col-check").map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+        const data = getMatrixData("export-col-check");
+        if (!data) return; // Stop if no tasks were selected
+
+        const csvString = "\uFEFF" + data.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
         const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
@@ -301,7 +321,8 @@ document.addEventListener("DOMContentLoaded", function() {
         link.click();
         document.body.removeChild(link);
     });
-});
+
+}); // <--- THIS WAS THE MISSING BRACKET THAT BROKE THE SCRIPT
 
 window.bulkPrintOvertime = function() {
     const checkboxes = document.querySelectorAll('.ot-checkbox:checked');
@@ -311,6 +332,11 @@ window.bulkPrintOvertime = function() {
     }
     const ids = Array.from(checkboxes).map(cb => cb.value).join(',');
     const printUrl = `{% url 'bulk_print_overtime' %}?ids=${ids}`;
+    window.open(printUrl, '_blank');
+};
+
+window.printSingleOvertime = function(taskId) {
+    const printUrl = `{% url 'bulk_print_overtime' %}?ids=${taskId}`;
     window.open(printUrl, '_blank');
 };
 
