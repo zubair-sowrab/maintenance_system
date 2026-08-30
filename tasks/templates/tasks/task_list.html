@@ -420,7 +420,7 @@
                    </tr>
                </thead>
               <tbody>
-    {% for task in completed_tasks %}
+    {% for task in completed_tasks|slice:":200"%}
     <tr class="{% if task.is_overdue %}text-danger{% endif %}">
         <td>{{ task.job_id }}</td>
         <td>
@@ -452,7 +452,7 @@
        </div>
 
        <div class="d-md-none" style="max-height: 400px; overflow-y: auto;">
-   {% for task in completed_tasks %}
+   {% for task in completed_tasks|slice:":200" %}
    <div class="card mb-2 shadow-sm {% if task.is_overdue %}border-danger{% else %}border-success{% endif %}">
        <div class="card-body p-2" style="font-size: 0.8rem;">
            <strong>
