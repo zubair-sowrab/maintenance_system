@@ -1,25 +1,8 @@
 {% extends 'base.html' %}
 
-
-
-
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 <div class="sticky-top bg-white p-2 shadow-sm d-flex align-items-center mb-3">
   <a href="javascript:history.back()" class="btn btn-outline-dark btn-sm">
@@ -28,17 +11,11 @@
   <h5 class="ms-3 mb-0 fw-bold text-dark">{{ title }}</h5>
 </div>
 
-
-
-
 <div class="card shadow-sm border-0 mb-4 bg-light">
   <div class="card-body p-3">
       <h6 class="fw-bold text-secondary mb-3">
           <i class="bi bi-funnel-fill text-dark me-1"></i> Filters (التصفية)
       </h6>
-
-
-
 
       <form method="GET">
           <div class="row g-2">
@@ -47,18 +24,10 @@
                   <input type="text" name="job_id" class="form-control form-control-sm" value="{{ request.GET.job_id }}" placeholder="Enter ID">
               </div>
 
-
-
-
               <div class="col-6 col-md-2">
    <label class="form-label small fw-semibold text-muted mb-1">User (المستخدم)</label>
-   <!-- 'name="user"' matches request.GET.user -->
-   <input type="text" name="user" class="form-control form-control-sm"
-          value="{{ request.GET.user|default:'' }}" placeholder="User Name">
+   <input type="text" name="user" class="form-control form-control-sm" value="{{ request.GET.user|default:'' }}" placeholder="User Name">
 </div>
-
-
-
 
               <div class="col-12 col-md-2">
                   <label class="form-label small fw-semibold text-muted mb-1">Work Type</label>
@@ -72,15 +41,10 @@
                       <option value="Carpenter" {% if request.GET.project_type == 'Carpenter' %}selected{% endif %}>Carpenter</option>
                       <option value="Mason" {% if request.GET.project_type == 'Mason' %}selected{% endif %}>Mason</option>
                       <option value="Plumbing and Electric" {% if request.GET.project_type == 'Plumbing and Electric' %}selected{% endif %}>Plumbing and Electric</option>
-
                   </select>
               </div>
 
-
- <!-- NEW: Building Filter -->
-
               {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
-  {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
                   {% if buildings %}
                   <div class="col-6 col-md-2">
                       <label class="form-label small fw-semibold text-muted mb-1">Building (المبنى)</label>
@@ -103,26 +67,16 @@
                   </div>
                   {% endif %}
               {% endif %}
-              {%endif%}
-
 
               <div class="col-6 col-md-2">
                   <label class="form-label small fw-semibold text-muted mb-1">Date From</label>
                   <input type="text" name="date_from" class="form-control form-control-sm flatpickr-date" placeholder="dd/mm/yyyy" value="{{ request.GET.date_from }}">
               </div>
 
-
-
-
               <div class="col-6 col-md-2">
                   <label class="form-label small fw-semibold text-muted mb-1">Date To</label>
                   <input type="text" name="date_to" class="form-control form-control-sm flatpickr-date" placeholder="dd/mm/yyyy" value="{{ request.GET.date_to }}">
               </div>
-
-
-
-
-
 
               <div class="col-12 col-md-1 d-flex align-items-end gap-1 mt-2 mt-md-0">
                   <button type="submit" class="btn btn-dark btn-sm w-100 fw-bold py-1.5" title="Filter">
@@ -137,13 +91,6 @@
   </div>
 </div>
 
-
-
-
-
-
-
-
 {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
   {% if "Completed" in title or "مكتمل" in title %}
   <div class="d-flex justify-content-end gap-2 mb-3">
@@ -154,95 +101,61 @@
           <button type="button" class="btn btn-success btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
               <span class="visually-hidden">Toggle Options</span>
           </button>
-          <ul class="dropdown-menu dropdown-menu-end p-2" ...>
-    <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns</li>
-
-    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="0" checked id="cCol0"><label class="form-check-label" for="cCol0">Job ID</label></div></li>
-    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="1" checked id="cCol1"><label class="form-check-label" for="cCol1">Title</label></div></li>
-    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="10" checked id="cCol10"><label class="form-check-label" for="cCol10">Project Type</label></div></li>
-    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="2" checked id="cCol2"><label class="form-check-label" for="cCol2">Description</label></div></li>
-
-    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="3" checked id="cCol3"><label class="form-check-label" for="cCol3">Items & Quantities</label></div></li>
-
-    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="4" checked id="cCol4"><label class="form-check-label" for="cCol4">Assigned To</label></div></li>
-    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="5" checked id="cCol5"><label class="form-check-label" for="cCol5">Service Charge</label></div></li>
-    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="6" checked id="cCol6"><label class="form-check-label" for="cCol6">Date Completed</label></div></li>
-    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="7" checked id="cCol7"><label class="form-check-label" for="cCol7">Complaints</label></div></li>
-    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="8" checked id="cCol8"><label class="form-check-label" for="cCol8">Location</label></div></li>
-    <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="9" checked id="cCol9"><label class="form-check-label" for="cCol9">Duration</label></div></li>
-
+          <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 200px; max-height: 300px; overflow-y: auto; font-size: 0.82rem;">
+              <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns</li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="0" checked id="cCol0"><label class="form-check-label" for="cCol0">Job ID</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="1" checked id="cCol1"><label class="form-check-label" for="cCol1">Title</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="2" checked id="cCol2"><label class="form-check-label" for="cCol2">Project Type</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="3" checked id="cCol3"><label class="form-check-label" for="cCol3">Description</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="4" checked id="cCol4"><label class="form-check-label" for="cCol4">Items & Quantities</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="5" checked id="cCol5"><label class="form-check-label" for="cCol5">Assigned To</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="6" checked id="cCol6"><label class="form-check-label" for="cCol6">Service Charge</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="7" checked id="cCol7"><label class="form-check-label" for="cCol7">Date Completed</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="8" checked id="cCol8"><label class="form-check-label" for="cCol8">Complaints</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="9" checked id="cCol9"><label class="form-check-label" for="cCol9">Location</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="10" checked id="cCol10"><label class="form-check-label" for="cCol10">Duration</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="11" checked id="cCol11"><label class="form-check-label fw-bold" for="cCol11">Tax (5%)</label></div></li>
+              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="12" checked id="cCol12"><label class="form-check-label fw-bold" for="cCol12">Total w/ Tax</label></div></li>
           </ul>
-
-
-
-
-
-
       </div>
-
-
-
 
       <button type="button" class="btn btn-dark btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#printSetupModal">
           <i class="bi bi-printer-fill me-1"></i> Print Report
       </button>
 
+      <button id="btnBulkInvoicePrint" class="btn btn-danger btn-sm fw-bold shadow-sm">
+          <i class="bi bi-printer"></i> Print Selected Invoices
+      </button>
 
-
-       {% if request.user.is_superuser or request.user.profile.role == 'Admin'  %}
-        {% if "Completed" in title or "مكتمل" in title %}
-    <button id="btnBulkInvoicePrint" class="btn btn-danger btn-sm fw-bold shadow-sm">
-        <i class="bi bi-printer"></i> Print Selected Invoices
-    </button>
-{% endif %}{% endif %}
-
-
-
-
-   <div class="btn-group shadow-sm">
-   <button type="button" id="btnExportCSV" class="btn btn-info btn-sm fw-bold text-white">
-       <i class="bi bi-download me-1"></i> Export CSV
-   </button>
-
-
-   <button type="button" class="btn btn-info btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-       <span class="visually-hidden">Toggle</span>
-   </button>
-
-
-   <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 200px; max-height: 300px; overflow-y: auto; font-size: 0.82rem;">
-       <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns to Export</li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="0" checked id="eCol0"><label class="form-check-label text-dark" for="eCol0">Job ID</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="1" checked id="eCol1"><label class="form-check-label text-dark" for="eCol1">Title</label></div></li>
-
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="10" checked id="eCol10"><label class="form-check-label text-dark" for="eCol10">Type</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="2" checked id="eCol2"><label class="form-check-label text-dark" for="eCol2">Description</label></div></li>
-              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="eCol3"><label class="form-check-label text-dark" for="eCol3">Items and Quantities</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="4" checked id="eCol4"><label class="form-check-label text-dark" for="eCol4">Assigned To</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="5" checked id="eCol5"><label class="form-check-label text-dark" for="eCol5">Service Charge</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="6" checked id="eCol6"><label class="form-check-label text-dark" for="eCol6">Date Ended</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="7" checked id="eCol7"><label class="form-check-label text-dark" for="eCol7">Complaints</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="8" checked id="eCol8"><label class="form-check-label text-dark" for="eCol8">Location</label></div></li>
-       <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="9" checked id="eCol9"><label class="form-check-label text-dark" for="eCol9">Duration</label></div></li>
-   </ul>
-</div>
-
-
-</div>
+      <div class="btn-group shadow-sm">
+          <button type="button" id="btnExportCSV" class="btn btn-info btn-sm fw-bold text-white">
+              <i class="bi bi-download me-1"></i> Export CSV
+          </button>
+          <button type="button" class="btn btn-info btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+              <span class="visually-hidden">Toggle</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 200px; max-height: 300px; overflow-y: auto; font-size: 0.82rem;">
+              <li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">Select Columns to Export</li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="0" checked id="eCol0"><label class="form-check-label text-dark" for="eCol0">Job ID</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="1" checked id="eCol1"><label class="form-check-label text-dark" for="eCol1">Title</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="2" checked id="eCol2"><label class="form-check-label text-dark" for="eCol2">Type</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="3" checked id="eCol3"><label class="form-check-label text-dark" for="eCol3">Description</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="4" checked id="eCol4"><label class="form-check-label text-dark" for="eCol4">Items and Quantities</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="5" checked id="eCol5"><label class="form-check-label text-dark" for="eCol5">Assigned To</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="6" checked id="eCol6"><label class="form-check-label text-dark" for="eCol6">Service Charge</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="7" checked id="eCol7"><label class="form-check-label text-dark" for="eCol7">Date Ended</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="8" checked id="eCol8"><label class="form-check-label text-dark" for="eCol8">Complaints</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="9" checked id="eCol9"><label class="form-check-label text-dark" for="eCol9">Location</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="10" checked id="eCol10"><label class="form-check-label text-dark" for="eCol10">Duration</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="11" checked id="eCol11"><label class="form-check-label fw-bold text-dark" for="eCol11">Tax (5%)</label></div></li>
+              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="12" checked id="eCol12"><label class="form-check-label fw-bold text-dark" for="eCol12">Total w/ Tax</label></div></li>
+          </ul>
+      </div>
+  </div>
   {% endif %}
 {% endif %}
 
-
-
-
 <div id="tasksListContainer" class="container-fluid px-0 border rounded overflow-hidden shadow-sm">
-
-
-<div class="container-fluid px-0 border rounded overflow-hidden shadow-sm">
-
-
-
-
   <div class="row mx-0 px-3 py-2 bg-dark text-white fw-semibold small d-none d-md-flex header-row">
       <div class="col-md-3 py-1 header-col d-flex align-items-center">
     {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
@@ -256,14 +169,8 @@
       <div class="col-md-2 text-end py-1">Action</div>
   </div>
 
-
-
-
   {% for task in tasks %}
   <div class="row mx-0 px-3 py-3 align-items-center bg-white task-row {% if task.status == 'Pending' %}status-pending{% elif task.status == 'In Progress' or task.status == 'Active' %}status-active{% elif task.status == 'Completed' %}status-completed{% elif task.status == 'Overdue' %}status-overdue{% endif %}">
-
-
-
 
       <div class="col-12 col-md-3 mb-2 mb-md-0 py-md-2 task-col">
           <h6 class="mb-1 d-flex align-items-start">
@@ -276,10 +183,6 @@
         {{ task.title }}
     </a>
 </h6>
-
-
-
-
           {% with task.complaint_set.last as complaint %}
               {% if complaint %}
                   <div class="text-danger small fw-semibold d-flex align-items-center mt-1" style="font-size: 0.78rem;">
@@ -294,17 +197,11 @@
           {% endwith %}
       </div>
 
-
-
-
       <div class="col-6 col-md-2 text-md-center mb-2 mb-md-0 py-md-2 task-col">
           <span class="d-md-none text-muted small block-label">Job ID: </span>
           <span class="fw-bold d-block text-dark small">{{ task.job_id }}</span>
           <span class="badge bg-secondary opacity-75 mt-1" style="font-size: 0.7rem;">{{ task.project_type }}</span>
       </div>
-
-
-
 
       <div class="col-6 col-md-2 text-md-center mb-2 mb-md-0 py-md-2 task-col">
           <span class="d-md-none text-muted small block-label">Status: </span>
@@ -321,10 +218,6 @@
                   <span class="badge bg-secondary px-2 py-1 small-badge">{{ task.status }}</span>
               {% endif %}
           </div>
-
-
-
-
           <div>
               {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
        <div class="d-inline-flex align-items-center gap-1 rp-edit-container">
@@ -349,26 +242,20 @@
           </div>
       </div>
 
-
-
-
       <div class="col-12 col-md-3 mb-3 mb-md-0 py-md-2 task-col">
-  <div class="small text-dark mb-1">
-  <i class="bi bi-person-fill text-secondary me-1"></i>
-  <strong>
-      {% for tech in task.assigned_technicians.all %}
-          {{ tech.username }}{% if not forloop.last %}, {% endif %}
-      {% empty %}
-          Unassigned
-      {% endfor %}
-  </strong>
-</div>
+          <div class="small text-dark mb-1">
+          <i class="bi bi-person-fill text-secondary me-1"></i>
+          <strong>
+              {% for tech in task.assigned_technicians.all %}
+                  {{ tech.username }}{% if not forloop.last %}, {% endif %}
+              {% empty %}
+                  Unassigned
+              {% endfor %}
+          </strong>
+        </div>
           <div class="small text-secondary mb-1">
               <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ task.location }}
           </div>
-
-
-
 
           <div class="small mb-1" style="font-size: 0.8rem;">
               <i class="bi bi-cash-stack me-1 text-success"></i>Service Charge:
@@ -393,9 +280,6 @@
               {% endif %}
           </div>
 
-
-
-
           {% if task.status == 'Completed' %}
               {% if task.time_taken %}
                   <div class="text-success small mb-1" style="font-size: 0.75rem;">
@@ -407,27 +291,6 @@
                       <i class="bi bi-calendar-check-fill text-success me-1"></i>Ended: <span class="fw-semibold text-dark">{{ task.completed_at|date:"d/m/Y H:i" }}</span>
                   </div>
               {% endif %}
-
-
-
-
-
-
-
-
-
-
-          {%comment%}
-          {% if task.work_delay %}
-                  <div class="text-muted small" style="font-size: 0.75rem;">
-                      <i class="bi bi-calendar-check-fill text-success me-1"></i>Delay: <span class="fw-semibold text-dark">{{ task.work_delay }}</span>
-                  </div>
-              {% endif %}
-          {%endcomment%}
-
-
-
-
           {% elif task.status == 'Overdue' and task.work_delay %}
               <div class="text-danger small fw-bold mt-1" style="font-size: 0.75rem;">
                   <i class="bi bi-alarm-fill me-1"></i>Delayed: {{ task.work_delay }}
@@ -435,24 +298,11 @@
           {% endif %}
       </div>
 
-
-
-
       <div class="col-12 col-md-2 text-end py-md-2">
           <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-dark w-100-mobile fw-bold text-center">
               View Details <i class="bi bi-arrow-right-short ms-1"></i>
           </a>
-       {% if task.status == 'Completed' %}
-<button type="button" class="btn btn-sm btn-outline-success w-100-mobile fw-bold text-center mt-1"
-        onclick="openOTInputModal('{{ task.id }}', '{{ task.overtime_hours|default:0 }}', '{{ task.overtime_charge|default:0 }}')">
-    <i class="bi bi-plus-circle me-1"></i> Add to Overtime
-</button>
-{% endif %}
-
       </div>
-
-
-
 
   </div>
   {% empty %}
@@ -460,21 +310,7 @@
       <p class="text-muted fs-6 mb-0">No tasks found matching this criteria. (لم يتم العثور على مهام)</p>
   </div>
   {% endfor %}
-
-
-
-
 </div>
-</div>
-
-
-
-
-
-
-
-
-
 
 <div id="copyToastNotification" class="custom-toast shadow border border-success d-none animate-fade-in">
   <div class="d-flex align-items-center gap-2">
@@ -484,19 +320,6 @@
       </span>
   </div>
 </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
@@ -509,11 +332,7 @@
 
           function filterUnits() {
               const selectedBuilding = buildingSelect.value;
-
-              // Hide all unit options first using the 'hidden' attribute for cross-browser safety
               allUnitOptions.forEach(opt => opt.hidden = true);
-
-              // Show units that match the selected building, or all if no building is selected
               if (selectedBuilding === "") {
                   allUnitOptions.forEach(opt => opt.hidden = false);
               } else {
@@ -523,21 +342,12 @@
           }
 
           buildingSelect.addEventListener('change', function() {
-              unitSelect.value = ""; // Reset unit when building changes
+              unitSelect.value = "";
               filterUnits();
           });
-
-          // Run once on load to set initial state based on URL parameters
           filterUnits();
       }
-      // --- END NEW LOGIC ---
 
-
-
-
-
-
-      // Flatpickr Calendar Core Initializer Routine
       flatpickr(".flatpickr-date", {
           altInput: true,
           altFormat: "d/m/Y",
@@ -546,10 +356,6 @@
           disableMobile: "true"
       });
 
-
-
-
-      // AJAX Inline Excel-Style Budget Update Execution Handling
       const saveButtons = document.querySelectorAll('.btn-save-budget');
       saveButtons.forEach(button => {
           button.addEventListener('click', function() {
@@ -557,16 +363,9 @@
               const inputField = document.getElementById(`budget-input-${taskId}`);
               const budgetValue = inputField.value;
 
-
-
-
-              // Toggle Visual Spinner Loader System State Indicators
               this.disabled = true;
               const originalContent = this.innerHTML;
               this.innerHTML = `<span class="spinner-border spinner-border-sm" style="width: 10px; height: 10px;" role="status" aria-hidden="true"></span>`;
-
-
-
 
               fetch(`/tasks/update-budget-ajax/${taskId}/`, {
                   method: 'POST',
@@ -580,12 +379,7 @@
               .then(data => {
                   this.disabled = false;
                   this.innerHTML = originalContent;
-
-
-
-
                   if (data.status === 'success') {
-                      // Success Blink Response UI Animation
                       inputField.classList.remove('border-secondary', 'is-invalid');
                       inputField.classList.add('is-valid');
                       setTimeout(() => inputField.classList.remove('is-valid'), 1500);
@@ -605,67 +399,42 @@
       });
   });
 
-
-
-
 document.addEventListener("DOMContentLoaded", function() {
   const quickCopyBtn = document.getElementById("btnQuickClipboardCopy");
   const toastNode = document.getElementById("copyToastNotification");
 
-
-
-
   if (quickCopyBtn) {
       quickCopyBtn.addEventListener("click", function() {
           const headersList = [
-    "Job ID",
-    "Title",
-    "Type",
-    "Description",
-    "Items & Quantities",
-    "Assigned To",
-    "Service Charge (Budget)",
-    "Date Completed",
-    "Complaints",
-    "Location", // <-- Ensure this has a closing quote
-    "Duration"
-];
+              "Job ID",
+              "Title",
+              "Type",
+              "Description",
+              "Items & Quantities",
+              "Assigned To",
+              "Service Charge (Budget)",
+              "Date Completed",
+              "Complaints",
+              "Location",
+              "Duration",
+              "Tax (5%)",
+              "Total w/ Tax"
+          ];
 
-
-
-
-          // 2. Determine user's target selected column array indices
           let activeIndices = [];
           const checkedBoxes = document.querySelectorAll(".copy-col-check:checked");
           checkedBoxes.forEach(cb => activeIndices.push(parseInt(cb.value)));
-
-
-
 
           if (activeIndices.length === 0) {
               alert("Please leave at least one dataset parameter column checked to compile values.");
               return;
           }
 
-
-
-
-          // Construct localized header array output matching selection
           let rows = [activeIndices.map(idx => headersList[idx])];
-
-
-
-
-          // Clean data line integrity helper
           const cleanStr = (val) => val ? val.replace(/[\t\n\r]/g, " ").trim() : "";
 
-
-
-
-          // 3. Loop through current context filtered records dataset
           {% for task in tasks %}
         (function() {
-            // Build the string: cat1(qty-1), cat2(qty-2)
             let itemData = [];
             {% for item in task.items.all %}
                 itemData.push("{{ item.sub_category|escapejs }}({{ item.quantity|escapejs }})");
@@ -678,23 +447,24 @@ document.addEventListener("DOMContentLoaded", function() {
                 {% if comp %} complaintMsg = "{{ comp.message|escapejs }}"; {% endif %}
             {% endwith %}
 
+            let rawBudget = parseFloat("{{ task.budget|default:'0.00'|escapejs }}") || 0.0;
+            let taxAmt = (rawBudget * 0.05).toFixed(2);
+            let totalWithTax = (rawBudget * 1.05).toFixed(2);
 
-
-
-
-                  // Full source index matching dataset scheme arrays
-                let fullDataRecord = [
+            let fullDataRecord = [
                 "{{ task.job_id|escapejs }}",
                 cleanStr("{{ task.title|escapejs }}"),
                 "{{ task.project_type|escapejs }}",
                 cleanStr("{{ task.description|default:''|escapejs }}"),
-                itemsStr, // This is the new combined column
+                itemsStr,
                 "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
-                "{{ task.budget|default:'0.00'|escapejs }}",
+                rawBudget.toFixed(2),
                 "{{ task.completed_at|date:'d/m/Y H:i' }}",
                 cleanStr(complaintMsg),
                 cleanStr("{{ task.location|escapejs }}"),
-                "{{ task.time_taken }}"
+                "{{ task.time_taken }}",
+                taxAmt,
+                totalWithTax
             ];
 
             let filteredRecord = activeIndices.map(idx => fullDataRecord[idx]);
@@ -702,49 +472,29 @@ document.addEventListener("DOMContentLoaded", function() {
         })();
     {% endfor %}
 
-
-
-
           if (rows.length <= 1) {
               alert("No completed task entries found matching your current filters.");
               return;
           }
 
-
-
-
-          // 4. Flatten layout into TSV text stream data maps
           const matrixString = rows.map(row => row.join("\t")).join("\n");
 
-
-
-
-         // Helper function to show the success toast
           const showToast = () => {
               if (toastNode) {
                   toastNode.classList.remove('d-none');
-                  setTimeout(() => {
-                      toastNode.classList.add('d-none');
-                  }, 4500);
+                  setTimeout(() => { toastNode.classList.add('d-none'); }, 4500);
               }
           };
 
-          // CHECK: Is the modern clipboard API available and allowed?
           if (navigator.clipboard && window.isSecureContext) {
-              // Modern HTTPS / Localhost method
-              navigator.clipboard.writeText(matrixString).then(() => {
-                  showToast();
-              }).catch(err => {
+              navigator.clipboard.writeText(matrixString).then(() => { showToast(); }).catch(err => {
                   console.error("Clipboard access rejected: ", err);
                   alert("Failed to write to clipboard. Please check application runtime browser permissions.");
               });
           } else {
-              // Fallback method for HTTP live servers
               try {
                   const textArea = document.createElement("textarea");
                   textArea.value = matrixString;
-
-                  // Move text area out of viewport so it doesn't flash on screen
                   textArea.style.position = "fixed";
                   textArea.style.left = "-999999px";
                   textArea.style.top = "-999999px";
@@ -756,11 +506,7 @@ document.addEventListener("DOMContentLoaded", function() {
                   const successful = document.execCommand('copy');
                   document.body.removeChild(textArea);
 
-                  if (successful) {
-                      showToast();
-                  } else {
-                      alert("Fallback clipboard copy failed. Your browser may be blocking it.");
-                  }
+                  if (successful) { showToast(); } else { alert("Fallback clipboard copy failed."); }
               } catch (err) {
                   console.error("Fallback clipboard error: ", err);
                   alert("Failed to copy to clipboard.");
@@ -770,51 +516,16 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 
-
-
-
-
-
-
-
-
-
-
-
-// Data Reporting Print Engine Routine
 document.addEventListener("DOMContentLoaded", function() {
-  const radioAll = document.getElementById("printTypeAll");
-  const radioCustom = document.getElementById("printTypeCustom");
-  const customPanel = document.getElementById("printCustomColumnPanel");
   const printExecuteBtn = document.getElementById("btnExecutePrintReport");
 
-
-
-
-  // Dynamic visibility toggle for the custom checkbox selection panel
-  if (radioAll && radioCustom && customPanel) {
-      const togglePanelVisibility = () => {
-          if (radioCustom.checked) {
-              customPanel.classList.remove("d-none");
-          } else {
-              customPanel.classList.add("d-none");
-          }
-      };
-      radioAll.addEventListener("change", togglePanelVisibility);
-      radioCustom.addEventListener("change", togglePanelVisibility);
-  }
-
-
-
-
- if (printExecuteBtn) {
+  if (printExecuteBtn) {
     printExecuteBtn.addEventListener("click", function() {
-        // 1. Updated Headers List (9 items total)
         const headersList = [
             "Job ID", "Title","Type", "Description",
             "Items & Quantities",
             "Assigned To", "Service Charge",
-            "Date Completed", "Complaints", "Location","Duration"
+            "Date Completed", "Complaints", "Location","Duration", "Tax (5%)", "Total w/ Tax"
         ];
 
         let printRows = [];
@@ -822,18 +533,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
         {% for task in tasks %}
             (function() {
-                // Formatting: subcat(qty-N), subcat(qty-N)
                 let itemData = [];
                 {% for item in task.items.all %}
                     itemData.push("{{ item.sub_category|escapejs }}({{ item.quantity|escapejs }})");
                 {% endfor %}
 
-                // Logic: Join with comma/space, then inject break if long
                 let joinedItems = itemData.join(", ");
                 let itemsStr = joinedItems;
-                if (itemsStr.length > 40) {
-                    itemsStr = joinedItems.replace(/, /g, "<br>");
-                }
+                if (itemsStr.length > 40) { itemsStr = joinedItems.replace(/, /g, "<br>"); }
                 if (itemsStr === "") itemsStr = "-";
 
                 let complaintMsg = "No complaints";
@@ -841,7 +548,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     {% if comp %} complaintMsg = "{{ comp.message|escapejs }}"; {% endif %}
                 {% endwith %}
 
-                // 2. Full Record Array (matches new headersList)
+                let rawBudget = parseFloat("{{ task.budget|default:'0.00'|escapejs }}") || 0.0;
+                let taxAmt = (rawBudget * 0.05).toFixed(2);
+                let totalWithTax = (rawBudget * 1.05).toFixed(2);
+
                 printRows.push([
                     "{{ task.job_id|escapejs }}",
                     cleanStr("{{ task.title|escapejs }}"),
@@ -849,59 +559,41 @@ document.addEventListener("DOMContentLoaded", function() {
                     cleanStr("{{ task.description|default:''|escapejs }}"),
                     itemsStr,
                     "{{ task.assigned_to_display|default:'Unassigned'|escapejs }}",
-                    "{{ task.budget|default:'0.00'|escapejs }}",
+                    rawBudget.toFixed(2),
                     "{{ task.completed_at|date:'d/m/Y H:i' }}",
                     cleanStr(complaintMsg),
                     cleanStr("{{ task.location|escapejs }}"),
                     "{{ task.time_taken}}",
+                    taxAmt,
+                    totalWithTax
                 ]);
             })();
         {% endfor %}
-
-        // ... existing radio/activeIndices logic ...
-
 
           if (printRows.length === 0) {
               alert("No data available to print based on current criteria matching parameters.");
               return;
           }
 
-
-
-
-          // 3. Determine specific active column indices based on user choice selection inputs
+          const radioAll = document.getElementById("printTypeAll");
           let activeIndices = [];
-          if (radioAll.checked) {
+          if (radioAll && radioAll.checked) {
               activeIndices = headersList.map((_, idx) => idx);
           } else {
               const checkedBoxes = document.querySelectorAll(".print-col-check:checked");
               checkedBoxes.forEach(cb => activeIndices.push(parseInt(cb.value)));
           }
 
-
-
-
           if (activeIndices.length === 0) {
               alert("Please select at least one value column to populate the report matrix.");
               return;
           }
 
-
-
-
-          // Hide configuration modal layout safely before generating system viewport windows
           const modalEl = document.getElementById('printSetupModal');
           const modalInstance = bootstrap.Modal.getInstance(modalEl);
           if (modalInstance) modalInstance.hide();
 
-
-
-
-          // 4. Construct a sandboxed, standalone print HTML stream window layout
           const printWindow = window.open("", "_blank");
-
-
-
 
           let htmlPayload = `
               <html>
@@ -914,19 +606,9 @@ document.addEventListener("DOMContentLoaded", function() {
                       .report-header p { margin: 0; font-size: 13px; color: #666; font-weight: 500; }
                       table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
                       th { background-color: #1a1a1a; color: #ffffff; font-weight: 600; text-align: left; padding: 8px 6px; border: 1px solid #333; }
-                      td { padding: 7px 6px; border: 1px solid #e0e0e0; vertical-align: top; word-break: break-word; }
+                      td { padding: 7px 6px; border: 1px solid #e0e0e0; vertical-align: top; word-break: break-word; white-space: pre-wrap; }
                       tr:nth-child(even) td { background-color: #f9f9f9; }
-                      td {
-    padding: 7px 6px;
-    border: 1px solid #e0e0e0;
-    vertical-align: top;
-    word-break: break-word;
-    white-space: pre-wrap; /* This ensures <br> tags actually create new lines */
-}
-                      @media print {
-                          body { padding: 0; }
-                          button { display: none; }
-                      }
+                      @media print { body { padding: 0; } button { display: none; } }
                   </style>
               </head>
               <body>
@@ -935,44 +617,23 @@ document.addEventListener("DOMContentLoaded", function() {
                       <p>Report Parameter Context: ${cleanStr("{{ title|escapejs }}")} | Generated: ${new Date().toLocaleString('en-AE')}</p>
                   </div>
                   <table>
-                      <thead>
-                          <tr>
-                              ${activeIndices.map(idx => `<th>${headersList[idx]}</th>`).join("")}
-                          </tr>
-                      </thead>
+                      <thead><tr>${activeIndices.map(idx => `<th>${headersList[idx]}</th>`).join("")}</tr></thead>
                       <tbody>
-                          ${printRows.map(row => `
-                              <tr>
-                                  ${activeIndices.map(idx => `<td>${row[idx]}</td>`).join("")}
-                              </tr>
-                          `).join("")}
+                          ${printRows.map(row => `<tr>${activeIndices.map(idx => `<td>${row[idx]}</td>`).join("")}</tr>`).join("")}
                       </tbody>
                   </table>
               </body>
               </html>
           `;
 
-
-
-
           printWindow.document.write(htmlPayload);
           printWindow.document.close();
 
-
-
-
-          // Execute automated layout printing routine on document ready context loops
-          printWindow.onload = function() {
-              printWindow.print();
-          };
+          printWindow.onload = function() { printWindow.print(); };
       });
   }
 });
 
-
-
-
-// AJAX Inline RP Update Execution
 const rpSaveButtons = document.querySelectorAll('.btn-save-rp');
 rpSaveButtons.forEach(button => {
    button.addEventListener('click', function() {
@@ -980,14 +641,10 @@ rpSaveButtons.forEach(button => {
        const inputField = document.getElementById(`rp-input-${taskId}`);
        const rpValue = inputField.value;
 
-
-       // Visual Feedback
        this.disabled = true;
        const originalContent = this.innerHTML;
        this.innerHTML = `<span class="spinner-border spinner-border-sm" style="width: 10px; height: 10px;"></span>`;
 
-
-       // Match the URL in your urls.py
        fetch(`/tasks/award-reward-points-ajax/${taskId}/`, {
            method: 'POST',
            headers: {
@@ -1001,7 +658,6 @@ rpSaveButtons.forEach(button => {
            this.disabled = false;
            this.innerHTML = originalContent;
 
-
            if (data.status === 'success') {
                inputField.classList.add('is-valid');
                setTimeout(() => inputField.classList.remove('is-valid'), 1500);
@@ -1012,33 +668,12 @@ rpSaveButtons.forEach(button => {
    });
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//CSV
-
-
 document.getElementById('btnExportCSV').addEventListener('click', function() {
-   // 1. Updated master headers (9 total)
    const masterHeaders = [
        "Job ID", "Title","Type", "Description",
        "Items & Quantities",
        "Assigned To", "Service Charge",
-       "Date Ended", "Complaints", "Location","Duration"
+       "Date Ended", "Complaints", "Location","Duration", "Tax (5%)", "Total w/ Tax"
    ];
 
    let activeIndices = [];
@@ -1051,7 +686,6 @@ document.getElementById('btnExportCSV').addEventListener('click', function() {
        return;
    }
 
-   // 2. Prepare CSV rows
    let csvRows = [];
    csvRows.push(activeIndices.map(idx => `"${masterHeaders[idx]}"`).join(","));
 
@@ -1059,65 +693,45 @@ document.getElementById('btnExportCSV').addEventListener('click', function() {
 
    {% for task in tasks %}
     (function() {
-        // Collect ALL items for this task
         let itemData = [];
-
-
-        // DEBUG: Check how many items are in the loop
         {% for item in task.items.all %}
-            console.log("DEBUG: Processing item: {{ item.sub_category }}");
             itemData.push("{{ item.sub_category|escapejs }}({{ item.quantity|escapejs }})");
         {% endfor %}
 
-        if (itemData.length === 0) {
-            console.warn("DEBUG: No items found for Task ID: {{ task.job_id }}");
-        }
+        let itemsStr = itemData.join(", ");
+        if (itemsStr === "") itemsStr = "-";
 
-
-        {% for item in task.items.all %}
-            // Verify we have access to item properties
-            itemData.push("{{ item.sub_category|escapejs }}({{ item.quantity|escapejs }})");
+        let techNames = [];
+        {% for tech in task.assigned_technicians.all %}
+            techNames.push("{{ tech.username|escapejs }}");
         {% endfor %}
+        let techString = techNames.length > 0 ? techNames.join(", ") : "Unassigned";
 
-        console.log("Task ID {{ task.job_id }}: Found " + itemData.length + " items.");
+        let rawBudget = parseFloat("{{ task.budget|default:'0.00'|escapejs }}") || 0.0;
+        let taxAmt = (rawBudget * 0.05).toFixed(2);
+        let totalWithTax = (rawBudget * 1.05).toFixed(2);
 
-        // Join all collected items
-        let joinedItems = itemData.join(", ");
+        let fullDataRecord = [
+            "{{ task.job_id|escapejs }}",
+            cleanStr("{{ task.title|escapejs }}"),
+            cleanStr("{{ task.project_type|escapejs }}"),
+            cleanStr("{{ task.description|default:''|escapejs }}"),
+            itemsStr,
+            techString,
+            rawBudget.toFixed(2),
+            "{{ task.completed_at|date:'d/m/Y H:i' }}",
+            "{{ task.complaint_set.last.message|default:'No complaints'|escapejs }}",
+            cleanStr("{{ task.location|escapejs }}"),
+            "{{ task.time_taken}}",
+            taxAmt,
+            totalWithTax
+        ];
 
-     // Simply join all items with a comma and space
-let itemsStr = itemData.join(", ");
-
-// If there are no items, show a dash
-if (itemsStr === "") itemsStr = "-";
-
-           let techNames = [];
-           {% for tech in task.assigned_technicians.all %}
-               techNames.push("{{ tech.username|escapejs }}");
-           {% endfor %}
-           let techString = techNames.length > 0 ? techNames.join(", ") : "Unassigned";
-
-           // 3. Build the 9-column record array
-           let fullDataRecord = [
-               "{{ task.job_id|escapejs }}",
-               cleanStr("{{ task.title|escapejs }}"),
-               cleanStr("{{ task.project_type|escapejs }}"),
-               cleanStr("{{ task.description|default:''|escapejs }}"),
-               itemsStr, // Combined Column
-               techString,
-               "{{ task.budget|default:'0.00'|escapejs }}",
-               "{{ task.completed_at|date:'d/m/Y H:i' }}",
-               "{{ task.complaint_set.last.message|default:'No complaints'|escapejs }}",
-               cleanStr("{{ task.location|escapejs }}"),
-               "{{ task.time_taken}}",
-           ];
-
-           // Filter and wrap in quotes for CSV compliance
-           let filteredRow = activeIndices.map(idx => `"${fullDataRecord[idx]}"`);
-           csvRows.push(filteredRow.join(","));
-       })();
+        let filteredRow = activeIndices.map(idx => `"${fullDataRecord[idx]}"`);
+        csvRows.push(filteredRow.join(","));
+    })();
    {% endfor %}
 
-   // 4. Trigger Download
    const csvString = "\uFEFF" + csvRows.join("\n");
    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
    const link = document.createElement("a");
@@ -1128,42 +742,21 @@ if (itemsStr === "") itemsStr = "-";
    document.body.removeChild(link);
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// BULK INVOICE PRINT LOGIC
 document.addEventListener("DOMContentLoaded", function() {
     const selectAllCheckbox = document.getElementById('selectAllInvoices');
     const invoiceCheckboxes = document.querySelectorAll('.invoice-checkbox');
     const btnBulkPrint = document.getElementById('btnBulkInvoicePrint');
 
-    // 1. Select All Checkbox logic
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', function() {
-            invoiceCheckboxes.forEach(cb => {
-                cb.checked = selectAllCheckbox.checked;
-            });
+            invoiceCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
         });
     }
 
-    // 2. Button click logic
     if (btnBulkPrint) {
         btnBulkPrint.addEventListener('click', function(e) {
             e.preventDefault();
 
-            // Gather all checked boxes
             const selectedCheckboxes = document.querySelectorAll('.invoice-checkbox:checked');
             if (selectedCheckboxes.length === 0) {
                 alert('Please select at least one completed task to print.');
@@ -1171,8 +764,6 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             const taskIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-
-            // Create pop-up modal overlay for Name and Address
             const modal = document.createElement('div');
             modal.style.position = 'fixed';
             modal.style.top = '0';
@@ -1209,16 +800,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
             document.body.appendChild(modal);
 
-            // Cancel Button
             document.getElementById('modalCancel').onclick = () => document.body.removeChild(modal);
 
-            // Print All Button
             document.getElementById('modalPrint').onclick = () => {
                 const customName = document.getElementById('modalName').value;
                 const customAddress = document.getElementById('modalAddress').value;
                 document.body.removeChild(modal);
 
-                // Pack the IDs, Name, and Address into a URL and open in a new tab!
                 const url = `/tasks/bulk-print-invoices/?ids=${taskIds.join(',')}&name=${encodeURIComponent(customName)}&address=${encodeURIComponent(customAddress)}`;
                 window.open(url, '_blank');
             };
@@ -1227,9 +815,6 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
-
-
-
 <style>
   .flatpickr-input { background-color: #fff !important; }
   .custom-excel-cell:focus {
@@ -1237,26 +822,12 @@ document.addEventListener("DOMContentLoaded", function() {
       box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25) !important;
       background-color: #f8fff9;
   }
-  .btn-xs {
-      padding: .125rem .25rem;
-      font-size: .75rem;
-      border-radius: .2rem;
-  }
+  .btn-xs { padding: .125rem .25rem; font-size: .75rem; border-radius: .2rem; }
 
-
-
-
-  /* Desktop View Interface Rule Sets */
   @media (min-width: 768px) {
       .task-row { border-bottom: 1px solid #e0e0e0 !important; }
       .header-col { border-right: 1px solid #495057; }
-      .task-col {
-          border-right: 1px solid #eaeaea;
-          align-self: stretch;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-      }
+      .task-col { border-right: 1px solid #eaeaea; align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
       .task-row { border-left: 6px solid #dee2e6 !important; position: relative; }
       .task-row.status-pending { border-left-color: #ffc107 !important; }
       .task-row.status-active { border-left-color: #0d6efd !important; }
@@ -1264,29 +835,16 @@ document.addEventListener("DOMContentLoaded", function() {
       .task-row.status-overdue { border-left-color: #dc3545 !important; }
   }
 
-
-
-
-  /* Global Dynamic Focus/Hover States animations */
   .task-row { transition: background-color 0.15s ease-in-out; }
   .task-row:hover { background-color: #fcfcfc !important; }
   .hover-primary-link:hover { color: #0d6efd !important; text-decoration: underline !important; }
   .small-badge { font-size: 0.75rem !important; font-weight: 600; }
 
-
-
-
-  /* Mobile Device Responsiveness Architecture Rules */
   @media (max-width: 767.98px) {
       .container-fluid { border: none !important; box-shadow: none !important; }
       .task-row {
-          margin-bottom: 12px;
-          border: 1px solid #dee2e6 !important;
-          border-left: 5px solid #dee2e6 !important;
-          border-radius: 0.5rem;
-          padding: 14px !important;
-          background-color: #ffffff;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+          margin-bottom: 12px; border: 1px solid #dee2e6 !important; border-left: 5px solid #dee2e6 !important;
+          border-radius: 0.5rem; padding: 14px !important; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.04);
       }
       .task-row.status-pending { border-left-color: #ffc107 !important; }
       .task-row.status-active { border-left-color: #0d6efd !important; }
@@ -1296,94 +854,16 @@ document.addEventListener("DOMContentLoaded", function() {
       .w-100-mobile { width: 100% !important; display: block; margin-top: 8px; padding: 6px; }
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  /* Custom Floating Toast Styling Rule-Matrix */
-.custom-toast {
-  position: fixed;
-  z-index: 2050;
-  background-color: #ffffff;
-  padding: 12px 20px;
-  border-radius: 8px;
-  max-width: 350px;
-  border-left: 5px solid #198754 !important; /* Bold Green Left Accent line */
-}
-
-
-
-
-/* PC Placement Setup: Bottom Left Corner */
-@media (min-width: 768px) {
   .custom-toast {
-      left: 24px;
-      bottom: 24px;
+      position: fixed; z-index: 2050; background-color: #ffffff; padding: 12px 20px; border-radius: 8px;
+      max-width: 350px; border-left: 5px solid #198754 !important;
   }
-}
 
-
-
-
-/* Mobile Screen Placement Setup: Bottom Center fixed layout */
-@media (max-width: 767.98px) {
-  .custom-toast {
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 16px;
-      width: 90%;
-      max-width: 100%;
-  }
-}
-
-
-
-
-/* Smooth entry animation fade */
-.animate-fade-in {
-  animation: fadeInUp 0.25s ease-out;
-}
-
-
-
-
-@keyframes fadeInUp {
-  from {
-      opacity: 0;
-      transform: translateY(10px) translateX(var(--tw-translate-x, 0));
-  }
-  to {
-      opacity: 1;
-      transform: translateY(0) translateX(var(--tw-translate-x, 0));
-  }
-}
+  @media (min-width: 768px) { .custom-toast { left: 24px; bottom: 24px; } }
+  @media (max-width: 767.98px) { .custom-toast { left: 50%; transform: translateX(-50%); bottom: 16px; width: 90%; max-width: 100%; } }
+  .animate-fade-in { animation: fadeInUp 0.25s ease-out; }
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px) translateX(var(--tw-translate-x, 0)); } to { opacity: 1; transform: translateY(0) translateX(var(--tw-translate-x, 0)); } }
 </style>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 <div class="modal fade" id="printSetupModal" tabindex="-1" aria-labelledby="printSetupModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -1397,46 +877,36 @@ document.addEventListener("DOMContentLoaded", function() {
           <div class="modal-body p-3">
               <p class="text-muted small fw-semibold mb-3">What parameters do you want to include in your printed worksheet report?</p>
 
-
-
-
               <div class="form-check mb-2">
                   <input class="form-check-input" type="radio" name="printTypeOption" id="printTypeAll" value="all" checked>
-                  <label class="form-check-label fw-bold small text-dark" for="printTypeAll">
-                      Print All Values (Full Spreadsheet Column Dataset Matrix)
-                  </label>
+                  <label class="form-check-label fw-bold small text-dark" for="printTypeAll">Print All Values (Full Spreadsheet Column Dataset Matrix)</label>
               </div>
               <div class="form-check mb-3">
                   <input class="form-check-input" type="radio" name="printTypeOption" id="printTypeCustom" value="custom">
-                  <label class="form-check-label fw-bold small text-dark" for="printTypeCustom">
-                      Select Custom Individual Values...
-                  </label>
+                  <label class="form-check-label fw-bold small text-dark" for="printTypeCustom">Select Custom Individual Values...</label>
               </div>
-
-
-
 
               <div id="printCustomColumnPanel" class="border rounded p-3 bg-light d-none" style="max-height: 220px; overflow-y: auto;">
                   <div class="row g-2">
                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="0" checked id="pCol0"><label class="form-check-label" for="pCol0">Job ID</label></div></div>
                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="1" checked id="pCol1"><label class="form-check-label" for="pCol1">Title</label></div></div>
-                       <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="10" checked id="pCol10"><label class="form-check-label" for="pCol10">Type</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="2" checked id="pCol2"><label class="form-check-label" for="pCol2">Description</label></div></div>
-                                            <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="3" checked id="pCol3"><label class="form-check-label" for="pCol3">Items and Quantities</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="4" checked id="pCol4"><label class="form-check-label" for="pCol4">Assigned To</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="5" checked id="pCol5"><label class="form-check-label" for="pCol5">Service Charge</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="6" checked id="pCol6"><label class="form-check-label" for="pCol6">Date Ended</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="7" checked id="pCol7"><label class="form-check-label" for="pCol7">Complaints</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="8" checked id="pCol8"><label class="form-check-label" for="pCol8">Location</label></div></div>
-                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="9" checked id="pCol9"><label class="form-check-label" for="pCol9">Duration</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="2" checked id="pCol2"><label class="form-check-label" for="pCol2">Type</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="3" checked id="pCol3"><label class="form-check-label" for="pCol3">Description</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="4" checked id="pCol4"><label class="form-check-label" for="pCol4">Items and Quantities</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="5" checked id="pCol5"><label class="form-check-label" for="pCol5">Assigned To</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="6" checked id="pCol6"><label class="form-check-label" for="pCol6">Service Charge</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="7" checked id="pCol7"><label class="form-check-label" for="pCol7">Date Ended</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="8" checked id="pCol8"><label class="form-check-label" for="pCol8">Complaints</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="9" checked id="pCol9"><label class="form-check-label" for="pCol9">Location</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="10" checked id="pCol10"><label class="form-check-label" for="pCol10">Duration</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="11" checked id="pCol11"><label class="form-check-label fw-bold text-dark" for="pCol11">Tax (5%)</label></div></div>
+                      <div class="col-6"><div class="form-check small"><input class="form-check-input print-col-check" type="checkbox" value="12" checked id="pCol12"><label class="form-check-label fw-bold text-dark" for="pCol12">Total w/ Tax</label></div></div>
                   </div>
               </div>
           </div>
           <div class="modal-footer p-2 bg-light">
               <button type="button" class="btn btn-outline-secondary btn-sm fw-bold px-3" data-bs-dismiss="modal">Cancel</button>
-              <button type="button" id="btnExecutePrintReport" class="btn btn-dark btn-sm fw-bold px-4">
-                  <i class="bi bi-printer me-1"></i> Print Now
-              </button>
+              <button type="button" id="btnExecutePrintReport" class="btn btn-dark btn-sm fw-bold px-4"><i class="bi bi-printer me-1"></i> Print Now</button>
           </div>
       </div>
   </div>
