@@ -137,7 +137,7 @@ path(
     name='create_general_material_request_with_name_ajax'
 ),
 
-
+path('overtime/ajax/remove/<int:task_id>/', views.remove_overtime_ajax, name='remove_overtime_ajax'),
 
 path('api/blacklist/list/', views.list_blacklist_ajax, name='list_blacklist_ajax'),
 path('api/blacklist/add/', views.add_blacklist_ajax, name='add_blacklist_ajax'),

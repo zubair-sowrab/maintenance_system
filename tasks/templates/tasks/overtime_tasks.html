@@ -157,7 +157,12 @@
                                  data-raw-val="{{ task.overtime_hours|default:'' }}"
                                  placeholder="0.00">
                       </div>
-                      <div class="w-100 mt-2 d-flex gap-2">
+                     <div class="w-100 mt-2 d-flex gap-2">
+                          <!-- NEW REMOVE BUTTON -->
+                          <button type="button" class="btn btn-outline-danger btn-sm flex-grow-1 fw-bold" onclick="removeOvertimeTask({{ task.id }}, this)">
+                              <i class="bi bi-trash-fill me-1"></i> Remove
+                          </button>
+
                           <button type="button" class="btn btn-outline-dark btn-sm flex-grow-1 fw-bold" onclick="printSingleOvertime({{ task.id }})">
                               <i class="bi bi-printer me-1"></i> Print
                           </button>
@@ -338,5 +343,50 @@ window.printSingleOvertime = function(taskId) {
     const printUrl = `{% url 'bulk_print_overtime' %}?ids=${taskId}`;
     window.open(printUrl, '_blank');
 };
+</script>
+
+
+
+
+<script>
+
+
+    window.removeOvertimeTask = function(taskId, btnElement) {
+    if (!confirm("Are you sure you want to remove this task from Overtime? This will reset its overtime hours to 0.")) {
+        return;
+    }
+
+    const originalText = btnElement.innerHTML;
+    btnElement.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    btnElement.disabled = true;
+
+    fetch(`/overtime/ajax/remove/${taskId}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Instantly delete the card from the UI so you don't have to refresh the page
+            const card = btnElement.closest('.task-card');
+            if (card) {
+                card.style.transition = "all 0.3s ease";
+                card.style.opacity = "0";
+                setTimeout(() => card.remove(), 300);
+            }
+        } else {
+            btnElement.innerHTML = originalText;
+            btnElement.disabled = false;
+            alert("Error removing overtime: " + data.message);
+        }
+    }).catch(err => {
+        btnElement.innerHTML = originalText;
+        btnElement.disabled = false;
+        console.error("Network Error: ", err);
+        alert("A network error occurred.");
+    });
+};
+
+
 </script>
 {% endblock %}

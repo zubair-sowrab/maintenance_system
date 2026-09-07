@@ -1732,7 +1732,7 @@ def all_overtime_tasks(request):
         Q(is_overtime=True) | Q(overtime_hours__gt=0) | Q(overtime_charge__gt=0)
     ).prefetch_related(
         'assigned_technicians', 'items', 'complaint_set'
-    ).distinct().order_by('-created_at')
+    ).distinct().order_by('-completed_at')
 
     # Capture Parameters
     date_from = request.GET.get('date_from')
@@ -1926,6 +1926,32 @@ def update_overtime_ajax(request, task_id):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
     return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+
+
+
+
+
+@csrf_exempt
+@login_required
+def remove_overtime_ajax(request, task_id):
+    if request.method == 'POST' and is_admin_strict(request.user):
+        try:
+            task = get_object_or_404(Task, id=task_id)
+            # Reset all overtime stats and flip the board flag back to False
+            task.is_overtime = False
+            task.overtime_hours = 0.00
+            task.overtime_charge = 0.00
+            task.save()
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+
+
+
+
+
 
 @login_required
 def get_assignable_overtime_tasks_ajax(request):

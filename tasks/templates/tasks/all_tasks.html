@@ -298,12 +298,36 @@
           {% endif %}
       </div>
 
+
+
+
+
       <div class="col-12 col-md-2 text-end py-md-2">
           <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-dark w-100-mobile fw-bold text-center">
               View Details <i class="bi bi-arrow-right-short ms-1"></i>
           </a>
-      </div>
 
+          {% if task.status == 'Completed' %}
+              {% if request.user.is_superuser or request.user.profile.role == 'Admin' %}
+
+                  {% if task.is_overtime or task.overtime_hours > 0 %}
+                      <!-- ALREADY IN OVERTIME: Show disabled green button -->
+                      <button type="button" class="btn btn-sm btn-success w-100-mobile fw-bold text-center mt-1 text-white" disabled>
+                          <i class="bi bi-check-circle me-1"></i> Added to OT
+                      </button>
+                  {% else %}
+                      <!-- NOT IN OVERTIME: Show regular Add button -->
+                      <button type="button" class="btn btn-sm btn-outline-success w-100-mobile fw-bold text-center mt-1"
+                              data-hours="{{ task.overtime_hours|default:'0' }}"
+                              data-charge="{{ task.overtime_charge|default:'0' }}"
+                              onclick="instantAddToOvertime('{{ task.id }}', this)">
+                          <i class="bi bi-plus-circle me-1"></i> Add to Overtime
+                      </button>
+                  {% endif %}
+
+              {% endif %}
+          {% endif %}
+      </div>
   </div>
   {% empty %}
   <div class="text-center py-5 bg-white">
@@ -311,6 +335,12 @@
   </div>
   {% endfor %}
 </div>
+
+
+
+
+
+
 
 <div id="copyToastNotification" class="custom-toast shadow border border-success d-none animate-fade-in">
   <div class="d-flex align-items-center gap-2">
@@ -813,6 +843,8 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 });
+
+
 </script>
 
 <style>
@@ -911,4 +943,57 @@ document.addEventListener("DOMContentLoaded", function() {
       </div>
   </div>
 </div>
+
+
+
+
+
+
+<script>
+window.instantAddToOvertime = function(taskId, btnElement) {
+    // Safely extract existing values so we don't accidentally overwrite past data
+    let hrs = btnElement.getAttribute('data-hours') || "0";
+    let chg = btnElement.getAttribute('data-charge') || "0";
+
+    // THE FIX: If hours are 0, we silently send "0.01" (which equals 1 minute).
+    // This forces the database to register the overtime as > 0 and guarantees it appears on the Overtime page!
+    if (hrs === "0" || hrs === "0.0" || hrs === "0.00" || hrs === "") {
+        hrs = "0.01";
+    }
+
+    // Trigger visual loading spinner
+    btnElement.disabled = true;
+    let originalText = btnElement.innerHTML;
+    btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Adding...';
+
+    // Fire background request to the existing overtime endpoint
+    fetch('/overtime/ajax/update/' + taskId + '/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ hours: hrs, charge: chg })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Success: Turn the button solid green
+            btnElement.classList.remove('btn-outline-success');
+            btnElement.classList.add('btn-success', 'text-white');
+            btnElement.innerHTML = '<i class="bi bi-check-circle me-1"></i> Added to OT';
+        } else {
+            // Fail: Revert the button
+            alert("Error adding to overtime: " + data.message);
+            btnElement.disabled = false;
+            btnElement.innerHTML = originalText;
+        }
+    }).catch(err => {
+        console.error("Network Error:", err);
+        alert("A network error occurred.");
+        btnElement.disabled = false;
+        btnElement.innerHTML = originalText;
+    });
+};
+</script>
 {% endblock %}
