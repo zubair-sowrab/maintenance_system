@@ -6,6 +6,7 @@ from itertools import chain
 from .models import Task, Complaint, SubTask, Notification
 from .forms import TaskForm
 from django.db.models import Sum
+import calendar
 from django.utils.decorators import method_decorator
 from django.db.models.functions import Coalesce
 from decimal import Decimal
@@ -820,15 +821,12 @@ from django.db.models import Q
 def all_completed_tasks(request):
     user = request.user
 
-
-
     # 1. Gather Role Configuration Strings
     user_role = getattr(user, "role", None)
     if not user_role and hasattr(user, "profile"):
         user_role = getattr(user.profile, "role", None)
 
     # 2. Enforce Role Visibility Restrictions
-    # PREFETCH is added here so the template can display assigned technicians correctly
     base_queryset = Task.objects.filter(status="Completed").prefetch_related("assigned_technicians")
 
     if (
@@ -839,22 +837,38 @@ def all_completed_tasks(request):
     ):
         base_tasks = base_queryset
     else:
-        # FIXED: Use ManyToMany filter
         base_tasks = base_queryset.filter(assigned_technicians=user)
 
-    # 3. Apply Filters from URL Query Parameters
-    job_id = request.GET.get("job_id")
-    user_query = request.GET.get("user")
-    project_type = request.GET.get("project_type")
-    date_from = request.GET.get("date_from")
-    date_to = request.GET.get("date_to")
-    building = request.GET.get("building")
-    unit = request.GET.get("unit")
+    # --- NEW: CALCULATE SMART DEFAULT DATES ---
+    today = timezone.now()
+    if today.month == 1:
+        default_from = datetime(today.year - 1, 12, 15).strftime("%Y-%m-%d")
+    else:
+        default_from = datetime(today.year, today.month - 1, 15).strftime("%Y-%m-%d")
 
+    last_day = calendar.monthrange(today.year, today.month)[1]
+    default_to = datetime(today.year, today.month, last_day).strftime("%Y-%m-%d")
+
+    # 3. Capture URL Parameters (Apply defaults ONLY on initial page load)
+    if not request.GET:
+        # If no filters are active, use our performance defaults
+        date_from = default_from
+        date_to = default_to
+        job_id = user_query = project_type = building = unit = None
+    else:
+        # Otherwise, respect whatever the user is searching for
+        date_from = request.GET.get("date_from", "")
+        date_to = request.GET.get("date_to", "")
+        job_id = request.GET.get("job_id")
+        user_query = request.GET.get("user")
+        project_type = request.GET.get("project_type")
+        building = request.GET.get("building")
+        unit = request.GET.get("unit")
+
+    # 4. Apply Filters to Database
     if job_id and job_id.strip():
         base_tasks = base_tasks.filter(job_id__icontains=job_id.strip())
 
-    # FIXED: Filter by technician username in ManyToMany
     if user_query and user_query.strip():
         base_tasks = base_tasks.filter(
             assigned_technicians__username__icontains=user_query.strip()
@@ -880,17 +894,22 @@ def all_completed_tasks(request):
     if unit and unit.strip():
         base_tasks = base_tasks.filter(unit__iexact=unit.strip())
 
-        # Automatically extract unique buildings and units from the database to populate the dropdowns
+    # Automatically extract unique buildings and units
     buildings = Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building',
                                                                                                     flat=True).distinct()
     units = Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
 
-
     return render(
         request,
         "tasks/all_tasks.html",
-        {"tasks": base_tasks.distinct().order_by('-completed_at'), "title": "Completed Tasks (المهام المكتملة)","buildings": buildings,
-           "units": units,},
+        {
+            "tasks": base_tasks.distinct().order_by('-completed_at'),
+            "title": "Completed Tasks (المهام المكتملة)",
+            "buildings": buildings,
+            "units": units,
+            "current_date_from": date_from,  # Passing our calculated variables to the frontend
+            "current_date_to": date_to
+        },
     )
 
 

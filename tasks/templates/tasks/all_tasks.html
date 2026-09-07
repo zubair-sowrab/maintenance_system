@@ -68,14 +68,16 @@
                   {% endif %}
               {% endif %}
 
-              <div class="col-6 col-md-2">
+            <div class="col-6 col-md-2">
                   <label class="form-label small fw-semibold text-muted mb-1">Date From</label>
-                  <input type="text" name="date_from" class="form-control form-control-sm flatpickr-date" placeholder="dd/mm/yyyy" value="{{ request.GET.date_from }}">
+                  <input type="text" name="date_from" class="form-control form-control-sm flatpickr-date" placeholder="dd/mm/yyyy"
+                         value="{% if current_date_from %}{{ current_date_from }}{% else %}{{ request.GET.date_from }}{% endif %}">
               </div>
 
               <div class="col-6 col-md-2">
                   <label class="form-label small fw-semibold text-muted mb-1">Date To</label>
-                  <input type="text" name="date_to" class="form-control form-control-sm flatpickr-date" placeholder="dd/mm/yyyy" value="{{ request.GET.date_to }}">
+                  <input type="text" name="date_to" class="form-control form-control-sm flatpickr-date" placeholder="dd/mm/yyyy"
+                         value="{% if current_date_to %}{{ current_date_to }}{% else %}{{ request.GET.date_to }}{% endif %}">
               </div>
 
               <div class="col-12 col-md-1 d-flex align-items-end gap-1 mt-2 mt-md-0">
