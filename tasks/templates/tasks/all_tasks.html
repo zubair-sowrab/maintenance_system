@@ -116,8 +116,6 @@
               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="8" checked id="cCol8"><label class="form-check-label" for="cCol8">Complaints</label></div></li>
               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="9" checked id="cCol9"><label class="form-check-label" for="cCol9">Location</label></div></li>
               <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="10" checked id="cCol10"><label class="form-check-label" for="cCol10">Duration</label></div></li>
-              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="11" checked id="cCol11"><label class="form-check-label fw-bold" for="cCol11">Tax (5%)</label></div></li>
-              <li><div class="form-check"><input class="form-check-input copy-col-check" type="checkbox" value="12" checked id="cCol12"><label class="form-check-label fw-bold" for="cCol12">Total w/ Tax</label></div></li>
           </ul>
       </div>
 
@@ -149,8 +147,6 @@
               <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="8" checked id="eCol8"><label class="form-check-label text-dark" for="eCol8">Complaints</label></div></li>
               <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="9" checked id="eCol9"><label class="form-check-label text-dark" for="eCol9">Location</label></div></li>
               <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="10" checked id="eCol10"><label class="form-check-label text-dark" for="eCol10">Duration</label></div></li>
-              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="11" checked id="eCol11"><label class="form-check-label fw-bold text-dark" for="eCol11">Tax (5%)</label></div></li>
-              <li><div class="form-check"><input class="form-check-input export-col-check" type="checkbox" value="12" checked id="eCol12"><label class="form-check-label fw-bold text-dark" for="eCol12">Total w/ Tax</label></div></li>
           </ul>
       </div>
   </div>
@@ -438,19 +434,8 @@ document.addEventListener("DOMContentLoaded", function() {
   if (quickCopyBtn) {
       quickCopyBtn.addEventListener("click", function() {
           const headersList = [
-              "Job ID",
-              "Title",
-              "Type",
-              "Description",
-              "Items & Quantities",
-              "Assigned To",
-              "Service Charge (Budget)",
-              "Date Completed",
-              "Complaints",
-              "Location",
-              "Duration",
-              "Tax (5%)",
-              "Total w/ Tax"
+              "Job ID", "Title", "Type", "Description", "Items & Quantities",
+              "Assigned To", "Service Charge (Budget)", "Date Completed", "Complaints", "Location", "Duration"
           ];
 
           let activeIndices = [];
@@ -480,8 +465,6 @@ document.addEventListener("DOMContentLoaded", function() {
             {% endwith %}
 
             let rawBudget = parseFloat("{{ task.budget|default:'0.00'|escapejs }}") || 0.0;
-            let taxAmt = (rawBudget * 0.05).toFixed(2);
-            let totalWithTax = (rawBudget * 1.05).toFixed(2);
 
             let fullDataRecord = [
                 "{{ task.job_id|escapejs }}",
@@ -494,9 +477,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 "{{ task.completed_at|date:'d/m/Y H:i' }}",
                 cleanStr(complaintMsg),
                 cleanStr("{{ task.location|escapejs }}"),
-                "{{ task.time_taken }}",
-                taxAmt,
-                totalWithTax
+                "{{ task.time_taken }}"
             ];
 
             let filteredRecord = activeIndices.map(idx => fullDataRecord[idx]);
@@ -551,13 +532,11 @@ document.addEventListener("DOMContentLoaded", function() {
 document.addEventListener("DOMContentLoaded", function() {
   const printExecuteBtn = document.getElementById("btnExecutePrintReport");
 
-  if (printExecuteBtn) {
+ if (printExecuteBtn) {
     printExecuteBtn.addEventListener("click", function() {
         const headersList = [
-            "Job ID", "Title","Type", "Description",
-            "Items & Quantities",
-            "Assigned To", "Service Charge",
-            "Date Completed", "Complaints", "Location","Duration", "Tax (5%)", "Total w/ Tax"
+            "Job ID", "Title","Type", "Description", "Items & Quantities",
+            "Assigned To", "Service Charge", "Date Completed", "Complaints", "Location","Duration"
         ];
 
         let printRows = [];
@@ -581,8 +560,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 {% endwith %}
 
                 let rawBudget = parseFloat("{{ task.budget|default:'0.00'|escapejs }}") || 0.0;
-                let taxAmt = (rawBudget * 0.05).toFixed(2);
-                let totalWithTax = (rawBudget * 1.05).toFixed(2);
 
                 printRows.push([
                     "{{ task.job_id|escapejs }}",
@@ -595,9 +572,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     "{{ task.completed_at|date:'d/m/Y H:i' }}",
                     cleanStr(complaintMsg),
                     cleanStr("{{ task.location|escapejs }}"),
-                    "{{ task.time_taken}}",
-                    taxAmt,
-                    totalWithTax
+                    "{{ task.time_taken}}"
                 ]);
             })();
         {% endfor %}
@@ -699,13 +674,10 @@ rpSaveButtons.forEach(button => {
        });
    });
 });
-
 document.getElementById('btnExportCSV').addEventListener('click', function() {
    const masterHeaders = [
-       "Job ID", "Title","Type", "Description",
-       "Items & Quantities",
-       "Assigned To", "Service Charge",
-       "Date Ended", "Complaints", "Location","Duration", "Tax (5%)", "Total w/ Tax"
+       "Job ID", "Title","Type", "Description", "Items & Quantities",
+       "Assigned To", "Service Charge", "Date Ended", "Complaints", "Location","Duration"
    ];
 
    let activeIndices = [];
@@ -740,8 +712,6 @@ document.getElementById('btnExportCSV').addEventListener('click', function() {
         let techString = techNames.length > 0 ? techNames.join(", ") : "Unassigned";
 
         let rawBudget = parseFloat("{{ task.budget|default:'0.00'|escapejs }}") || 0.0;
-        let taxAmt = (rawBudget * 0.05).toFixed(2);
-        let totalWithTax = (rawBudget * 1.05).toFixed(2);
 
         let fullDataRecord = [
             "{{ task.job_id|escapejs }}",
@@ -754,9 +724,7 @@ document.getElementById('btnExportCSV').addEventListener('click', function() {
             "{{ task.completed_at|date:'d/m/Y H:i' }}",
             "{{ task.complaint_set.last.message|default:'No complaints'|escapejs }}",
             cleanStr("{{ task.location|escapejs }}"),
-            "{{ task.time_taken}}",
-            taxAmt,
-            totalWithTax
+            "{{ task.time_taken}}"
         ];
 
         let filteredRow = activeIndices.map(idx => `"${fullDataRecord[idx]}"`);
