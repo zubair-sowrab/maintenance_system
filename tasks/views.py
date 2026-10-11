@@ -2230,7 +2230,6 @@ def disapprove_material_request_ajax(request, task_id):
 
     return JsonResponse({'status': 'success'})
 
-
 @login_required
 def material_approvals_view(request):
     if getattr(request.user.profile, 'role', '') != 'Admin' and not request.user.is_superuser:
@@ -2238,21 +2237,62 @@ def material_approvals_view(request):
 
     requests_qs = MaterialRequest.objects.all().order_by('-updated_at')
 
-    # --- NEW: Fetch General Material Requests ---
+    # Fetch General Material Requests
     general_requests = GeneralMaterialRequest.objects.all().order_by('-created_at')
     general_pending_count = GeneralMaterialRequest.objects.filter(status='Pending').count()
 
-    # (Keep your existing filter logic for task material requests here)
+    # -------------------------------------------------------------------
+    # NEW: Capture URL Parameters and Apply Filters
+    # -------------------------------------------------------------------
+    job_id = request.GET.get('job_id')
+    technician = request.GET.get('user')
+    building = request.GET.get('building')
+    unit = request.GET.get('unit')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+
+    # Apply filters to Task-based Material Requests
+    if job_id and job_id.strip():
+        requests_qs = requests_qs.filter(task__job_id__icontains=job_id.strip())
+
+    if technician and technician.strip():
+        requests_qs = requests_qs.filter(
+            task__assigned_technicians__username__icontains=technician.strip()).distinct()
+
+    if building and building.strip():
+        requests_qs = requests_qs.filter(task__building__iexact=building.strip())
+
+    if unit and unit.strip():
+        requests_qs = requests_qs.filter(task__unit__iexact=unit.strip())
+
+    if date_from and date_from.strip():
+        requests_qs = requests_qs.filter(updated_at__date__gte=date_from)
+
+    if date_to and date_to.strip():
+        requests_qs = requests_qs.filter(updated_at__date__lte=date_to)
+
+    # Apply filters to General Material Requests
+    if technician and technician.strip():
+        general_requests = general_requests.filter(submitted_by__username__icontains=technician.strip())
+
+    if date_from and date_from.strip():
+        general_requests = general_requests.filter(created_at__date__gte=date_from)
+
+    if date_to and date_to.strip():
+        general_requests = general_requests.filter(created_at__date__lte=date_to)
+
+    # If a user is specifically searching by Job ID, Building, or Unit,
+    # General requests shouldn't show up because they don't have these attributes.
+    if job_id or building or unit:
+        general_requests = general_requests.none()
 
     return render(request, 'tasks/material_approvals.html', {
         'requests': requests_qs,
         'general_requests': general_requests,
         'general_pending_count': general_pending_count,
-        'buildings': Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building',
-                                                                                                         flat=True).distinct(),
+        'buildings': Task.objects.exclude(building__isnull=True).exclude(building__exact='').values_list('building', flat=True).distinct(),
         'units': Task.objects.exclude(unit__isnull=True).exclude(unit__exact='').values('building', 'unit').distinct()
     })
-
 
 @login_required
 def approved_materials_list(request):
