@@ -743,10 +743,10 @@
                     submitAttendance(locStr, btnElement, originalText);
                 },
                 (error) => {
-                    // Triggers if they block location access
                     submitAttendance("User Denied GPS Access / Unavailable", btnElement, originalText);
                 },
-                { enableHighAccuracy: true, timeout: 10000 }
+                // ADDED maximumAge: 0 AND INCREASED TIMEOUT
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         } else {
             submitAttendance("Browser does not support GPS", btnElement, originalText);
