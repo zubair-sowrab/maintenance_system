@@ -56,7 +56,14 @@ class TaskAdmin(admin.ModelAdmin):
 
     inlines = [TaskItemInline]
 
+    # Add this to your imports at the top:
+from .models import AttendanceRecord
 
+# Add this at the bottom of the file:
+@admin.register(AttendanceRecord)
+class AttendanceRecordAdmin(admin.ModelAdmin):
+    list_display = ('user', 'date', 'status', 'check_in_time', 'delay_minutes')
+    list_filter = ('date', 'status', 'user')
 
 
 

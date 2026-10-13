@@ -773,3 +773,21 @@ class BlacklistedUnit(models.Model):
 
     def __str__(self):
         return f"{self.building} - {self.unit}"
+
+class AttendanceRecord(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendance_records')
+    date = models.DateField()
+    check_in_time = models.DateTimeField()
+    status = models.CharField(
+        max_length=20,
+        choices=[('Present', 'Present'), ('Late', 'Late'), ('Absent', 'Absent')]
+    )
+    delay_minutes = models.IntegerField(default=0, help_text="Minutes late past 9:00 AM")
+    location = models.CharField(max_length=500, blank=True, null=True, help_text="GPS Maps Link")
+
+    class Meta:
+        unique_together = ('user', 'date') # Enforces "one punch per day"
+        ordering = ['-date', '-check_in_time']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.date} - {self.status}"

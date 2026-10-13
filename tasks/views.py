@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 
 from core import settings
 from itertools import chain
+from .models import AttendanceRecord
 
 from .models import Task, Complaint, SubTask, Notification
 from .forms import TaskForm
@@ -158,13 +159,21 @@ def task_list(request):
     completed_tasks = tasks.filter(Q(status='Completed') | Q(status='مكتمل')).distinct().order_by('-completed_at')
 
     overdue_tasks = tasks.filter(status='Overdue').distinct().order_by('-deadline')
-
+    # ADD THIS TO BOTH `dashboard` AND `task_list` FUNCTIONS:
+    dubai_tz = pytz.timezone('Asia/Dubai')
+    now_dubai = timezone.now().astimezone(dubai_tz)
+    today = now_dubai.date()
+    is_friday = (today.weekday() == 4)
+    todays_attendance = AttendanceRecord.objects.filter(user=request.user, date=today).first()
     context = {
         'project_types': project_types,
         'pending_tasks': pending_tasks,
         'active_tasks': active_tasks,
         'completed_tasks': completed_tasks,
         'overdue_tasks': overdue_tasks,
+        # Add to the existing context dict:
+        'is_friday': is_friday,
+        'todays_attendance': todays_attendance,
         'tasks': tasks,
     }
 
@@ -2658,3 +2667,82 @@ def reset_active_task_ajax(request, task_id):
         return JsonResponse({'status': 'success', 'message': 'Task reset to pending.'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Only active tasks can be reset.'}, status=400)
+
+
+@login_required
+def attendance_dashboard(request):
+    dubai_tz = pytz.timezone('Asia/Dubai')
+    now_dubai = timezone.now().astimezone(dubai_tz)
+    today = now_dubai.date()
+
+    user_role = getattr(request.user.profile, 'role', '') if hasattr(request.user, 'profile') else ''
+    is_admin_user = request.user.is_superuser or user_role == 'Admin'
+
+    admin_records = []
+    missing_users = []
+    selected_date = today
+
+    if is_admin_user:
+        date_str = request.GET.get('date')
+        if date_str:
+            try:
+                selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                selected_date = today
+
+        admin_records = AttendanceRecord.objects.filter(date=selected_date).order_by('-check_in_time')
+        techs = User.objects.filter(profile__role__in=['Technician', 'Supervisor', 'Admin'])
+        recorded_users = admin_records.values_list('user_id', flat=True)
+        missing_users = techs.exclude(id__in=recorded_users).exclude(is_superuser=True)
+
+    user_history = AttendanceRecord.objects.filter(user=request.user).order_by('-date')[:30]
+
+    return render(request, 'tasks/attendance.html', {
+        'user_history': user_history,
+        'is_admin_user': is_admin_user,
+        'admin_records': admin_records,
+        'missing_users': missing_users,
+        'selected_date': selected_date.strftime("%Y-%m-%d"),
+    })
+
+
+@csrf_exempt
+@login_required
+def mark_attendance_ajax(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            location = data.get('location', 'Location Access Denied/Unavailable')
+
+            dubai_tz = pytz.timezone('Asia/Dubai')
+            now = timezone.now().astimezone(dubai_tz)
+            today = now.date()
+
+            if today.weekday() == 4:
+                return JsonResponse({'status': 'error', 'message': 'Today is Friday. Attendance is not required.'})
+
+            if AttendanceRecord.objects.filter(user=request.user, date=today).exists():
+                return JsonResponse({'status': 'error', 'message': 'Attendance already marked today.'})
+
+            # EXACT 9:00 AM TARGET LINE
+            target_time = now.replace(hour=9, minute=0, second=0, microsecond=0)
+            status = 'Present'
+            delay_minutes = 0
+
+            if now > target_time:
+                status = 'Late'
+                delay = now - target_time
+                delay_minutes = int(delay.total_seconds() // 60)
+
+            AttendanceRecord.objects.create(
+                user=request.user,
+                date=today,
+                check_in_time=now,
+                status=status,
+                delay_minutes=delay_minutes,
+                location=location
+            )
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)

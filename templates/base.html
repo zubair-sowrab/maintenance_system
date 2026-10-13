@@ -85,11 +85,16 @@
                     <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">المهام</small>
                 </a>
 
+
                     {% if user.profile.role == 'Admin' %}
                         <a href="{% url 'reports' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
                             Reports
                             <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">التقارير</small>
                         </a>
+                <a href="{% url 'attendance_dashboard' %}" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
+                        Attendance
+                        <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">الحضور</small>
+                    </a>
                         <a href="/admin/" class="btn btn-light btn-sm mb-2 mb-lg-0 text-center">
                             Admin Panel
                             <small class="d-block opacity-75 fs-7" style="font-size: 0.75rem;">لوحة المسؤول</small>

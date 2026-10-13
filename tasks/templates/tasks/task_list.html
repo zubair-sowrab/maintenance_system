@@ -69,9 +69,33 @@
 
 
 
+<!-- ATTENDANCE PROMPT -->
+{% if not is_friday %}
+    {% if not todays_attendance %}
+        <div class="alert alert-danger shadow-sm border-0 d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 p-3 rounded-3">
+            <div class="mb-2 mb-md-0">
+                <h5 class="fw-bold mb-1 text-danger"><i class="bi bi-geo-alt-fill me-2"></i>Daily Attendance Required</h5>
+                <p class="mb-0 small text-dark">Please mark your attendance before 9:00 AM to avoid being marked late.</p>
+            </div>
+            <!-- DIRECT BUTTON (NO POPUPS) -->
+            <button id="btnMarkPresent" class="btn btn-danger fw-bold shadow-sm px-4 py-2" onclick="triggerAttendance(this)">
+                <i class="bi bi-fingerprint me-1"></i> Mark Present
+            </button>
+        </div>
+    {% else %}
 
-
-
+        <div class="alert {% if todays_attendance.status == 'Late' %}alert-warning{% else %}alert-success{% endif %} shadow-sm border-0 d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 p-3 rounded-3">
+            <div class="mb-2 mb-md-0">
+                <h6 class="fw-bold mb-1 text-dark">
+                    <i class="bi bi-check-circle-fill me-2"></i>Attendance Recorded: {{ todays_attendance.status }}
+                    {% if todays_attendance.status == 'Late' %}({{ todays_attendance.delay_minutes }} minutes late){% endif %}
+                </h6>
+                <p class="mb-0 small text-muted">Punched in at {{ todays_attendance.check_in_time|date:"h:i A" }}</p>
+            </div>
+            <a href="{% url 'attendance_dashboard' %}" class="btn btn-dark btn-sm fw-bold px-3">View History</a>
+        </div>
+    {% endif %}
+{% endif %}
 
 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#generalMaterialModal">
     <i class="bi bi-box-seam"></i> Add General Materials
@@ -695,6 +719,66 @@
        </form>
    </div>
 </div>
+
+
+
+
+<script>
+    function triggerAttendance(btnElement) {
+        // Prevent double clicks
+        if (btnElement.disabled) return;
+
+        // Show loading state directly on the red button
+        const originalText = btnElement.innerHTML;
+        btnElement.disabled = true;
+        btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Acquiring GPS...';
+
+        // Ask the browser for GPS coordinates
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const locStr = `https://www.google.com/maps?q=${lat},${lon}`;
+                    submitAttendance(locStr, btnElement, originalText);
+                },
+                (error) => {
+                    // Triggers if they block location access
+                    submitAttendance("User Denied GPS Access / Unavailable", btnElement, originalText);
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        } else {
+            submitAttendance("Browser does not support GPS", btnElement, originalText);
+        }
+    }
+
+    function submitAttendance(locationStr, btnElement, originalText) {
+        btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Saving...';
+
+        fetch("{% url 'mark_attendance_ajax' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ location: locationStr })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if(data.status === 'success') {
+                location.reload(); // Reloads the page to show the Green Success Box
+            } else {
+                alert(data.message);
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalText;
+            }
+        }).catch(err => {
+            alert("Network error occurred while saving attendance.");
+            btnElement.disabled = false;
+            btnElement.innerHTML = originalText;
+        });
+    }
+</script>
+
+
 
 
 
