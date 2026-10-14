@@ -847,23 +847,72 @@
         }
     }
 
-    function getLocationAndSubmit(coworkers, btnElement, originalText) {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    const locStr = `https://www.google.com/maps?q=${lat},${lon}`;
-                    executeAttendancePost(locStr, coworkers, btnElement, originalText);
-                },
-                (error) => {
-                    executeAttendancePost("User Denied GPS Access / Unavailable", coworkers, btnElement, originalText);
-                },
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-            );
-        } else {
-            executeAttendancePost("Browser does not support GPS", coworkers, btnElement, originalText);
+   function getLocationAndSubmit(coworkers, btnElement, originalText) {
+        if (!navigator.geolocation) {
+            btnElement.disabled = false;
+            btnElement.innerHTML = originalText;
+            Swal.fire({
+                icon: 'error',
+                title: 'GPS Not Supported',
+                text: 'Your browser does not support GPS location. Attendance cannot be marked.'
+            });
+            return;
         }
+
+        // Helper to handle successful coordinate capture
+        const onSuccess = (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const locStr = `https://www.google.com/maps?q=${lat},${lon}`;
+            executeAttendancePost(locStr, coworkers, btnElement, originalText);
+        };
+
+        // Helper when location is blocked or turned off
+        const onError = (error) => {
+            btnElement.disabled = false;
+            btnElement.innerHTML = originalText;
+
+            let errorMsg = 'Please turn ON your device GPS/Location and allow location access to mark attendance.';
+            if (error.code === error.PERMISSION_DENIED) {
+                errorMsg = 'You blocked location access! Please click the settings/lock icon next to the website URL at the top of your browser, set "Location" to "Allow", and try again.';
+            }
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Location Access Required!',
+                text: errorMsg,
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Try Again',
+                cancelButtonText: 'Cancel'
+            }).then((retryResult) => {
+                if (retryResult.isConfirmed) {
+                    btnElement.disabled = true;
+                    btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Acquiring GPS...';
+                    getLocationAndSubmit(coworkers, btnElement, originalText);
+                }
+            });
+        };
+
+        // 1st Attempt: High Accuracy GPS
+        navigator.geolocation.getCurrentPosition(
+            onSuccess,
+            (err) => {
+                // If the user explicitly clicked "Block/Deny", stop immediately and ask for permission
+                if (err.code === err.PERMISSION_DENIED) {
+                    onError(err);
+                } else {
+                    // If indoor satellite signal timed out, try standard network location once before failing
+                    navigator.geolocation.getCurrentPosition(
+                        onSuccess,
+                        onError,
+                        { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
+                    );
+                }
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
     }
 
     function executeAttendancePost(locationStr, coworkers, btnElement, originalText) {

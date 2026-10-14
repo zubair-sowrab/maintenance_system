@@ -2721,15 +2721,21 @@ def attendance_dashboard(request):
         'selected_date': selected_date.strftime("%Y-%m-%d"),
     })
 
-
 @csrf_exempt
 @login_required
 def mark_attendance_ajax(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            location = data.get('location', 'Location Access Denied/Unavailable')
-            coworker_ids = data.get('coworkers', [])  # NEW: Get the list of coworkers
+            location = str(data.get('location') or '').strip()
+            coworker_ids = data.get('coworkers', [])
+
+            # STRICT SERVER CHECK: Block attendance if GPS coordinates were not granted
+            if not location.startswith('https://www.google.com/maps?q='):
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Location access is required! Please allow GPS permission in your browser and turn on device Location to mark attendance.'
+                }, status=400)
 
             dubai_tz = pytz.timezone('Asia/Dubai')
             now = timezone.now().astimezone(dubai_tz)
@@ -2766,7 +2772,6 @@ def mark_attendance_ajax(request):
                 for cw_id in coworker_ids:
                     try:
                         cw_user = User.objects.get(id=cw_id)
-                        # Prevent duplicate check-ins for coworkers
                         if not AttendanceRecord.objects.filter(user=cw_user, date=today).exists():
                             AttendanceRecord.objects.create(
                                 user=cw_user,
@@ -2777,7 +2782,7 @@ def mark_attendance_ajax(request):
                                 location=location
                             )
                     except User.DoesNotExist:
-                        continue  # Safely skip invalid IDs
+                        continue
 
             return JsonResponse({'status': 'success'})
         except Exception as e:
