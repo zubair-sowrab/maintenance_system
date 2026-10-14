@@ -165,7 +165,10 @@ def task_list(request):
     today = now_dubai.date()
     is_friday = (today.weekday() == 4)
     todays_attendance = AttendanceRecord.objects.filter(user=request.user, date=today).first()
+    # Fetch all users except the currently logged-in user
+    all_technicians = User.objects.filter(is_active=True).exclude(id=request.user.id).order_by('username')
     context = {
+        'all_technicians': all_technicians,
         'project_types': project_types,
         'pending_tasks': pending_tasks,
         'active_tasks': active_tasks,
@@ -502,13 +505,26 @@ def dashboard(request):
     completed_tasks = tasks.filter(status='Completed').distinct().order_by('-completed_at')  # Newest completions first
     overdue_tasks = tasks.filter(status='Overdue').distinct().order_by('deadline')  # Closest to deadline first
 
+    # 1. ADD THESE ATTENDANCE LINES TO dashboard(request):
+    dubai_tz = pytz.timezone('Asia/Dubai')
+    now_dubai = timezone.now().astimezone(dubai_tz)
+    today = now_dubai.date()
+    is_friday = (today.weekday() == 4)
+    todays_attendance = AttendanceRecord.objects.filter(user=request.user, date=today).first()
+
+    # Fetch all users except the currently logged-in user
+
+    all_technicians = User.objects.filter(is_active=True).exclude(id=request.user.id).order_by('username')
     context = {
+        'all_technicians': all_technicians,
         'project_types': project_types,
         'pending_tasks': pending_tasks,
         'active_tasks': active_tasks,
         'completed_tasks': completed_tasks,
         'overdue_tasks': overdue_tasks,
-        'tasks': tasks
+        'tasks': tasks,
+        'is_friday': is_friday,  # <-- 2. ADD THIS
+        'todays_attendance': todays_attendance,  # <-- 3. ADD THIS
     }
 
     return render(request, 'tasks/task_list.html', context)
@@ -2713,6 +2729,7 @@ def mark_attendance_ajax(request):
         try:
             data = json.loads(request.body)
             location = data.get('location', 'Location Access Denied/Unavailable')
+            coworker_ids = data.get('coworkers', [])  # NEW: Get the list of coworkers
 
             dubai_tz = pytz.timezone('Asia/Dubai')
             now = timezone.now().astimezone(dubai_tz)
@@ -2734,6 +2751,7 @@ def mark_attendance_ajax(request):
                 delay = now - target_time
                 delay_minutes = int(delay.total_seconds() // 60)
 
+            # 1. Mark attendance for the primary user
             AttendanceRecord.objects.create(
                 user=request.user,
                 date=today,
@@ -2742,6 +2760,25 @@ def mark_attendance_ajax(request):
                 delay_minutes=delay_minutes,
                 location=location
             )
+
+            # 2. Mark attendance for all selected coworkers
+            if coworker_ids:
+                for cw_id in coworker_ids:
+                    try:
+                        cw_user = User.objects.get(id=cw_id)
+                        # Prevent duplicate check-ins for coworkers
+                        if not AttendanceRecord.objects.filter(user=cw_user, date=today).exists():
+                            AttendanceRecord.objects.create(
+                                user=cw_user,
+                                date=today,
+                                check_in_time=now,
+                                status=status,
+                                delay_minutes=delay_minutes,
+                                location=location
+                            )
+                    except User.DoesNotExist:
+                        continue  # Safely skip invalid IDs
+
             return JsonResponse({'status': 'success'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
