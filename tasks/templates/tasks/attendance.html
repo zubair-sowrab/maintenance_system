@@ -1,49 +1,130 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3 mt-2">
-    <h4 class="fw-bold"><i class="bi bi-person-badge text-primary me-2"></i> Attendance Dashboard</h4>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 mt-2 gap-2">
+    <h4 class="fw-bold mb-0">
+        <i class="bi bi-person-badge text-primary me-2"></i> Attendance Dashboard
+    </h4>
+
+    {% if is_admin_user %}
+    <button type="button" id="btnExportAttendanceCSV" class="btn btn-info btn-sm fw-bold text-white shadow-sm px-3">
+        <i class="bi bi-download me-1"></i> Export CSV
+    </button>
+    {% endif %}
+</div>
+
+<!-- FILTER BAR -->
+<div class="card shadow-sm border-0 mb-4 bg-light">
+    <div class="card-body p-3">
+        <h6 class="fw-bold text-secondary mb-3">
+            <i class="bi bi-funnel-fill text-dark me-1"></i> Filters (التصفية)
+        </h6>
+        <form method="GET">
+            <div class="row g-2 align-items-end">
+                <div class="col-6 col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Date From</label>
+                    <input type="text" name="date_from" class="form-control form-control-sm flatpickr-date bg-white" placeholder="YYYY-MM-DD" value="{{ date_from }}">
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Date To</label>
+                    <input type="text" name="date_to" class="form-control form-control-sm flatpickr-date bg-white" placeholder="YYYY-MM-DD" value="{{ date_to }}">
+                </div>
+
+                {% if is_admin_user %}
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold text-muted mb-1">Technician</label>
+                    <select name="user" class="form-select form-select-sm bg-white">
+                        <option value="">All Technicians</option>
+                        {% for tech in all_technicians %}
+                            <option value="{{ tech.username }}" {% if selected_user == tech.username %}selected{% endif %}>
+                                {{ tech.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold text-muted mb-1">Status</label>
+                    <select name="status" class="form-select form-select-sm bg-white">
+                        <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
+                        <option value="present" {% if selected_status == 'present' %}selected{% endif %}>Present (All Check-ins)</option>
+                        <option value="on_time" {% if selected_status == 'on_time' %}selected{% endif %}>On Time</option>
+                        <option value="late" {% if selected_status == 'late' %}selected{% endif %}>Late</option>
+                        <option value="absent" {% if selected_status == 'absent' %}selected{% endif %}>Absent</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-2 d-flex gap-1 mt-2 mt-md-0">
+                    <button type="submit" class="btn btn-dark btn-sm w-100 fw-bold">
+                        <i class="bi bi-search me-1"></i> Filter
+                    </button>
+                    <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm w-100 fw-bold">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
 
 {% if is_admin_user %}
 <!-- ADMIN VIEW: Sees Everyone -->
 <div class="card shadow-sm mb-4 border-0">
-    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold"><i class="bi bi-shield-lock me-2"></i>Team Attendance ({{ selected_date }})</h6>
-        <form method="GET" class="d-flex gap-2">
-            <input type="date" name="date" class="form-control form-control-sm" value="{{ selected_date }}">
-            <button type="submit" class="btn btn-primary btn-sm fw-bold">Load</button>
-        </form>
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-2 px-3">
+        <h6 class="mb-0 fw-bold">
+            <i class="bi bi-shield-lock me-2"></i>Team Attendance ({{ date_from }}{% if date_to and date_to != date_from %} to {{ date_to }}{% endif %})
+        </h6>
+        <span class="badge bg-secondary">{{ admin_rows|length }} Record(s)</span>
     </div>
-    <div class="card-body p-0">
+    <div class="card-body p-0 table-responsive">
         <table class="table table-hover align-middle text-center mb-0" style="font-size: 0.9rem;">
             <thead class="table-light">
-                <tr><th>User</th><th>Time</th><th>Status</th><th>Location</th></tr>
+                <tr>
+                    <th>Date</th>
+                    <th>User</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Location</th>
+                </tr>
             </thead>
             <tbody>
-                {% for rec in admin_records %}
-                <tr>
-                    <td class="fw-bold text-dark">{{ rec.user.username }}</td>
-                    <td>{{ rec.check_in_time|date:"h:i A" }}</td>
+                {% for row in admin_rows %}
+                <tr class="{% if row.status == 'Absent' %}bg-light{% endif %}">
+                    <td class="fw-semibold text-secondary">{{ row.date|date:"Y-m-d" }}</td>
+                    <td class="fw-bold {% if row.status == 'Absent' %}text-secondary{% else %}text-dark{% endif %}">{{ row.username }}</td>
                     <td>
-                        {% if rec.status == 'Late' %}<span class="badge bg-danger">Late ({{ rec.delay_minutes }}m)</span>
-                        {% elif rec.status == 'Present' %}<span class="badge bg-success">On Time</span>
+                        {% if row.check_in_time %}
+                            {{ row.check_in_time|date:"h:i A" }}
+                        {% else %}
+                            <span class="text-muted">--:--</span>
                         {% endif %}
                     </td>
                     <td>
-                        {% if 'http' in rec.location %}
-                            <a href="{{ rec.location }}" target="_blank" class="btn btn-sm btn-outline-danger py-0 fw-bold"><i class="bi bi-map"></i> View Map</a>
+                        {% if row.status == 'Late' %}
+                            <span class="badge bg-danger">Late ({{ row.delay_minutes }}m)</span>
+                        {% elif row.status == 'Present' %}
+                            <span class="badge bg-success">On Time</span>
                         {% else %}
-                            <span class="text-muted small">{{ rec.location }}</span>
+                            <span class="badge bg-secondary">Absent / Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if 'http' in row.location %}
+                            <a href="{{ row.location }}" target="_blank" class="btn btn-sm btn-outline-danger py-0 fw-bold">
+                                <i class="bi bi-map"></i> View Map
+                            </a>
+                        {% else %}
+                            <span class="text-muted small">{{ row.location }}</span>
                         {% endif %}
                     </td>
                 </tr>
-                {% endfor %}
-                {% for missing in missing_users %}
-                <tr class="bg-light">
-                    <td class="fw-bold text-secondary">{{ missing.username }}</td>
-                    <td class="text-muted">--:--</td>
-                    <td><span class="badge bg-secondary">Absent / Pending</span></td>
-                    <td class="text-muted">No Data</td>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-muted py-4">No attendance records match your filters.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -57,25 +138,90 @@
     <div class="card-header bg-light">
         <h6 class="mb-0 fw-bold text-secondary">My Personal Attendance History</h6>
     </div>
-    <div class="card-body p-0">
+    <div class="card-body p-0 table-responsive">
         <table class="table table-striped align-middle text-center mb-0" style="font-size: 0.9rem;">
-            <thead class="table-light"><tr><th>Date</th><th>Check-in Time</th><th>Status</th></tr></thead>
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Check-in Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
             <tbody>
                 {% for rec in user_history %}
                 <tr>
                     <td class="fw-bold text-dark">{{ rec.date|date:"Y-m-d" }}</td>
                     <td>{{ rec.check_in_time|date:"h:i A" }}</td>
                     <td>
-                        {% if rec.status == 'Late' %}<span class="badge bg-danger">Late ({{ rec.delay_minutes }}m)</span>
-                        {% elif rec.status == 'Present' %}<span class="badge bg-success">On Time</span>
+                        {% if rec.status == 'Late' %}
+                            <span class="badge bg-danger">Late ({{ rec.delay_minutes }}m)</span>
+                        {% elif rec.status == 'Present' %}
+                            <span class="badge bg-success">On Time</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Absent</span>
                         {% endif %}
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="3" class="text-muted py-4">No personal attendance records found.</td></tr>
+                <tr>
+                    <td colspan="3" class="text-muted py-4">No personal attendance records found.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    flatpickr(".flatpickr-date", {
+        altInput: true,
+        altFormat: "d/m/Y",
+        dateFormat: "Y-m-d",
+        allowInput: true,
+        disableMobile: "true"
+    });
+
+    const exportBtn = document.getElementById("btnExportAttendanceCSV");
+    if (exportBtn) {
+        exportBtn.addEventListener("click", function() {
+            const headers = ["Date", "Technician", "Check-in Time", "Status", "Delay (Minutes)", "Location"];
+            const csvRows = [headers.map(h => `"${h}"`).join(",")];
+
+            const cleanStr = (val) => val ? String(val).replace(/"/g, '""').replace(/[\t\n\r]/g, " ").trim() : "";
+
+            {% for row in admin_rows %}
+            (function() {
+                let statusText = "{% if row.status == 'Present' %}On Time{% elif row.status == 'Late' %}Late ({{ row.delay_minutes }}m){% else %}Absent{% endif %}";
+                let timeText = "{% if row.check_in_time %}{{ row.check_in_time|date:'h:i A' }}{% else %}--:--{% endif %}";
+                let rowData = [
+                    "{{ row.date|date:'Y-m-d' }}",
+                    cleanStr("{{ row.username|escapejs }}"),
+                    timeText,
+                    statusText,
+                    "{{ row.delay_minutes|default:0 }}",
+                    cleanStr("{{ row.location|escapejs }}")
+                ];
+                csvRows.push(rowData.map(cell => `"${cell}"`).join(","));
+            })();
+            {% endfor %}
+
+            if (csvRows.length <= 1) {
+                alert("No attendance records available to export.");
+                return;
+            }
+
+            const csvString = "\uFEFF" + csvRows.join("\n");
+            const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", "attendance_{{ date_from }}_to_{{ date_to }}.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+});
+</script>
 {% endblock %}

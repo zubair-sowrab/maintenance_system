@@ -2684,7 +2684,6 @@ def reset_active_task_ajax(request, task_id):
     else:
         return JsonResponse({'status': 'error', 'message': 'Only active tasks can be reset.'}, status=400)
 
-
 @login_required
 def attendance_dashboard(request):
     dubai_tz = pytz.timezone('Asia/Dubai')
@@ -2694,32 +2693,135 @@ def attendance_dashboard(request):
     user_role = getattr(request.user.profile, 'role', '') if hasattr(request.user, 'profile') else ''
     is_admin_user = request.user.is_superuser or user_role == 'Admin'
 
-    admin_records = []
-    missing_users = []
-    selected_date = today
+    # 1. Capture Filter Parameters (Default to today if no date range is submitted)
+    date_from_str = request.GET.get('date_from', '').strip()
+    date_to_str = request.GET.get('date_to', '').strip()
+    tech_query = request.GET.get('user', '').strip()
+    status_filter = request.GET.get('status', '').strip().lower()
+
+    if not date_from_str and not date_to_str:
+        start_date = today
+        end_date = today
+        date_from_str = today.strftime("%Y-%m-%d")
+        date_to_str = today.strftime("%Y-%m-%d")
+    else:
+        try:
+            start_date = datetime.strptime(date_from_str, "%Y-%m-%d").date() if date_from_str else today
+        except ValueError:
+            start_date = today
+            date_from_str = today.strftime("%Y-%m-%d")
+
+        try:
+            end_date = datetime.strptime(date_to_str, "%Y-%m-%d").date() if date_to_str else start_date
+        except ValueError:
+            end_date = start_date
+            date_to_str = end_date.strftime("%Y-%m-%d")
+
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+        date_from_str = start_date.strftime("%Y-%m-%d")
+        date_to_str = end_date.strftime("%Y-%m-%d")
+
+    all_technicians = User.objects.filter(
+        profile__role__in=['Technician', 'Supervisor', 'Admin'],
+        is_active=True
+    ).exclude(username='approval_admin').order_by('username')
+
+    admin_rows = []
 
     if is_admin_user:
-        date_str = request.GET.get('date')
-        if date_str:
-            try:
-                selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-            except ValueError:
-                selected_date = today
+        # Fetch recorded check-ins within the date range
+        records_qs = AttendanceRecord.objects.filter(
+            date__gte=start_date,
+            date__lte=end_date
+        ).select_related('user').order_by('-date', '-check_in_time')
 
-        admin_records = AttendanceRecord.objects.filter(date=selected_date).order_by('-check_in_time')
-        techs = User.objects.filter(profile__role__in=['Technician', 'Supervisor', 'Admin'])
-        recorded_users = admin_records.values_list('user_id', flat=True)
-        missing_users = techs.exclude(id__in=recorded_users).exclude(is_superuser=True)
+        if tech_query:
+            records_qs = records_qs.filter(user__username__icontains=tech_query)
 
-    user_history = AttendanceRecord.objects.filter(user=request.user).order_by('-date')[:30]
+        # Group existing records by date
+        records_by_date = {}
+        recorded_user_ids_by_date = {}
+        for rec in records_qs:
+            records_by_date.setdefault(rec.date, []).append(rec)
+            recorded_user_ids_by_date.setdefault(rec.date, set()).add(rec.user_id)
+
+        # Filter the staff queryset for absent calculation
+        staff_qs = all_technicians.exclude(is_superuser=True)
+        if tech_query:
+            staff_qs = staff_qs.filter(username__icontains=tech_query)
+        staff_list = list(staff_qs)
+
+        # Cap day-by-day iteration to 90 days max for performance safety
+        max_days = min((end_date - start_date).days, 90)
+
+        for i in range(max_days + 1):
+            curr_date = end_date - timedelta(days=i)
+
+            # A. Add matching check-in records for this date
+            for rec in records_by_date.get(curr_date, []):
+                if status_filter == 'on_time' and rec.status != 'Present':
+                    continue
+                if status_filter == 'late' and rec.status != 'Late':
+                    continue
+                if status_filter == 'present' and rec.status not in ['Present', 'Late']:
+                    continue
+                if status_filter == 'absent' and rec.status != 'Absent':
+                    continue
+
+                admin_rows.append({
+                    'date': rec.date,
+                    'username': rec.user.username,
+                    'check_in_time': rec.check_in_time,
+                    'status': rec.status,
+                    'delay_minutes': rec.delay_minutes,
+                    'location': rec.location or 'No Data',
+                })
+
+            # B. Generate Absent rows for non-Fridays up to today
+            if curr_date <= today and curr_date.weekday() != 4:
+                if status_filter in ['', 'absent']:
+                    present_ids = recorded_user_ids_by_date.get(curr_date, set())
+                    for staff in staff_list:
+                        if staff.id not in present_ids:
+                            admin_rows.append({
+                                'date': curr_date,
+                                'username': staff.username,
+                                'check_in_time': None,
+                                'status': 'Absent',
+                                'delay_minutes': 0,
+                                'location': 'No Data',
+                            })
+
+    # Filter Personal Attendance History as well
+    user_history = AttendanceRecord.objects.filter(user=request.user).order_by('-date')
+    if request.GET.get('date_from'):
+        user_history = user_history.filter(date__gte=start_date)
+    if request.GET.get('date_to'):
+        user_history = user_history.filter(date__lte=end_date)
+    if status_filter == 'on_time':
+        user_history = user_history.filter(status='Present')
+    elif status_filter == 'late':
+        user_history = user_history.filter(status='Late')
+    elif status_filter == 'present':
+        user_history = user_history.filter(status__in=['Present', 'Late'])
+    elif status_filter == 'absent':
+        user_history = user_history.filter(status='Absent')
+
+    user_history = user_history[:60]
 
     return render(request, 'tasks/attendance.html', {
         'user_history': user_history,
         'is_admin_user': is_admin_user,
-        'admin_records': admin_records,
-        'missing_users': missing_users,
-        'selected_date': selected_date.strftime("%Y-%m-%d"),
+        'admin_rows': admin_rows,
+        'all_technicians': all_technicians,
+        'date_from': date_from_str,
+        'date_to': date_to_str,
+        'selected_user': tech_query,
+        'selected_status': status_filter,
     })
+
+
 
 @csrf_exempt
 @login_required
