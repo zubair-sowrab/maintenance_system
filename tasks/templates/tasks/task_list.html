@@ -85,10 +85,10 @@
                 <h5 class="fw-bold mb-1 text-dark">
                     <i class="bi bi-check-circle-fill text-success me-2"></i>Attendance Marked Today
                 </h5>
-                <p class="mb-0 small text-dark">
+               <p class="mb-0 small text-dark">
                     Punched in at <strong>{{ todays_attendance.check_in_time|date:"h:i A" }}</strong>
                     {% if todays_attendance.status == 'Late' %}
-                        <span class="text-danger fw-bold">(Late by {{ todays_attendance.delay_minutes }} minutes)</span>
+                        <span class="text-danger fw-bold">(Late by {{ todays_attendance.formatted_delay }})</span>
                     {% else %}
                         <span class="text-success fw-bold">(On time)</span>
                     {% endif %}

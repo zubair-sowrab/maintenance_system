@@ -791,3 +791,16 @@ class AttendanceRecord(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.date} - {self.status}"
+
+    @property
+    def formatted_delay(self):
+        total_mins = int(self.delay_minutes or 0)
+        if total_mins <= 0:
+            return "0 mins"
+        hours, mins = divmod(total_mins, 60)
+        parts = []
+        if hours > 0:
+            parts.append(f"{hours} hr{'s' if hours != 1 else ''}")
+        if mins > 0:
+            parts.append(f"{mins} min{'s' if mins != 1 else ''}")
+        return " ".join(parts)

@@ -103,9 +103,9 @@
                             <span class="text-muted">--:--</span>
                         {% endif %}
                     </td>
-                    <td>
+                   <td>
                         {% if row.status == 'Late' %}
-                            <span class="badge bg-danger">Late ({{ row.delay_minutes }}m)</span>
+                            <span class="badge bg-danger">Late ({{ row.formatted_delay }})</span>
                         {% elif row.status == 'Present' %}
                             <span class="badge bg-success">On Time</span>
                         {% else %}
@@ -152,9 +152,9 @@
                 <tr>
                     <td class="fw-bold text-dark">{{ rec.date|date:"Y-m-d" }}</td>
                     <td>{{ rec.check_in_time|date:"h:i A" }}</td>
-                    <td>
+                   <td>
                         {% if rec.status == 'Late' %}
-                            <span class="badge bg-danger">Late ({{ rec.delay_minutes }}m)</span>
+                            <span class="badge bg-danger">Late ({{ rec.formatted_delay }})</span>
                         {% elif rec.status == 'Present' %}
                             <span class="badge bg-success">On Time</span>
                         {% else %}
@@ -186,21 +186,21 @@ document.addEventListener("DOMContentLoaded", function() {
     const exportBtn = document.getElementById("btnExportAttendanceCSV");
     if (exportBtn) {
         exportBtn.addEventListener("click", function() {
-            const headers = ["Date", "Technician", "Check-in Time", "Status", "Delay (Minutes)", "Location"];
+         const headers = ["Date", "Technician", "Check-in Time", "Status", "Delay", "Location"];
             const csvRows = [headers.map(h => `"${h}"`).join(",")];
 
             const cleanStr = (val) => val ? String(val).replace(/"/g, '""').replace(/[\t\n\r]/g, " ").trim() : "";
 
             {% for row in admin_rows %}
             (function() {
-                let statusText = "{% if row.status == 'Present' %}On Time{% elif row.status == 'Late' %}Late ({{ row.delay_minutes }}m){% else %}Absent{% endif %}";
+                let statusText = "{% if row.status == 'Present' %}On Time{% elif row.status == 'Late' %}Late ({{ row.formatted_delay }}){% else %}Absent{% endif %}";
                 let timeText = "{% if row.check_in_time %}{{ row.check_in_time|date:'h:i A' }}{% else %}--:--{% endif %}";
                 let rowData = [
                     "{{ row.date|date:'Y-m-d' }}",
                     cleanStr("{{ row.username|escapejs }}"),
                     timeText,
                     statusText,
-                    "{{ row.delay_minutes|default:0 }}",
+                    "{% if row.status == 'Late' %}{{ row.formatted_delay }}{% else %}-{% endif %}",
                     cleanStr("{{ row.location|escapejs }}")
                 ];
                 csvRows.push(rowData.map(cell => `"${cell}"`).join(","));

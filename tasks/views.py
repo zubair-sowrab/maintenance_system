@@ -2683,7 +2683,6 @@ def reset_active_task_ajax(request, task_id):
         return JsonResponse({'status': 'success', 'message': 'Task reset to pending.'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Only active tasks can be reset.'}, status=400)
-
 @login_required
 def attendance_dashboard(request):
     dubai_tz = pytz.timezone('Asia/Dubai')
@@ -2775,6 +2774,7 @@ def attendance_dashboard(request):
                     'check_in_time': rec.check_in_time,
                     'status': rec.status,
                     'delay_minutes': rec.delay_minutes,
+                    'formatted_delay': rec.formatted_delay,  # <-- THIS POPULATES THE ADMIN BADGE
                     'location': rec.location or 'No Data',
                 })
 
@@ -2790,6 +2790,7 @@ def attendance_dashboard(request):
                                 'check_in_time': None,
                                 'status': 'Absent',
                                 'delay_minutes': 0,
+                                'formatted_delay': '-',
                                 'location': 'No Data',
                             })
 
@@ -2820,8 +2821,6 @@ def attendance_dashboard(request):
         'selected_user': tech_query,
         'selected_status': status_filter,
     })
-
-
 
 @csrf_exempt
 @login_required
