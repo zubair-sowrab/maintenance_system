@@ -410,28 +410,39 @@ def end_task(request, task_id):
     task = get_object_or_404(Task, id=task_id)
 
     if request.method == 'POST':
-        # Get the budget from the modal input
+        # 1. Check and save description if provided during task completion
+        final_description = request.POST.get('final_description', '').strip()
+        if final_description:
+            task.description = safe_translate(final_description)
+
+        # Strict backend check: block ending the task if description is still empty
+        if not task.description or not str(task.description).strip():
+            messages.error(request, "You have not given any description, please enter description before ending the task.")
+            return redirect('dashboard')
+
+        # 2. Get the budget from the modal input
         final_budget = request.POST.get('final_budget')
         if final_budget:
             task.budget = final_budget
 
-            # 2. Save Image if uploaded
-            image = request.FILES.get('task_image')
-            video = request.FILES.get('task_video')
-            if image or video:
-                TaskAttachment.objects.create(
-                    task=task,
-                    image=image,
-                    video=video,
-                    uploaded_by=request.user
-                )
+        # 3. Save Image/Video if uploaded
+        image = request.FILES.get('task_image')
+        video = request.FILES.get('task_video')
+        if image or video:
+            TaskAttachment.objects.create(
+                task=task,
+                image=image,
+                video=video,
+                uploaded_by=request.user
+            )
 
-    task.status = 'Completed'
-    task.completed_at = timezone.now()
-    task.save()
+        task.status = 'Completed'
+        task.completed_at = timezone.now()
+        task.save()
 
-    # Trigger the Free Google Sheet Sync webhook routine stream asynchronously
-    send_task_to_google_sheet(task)
+        # Trigger the Free Google Sheet Sync webhook routine
+        send_task_to_google_sheet(task)
+
     return redirect('dashboard')
 
 
