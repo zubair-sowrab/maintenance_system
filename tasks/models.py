@@ -52,7 +52,11 @@ class Task(models.Model):
       default=False,
       help_text="Flag to explicitly pin this task to the Overtime board"
   )
-
+  # --- ADD THIS NEW FIELD ---
+  is_paid = models.BooleanField(
+      default=False,
+      help_text="Flag indicating if the overtime for this task has been paid out."
+  )
   created_by = models.ForeignKey(
       User,
       on_delete=models.SET_NULL,

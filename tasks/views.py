@@ -2900,3 +2900,24 @@ def mark_attendance_ajax(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+
+
+@csrf_exempt
+@login_required
+def toggle_paid_status_ajax(request, task_id):
+    if request.method == 'POST' and is_admin_strict(request.user):
+        try:
+            task = get_object_or_404(Task, id=task_id)
+
+            # Read the target state sent from the frontend
+            data = json.loads(request.body)
+            target_status = data.get('is_paid', False)
+
+            task.is_paid = target_status
+            task.save()
+
+            return JsonResponse({'status': 'success', 'is_paid': task.is_paid})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)

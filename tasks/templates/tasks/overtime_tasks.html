@@ -158,6 +158,15 @@
                                  placeholder="0.00">
                       </div>
                      <div class="w-100 mt-2 d-flex gap-2">
+                         {% if task.is_paid %}
+                              <button type="button" id="paid-btn-{{ task.id }}" class="btn btn-success btn-sm flex-grow-1 fw-bold" onclick="togglePaidStatus({{ task.id }}, false, this)">
+                                  <i class="bi bi-check-circle-fill me-1"></i> Paid
+                              </button>
+                          {% else %}
+                              <button type="button" id="paid-btn-{{ task.id }}" class="btn btn-outline-secondary btn-sm flex-grow-1 fw-bold" onclick="togglePaidStatus({{ task.id }}, true, this)">
+                                  <i class="bi bi-dash-circle me-1"></i> Unpaid
+                              </button>
+                          {% endif %}
                           <!-- NEW REMOVE BUTTON -->
                           <button type="button" class="btn btn-outline-danger btn-sm flex-grow-1 fw-bold" onclick="removeOvertimeTask({{ task.id }}, this)">
                               <i class="bi bi-trash-fill me-1"></i> Remove
@@ -389,4 +398,50 @@ window.printSingleOvertime = function(taskId) {
 
 
 </script>
+
+
+<script>
+    window.togglePaidStatus = function(taskId, targetStatus, btnElement) {
+        const originalHTML = btnElement.innerHTML;
+        const originalClass = btnElement.className;
+        btnElement.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        btnElement.disabled = true;
+
+        fetch(`/overtime/ajax/toggle-paid/${taskId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ is_paid: targetStatus })
+        })
+        .then(r => r.json())
+        .then(data => {
+            btnElement.disabled = false;
+
+            if (data.status === 'success') {
+                if (data.is_paid) {
+                    btnElement.className = 'btn btn-success btn-sm flex-grow-1 fw-bold';
+                    btnElement.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Paid';
+                    btnElement.setAttribute('onclick', `togglePaidStatus(${taskId}, false, this)`);
+                } else {
+                    btnElement.className = 'btn btn-outline-secondary btn-sm flex-grow-1 fw-bold';
+                    btnElement.innerHTML = '<i class="bi bi-dash-circle me-1"></i> Unpaid';
+                    btnElement.setAttribute('onclick', `togglePaidStatus(${taskId}, true, this)`);
+                }
+            } else {
+                btnElement.className = originalClass;
+                btnElement.innerHTML = originalHTML;
+                alert("Error updating status: " + data.message);
+            }
+        }).catch(err => {
+            btnElement.className = originalClass;
+            btnElement.innerHTML = originalHTML;
+            btnElement.disabled = false;
+            console.error("Network Error: ", err);
+            alert("A network error occurred.");
+        });
+    };
+</script>
+
 {% endblock %}

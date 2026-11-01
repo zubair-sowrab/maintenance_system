@@ -145,4 +145,6 @@ path('api/blacklist/remove/<int:item_id>/', views.remove_blacklist_ajax, name='r
 path('tasks/reset-active-ajax/<int:task_id>/', views.reset_active_task_ajax, name='reset_active_task_ajax'),
 path('attendance/', views.attendance_dashboard, name='attendance_dashboard'),
     path('attendance/mark/', views.mark_attendance_ajax, name='mark_attendance_ajax'),
+
+path('overtime/ajax/toggle-paid/<int:task_id>/', views.toggle_paid_status_ajax, name='toggle_paid_status_ajax'),
 ]
