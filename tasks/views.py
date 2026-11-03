@@ -113,11 +113,13 @@ def task_list(request):
         # UPDATED: Admin/Supervisor logic
         if user.is_superuser or user.is_staff or user_role in ['Admin'] or \
                 user.groups.filter(name__in=['Admin']).exists():
-            tasks = Task.objects.all()
+            tasks = Task.objects.filter(is_deleted=False)  # <--- ADD FILTER
+
         else:
+            tasks = Task.objects.filter(assigned_technicians=user, is_deleted=False)  # <--- ADD FILTER
             # UPDATED: Many-to-Many filter
             # Django automatically checks if 'user' is in the 'assigned_technicians' set
-            tasks = Task.objects.filter(assigned_technicians=user)
+
 
         check_and_update_overdue_tasks(tasks)
 
@@ -468,10 +470,12 @@ def dashboard(request):
             user.is_staff or \
             user_role in ["Admin"] or \
             user.groups.filter(name__in=["Admin"]).exists():
-        tasks = base_queryset.all()
+        tasks = Task.objects.filter(is_deleted=False)  # <--- ADD FILTER
+
     else:
+        tasks = Task.objects.filter(assigned_technicians=user, is_deleted=False)  # <--- ADD FILTER
         # Filter tasks where the user is one of the assigned technicians
-        tasks = base_queryset.filter(assigned_technicians=user)
+
 
     check_and_update_overdue_tasks(tasks)
 
@@ -673,7 +677,8 @@ def reports(request):
 
     all_units = unit_queryset
 
-    base_tasks = Task.objects.all()
+
+    base_tasks = Task.objects.filter(is_deleted=False)  # <--- ADD FILTER
 
     # Get staff list safely
     all_technicians = User.objects.filter(groups__name='Technician') | User.objects.filter(
@@ -863,8 +868,7 @@ def all_completed_tasks(request):
         user_role = getattr(user.profile, "role", None)
 
     # 2. Enforce Role Visibility Restrictions
-    base_queryset = Task.objects.filter(status="Completed").prefetch_related("assigned_technicians")
-
+    base_queryset = Task.objects.filter(status="Completed", is_deleted=False).prefetch_related("assigned_technicians")
     if (
             user.is_superuser
             or user.is_staff
@@ -955,7 +959,8 @@ def all_pending_tasks(request):
     # Added distinct() because filtering by ManyToMany can return duplicates
     tasks = Task.objects.filter(
         Q(status__in=['Pending', 'Pending(قيد الانتظار)']) |
-        (Q(status='Overdue') & Q(started_at__isnull=True))
+        (Q(status='Overdue') & Q(started_at__isnull=True)),
+        is_deleted=False
     ).distinct()
 
     # Gather URL Query Parameters
@@ -1016,7 +1021,8 @@ def all_pending_tasks(request):
 def all_active_tasks(request):
     tasks = Task.objects.filter(
         Q(status__in=['In Progress', 'قيد التنفيذ']) |
-        (Q(status='Overdue') & Q(started_at__isnull=False))
+        (Q(status='Overdue') & Q(started_at__isnull=False)),
+        is_deleted=False
     ).distinct()
 
     job_id = request.GET.get('job_id')
@@ -1068,8 +1074,7 @@ def all_active_tasks(request):
     )
 
 def all_overdue_tasks(request):
-    tasks = Task.objects.filter(status='Overdue').distinct()
-
+    tasks = Task.objects.filter(status='Overdue', is_deleted=False).distinct()
     job_id = request.GET.get('job_id')
     user = request.GET.get('user')
     project_type = request.GET.get('project_type')
@@ -2080,25 +2085,69 @@ def update_status_ajax(request, task_id):
 @login_required
 @require_POST
 def delete_task_ajax(request, task_id):
-
-    task = get_object_or_404(Task,id=task_id)
+    task = get_object_or_404(Task, id=task_id)
 
     if request.user.profile.role != "Admin":
+        return JsonResponse({"status": "error"}, status=403)
 
-        return JsonResponse({
+    # SOFT DELETE: Hide it from normal views instead of wiping it
+    task.is_deleted = True
+    task.save()
 
-            "status":"error"
+    return JsonResponse({"status": "success"})
 
-        },status=403)
 
-    task.delete()
+# --- ADD THESE TWO NEW FUNCTIONS FOR THE DELETED TASKS BIN ---
 
-    return JsonResponse({
+@login_required
+def deleted_tasks_ajax(request):
+    if request.user.profile.role != "Admin":
+        return JsonResponse({"status": "error"}, status=403)
 
-        "status":"success"
+    # Fetch all soft-deleted tasks, latest first
+    tasks = Task.objects.filter(is_deleted=True).order_by('-created_at')
 
-    })
+    task_list = []
+    for t in tasks:
+        task_list.append({
+            'id': t.id,
+            'job_id': t.job_id,
+            'title': t.title,
+            'project_type': t.project_type,
+            'location': str(t.location),
+            'date': t.created_at.strftime('%Y-%m-%d %H:%M') if t.created_at else '-'
+        })
 
+    return JsonResponse({'status': 'success', 'tasks': task_list})
+
+
+@login_required
+@require_POST
+def manage_deleted_task_ajax(request, task_id):
+    if request.user.profile.role != "Admin":
+        return JsonResponse({"status": "error"}, status=403)
+
+    task = get_object_or_404(Task, id=task_id, is_deleted=True)
+
+    try:
+        data = json.loads(request.body)
+        action = data.get('action')
+
+        if action == 'restore':
+            task.is_deleted = False
+            task.status = 'Pending'  # Push it back to the Pending board
+            task.save()
+            return JsonResponse({"status": "success", "message": "Task restored to Pending."})
+
+        elif action == 'permanent_delete':
+            task.delete()  # HARD DELETE: Permanently wipe from database
+            return JsonResponse({"status": "success", "message": "Task permanently deleted."})
+
+        else:
+            return JsonResponse({"status": "error", "message": "Invalid action."}, status=400)
+
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 @login_required
 def overtime_technicians(request):

@@ -147,4 +147,6 @@ path('attendance/', views.attendance_dashboard, name='attendance_dashboard'),
     path('attendance/mark/', views.mark_attendance_ajax, name='mark_attendance_ajax'),
 
 path('overtime/ajax/toggle-paid/<int:task_id>/', views.toggle_paid_status_ajax, name='toggle_paid_status_ajax'),
+path('api/tasks/deleted/', views.deleted_tasks_ajax, name='deleted_tasks_ajax'),
+    path('api/tasks/deleted/manage/<int:task_id>/', views.manage_deleted_task_ajax, name='manage_deleted_task_ajax'),
 ]

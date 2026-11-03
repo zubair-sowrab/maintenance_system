@@ -57,6 +57,10 @@ class Task(models.Model):
       default=False,
       help_text="Flag indicating if the overtime for this task has been paid out."
   )
+  is_deleted = models.BooleanField(
+      default=False,
+      help_text="Soft deletion flag. If True, task is hidden in the Trash bin."
+  )
   created_by = models.ForeignKey(
       User,
       on_delete=models.SET_NULL,

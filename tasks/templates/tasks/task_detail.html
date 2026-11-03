@@ -1604,49 +1604,46 @@ if (techForm) {
     // ==========================================
 
 
-document.getElementById("deleteTaskBtn").addEventListener("click", function () {
+// ==========================================
+    // --- Delete Button Logic (Soft Delete) ---
+    // ==========================================
 
+document.getElementById("deleteTaskBtn").addEventListener("click", function () {
     Swal.fire({
         title: "Delete Task?",
-        text: "This action cannot be undone.",
+        text: "This task will be moved to the Deleted Tasks Bin.",
         icon: "warning",
         showCancelButton: true,
-        confirmButtonText: "Delete",
+        confirmButtonText: "Move to Bin",
         confirmButtonColor: "#d33"
     }).then((result) => {
-
-        if(result.isConfirmed){
-
-            fetch("{% url 'delete_task_ajax' task.id %}",{
-                method:"POST",
-                headers:{
-                    "X-CSRFToken":"{{ csrf_token }}"
+        if (result.isConfirmed) {
+            fetch("{% url 'delete_task_ajax' task.id %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}"
                 }
             })
-            .then(response=>response.json())
-            .then(data=>{
-
-                if(data.status==="success"){
-
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
                     Swal.fire({
-                        icon:"success",
-                        title:"Task Deleted"
-                    }).then(()=>{
-                        window.location="{% url 'dashboard' %}";
+                        icon: "success",
+                        title: "Moved to Bin",
+                        text: "Task successfully hidden."
+                    }).then(() => {
+                        window.location.href = "{% url 'dashboard' %}";
                     });
-
-                }else{
-
-                    Swal.fire("Error","Could not delete task","error");
-
+                } else {
+                    Swal.fire("Error", "Could not delete task", "error");
                 }
-
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire("Error", "Network error occurred", "error");
             });
-
         }
-
     });
-
 });
 
 

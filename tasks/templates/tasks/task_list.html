@@ -639,6 +639,52 @@
 </div>
 
 
+
+
+
+
+<!-- TRASH BIN BUTTON -->
+{% if user.profile.role == 'Admin' %}
+<div class="d-flex justify-content-end mb-5">
+    <button type="button" class="btn btn-outline-secondary btn-sm fw-bold shadow-sm" onclick="openDeletedTasksBin()">
+        <i class="bi bi-trash3-fill me-1 text-danger"></i> Deleted Tasks Bin
+    </button>
+</div>
+
+<!-- DELETED TASKS MODAL -->
+<div class="modal fade" id="deletedTasksModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-secondary text-white p-3">
+                <h6 class="modal-title fw-bold"><i class="bi bi-trash3-fill me-2"></i>Deleted Tasks Bin</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0 bg-light">
+                <table class="table table-hover align-middle mb-0 text-center" style="font-size: 0.85rem;">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>Job ID</th>
+                            <th class="text-start">Task Title</th>
+                            <th>Type</th>
+                            <th>Deleted On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deletedTasksTbody">
+                        <!-- Populated via AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
+
+
+
+
 <!-- ACCESS CONTROL MODAL & SCRIPTS -->
 <div class="modal fade" id="unauthorizedActionModal" tabindex="-1" aria-hidden="true">
    <div class="modal-dialog modal-dialog-centered px-3">
@@ -1268,7 +1314,90 @@ document.addEventListener('DOMContentLoaded', function () {
         createMaterialRow();
     }
 });
+
+
+
 </script>
+
+{% if user.profile.role == 'Admin' %}
+<script>
+    function openDeletedTasksBin() {
+        const tbody = document.getElementById('deletedTasksTbody');
+        tbody.innerHTML = '<tr><td colspan="5" class="py-4"><div class="spinner-border spinner-border-sm text-secondary"></div> Loading...</td></tr>';
+
+        const modal = new bootstrap.Modal(document.getElementById('deletedTasksModal'));
+        modal.show();
+
+        fetch("{% url 'deleted_tasks_ajax' %}")
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                tbody.innerHTML = '';
+                if (data.tasks.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-muted fw-bold">The recycle bin is empty.</td></tr>';
+                    return;
+                }
+
+                data.tasks.forEach(t => {
+                    tbody.innerHTML += `
+                        <tr id="del-row-${t.id}">
+                            <td class="text-muted fw-bold">${t.job_id}</td>
+                            <td class="text-start fw-bold text-dark">${t.title}<br><span class="text-muted small fw-normal"><i class="bi bi-geo-alt"></i> ${t.location}</span></td>
+                            <td><span class="badge bg-light text-dark border">${t.project_type}</span></td>
+                            <td class="text-secondary">${t.date}</td>
+                            <td>
+                                <div class="btn-group shadow-sm">
+                                    <button class="btn btn-success btn-sm fw-bold" onclick="manageDeletedTask(${t.id}, 'restore')" title="Make Pending">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                    </button>
+                                    <button class="btn btn-danger btn-sm fw-bold" onclick="manageDeletedTask(${t.id}, 'permanent_delete')" title="Delete Forever">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-danger fw-bold">Error loading tasks.</td></tr>`;
+            }
+        });
+    }
+
+    function manageDeletedTask(taskId, actionType) {
+        const actionText = actionType === 'restore' ? 'Restore to Pending?' : 'Permanently Delete? (Cannot be undone!)';
+        const confirmColor = actionType === 'restore' ? '#198754' : '#dc3545';
+
+        Swal.fire({
+            title: actionText,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: confirmColor,
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, do it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/api/tasks/deleted/manage/${taskId}/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({ action: actionType })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById(`del-row-${taskId}`).remove();
+                        Swal.fire({title: 'Success!', text: data.message, icon: 'success', timer: 1500, showConfirmButton: false});
+                        if (actionType === 'restore') { setTimeout(() => location.reload(), 1500); }
+                    } else {
+                        Swal.fire('Error', data.message, 'error');
+                    }
+                });
+            }
+        });
+    }
+</script>
+{% endif %}
+
 
 
 
