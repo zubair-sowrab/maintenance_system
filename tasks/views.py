@@ -1786,10 +1786,9 @@ def all_overtime_tasks(request):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied("Only administrators can access the Overtime System.")
 
-    # --- THE FILTER FIX ---
-    # Now looks for our new flag OR legacy tasks with >0 hours
     tasks = Task.objects.filter(
-        Q(is_overtime=True) | Q(overtime_hours__gt=0) | Q(overtime_charge__gt=0)
+        Q(is_overtime=True) | Q(overtime_hours__gt=0) | Q(overtime_charge__gt=0),
+        is_deleted=False
     ).prefetch_related(
         'assigned_technicians', 'items', 'complaint_set'
     ).distinct().order_by('-completed_at')
@@ -1802,6 +1801,7 @@ def all_overtime_tasks(request):
     project_type = request.GET.get('project_type')
     building = request.GET.get('building')
     unit = request.GET.get('unit')
+    paid_status = request.GET.get('paid_status')  # <-- NEW: Capture Payment Status
 
     # Apply String Filters
     if job_id and job_id.strip():
@@ -1815,16 +1815,20 @@ def all_overtime_tasks(request):
     if unit and unit.strip():
         tasks = tasks.filter(unit__iexact=unit.strip())
 
+    # NEW: Apply Paid / Unpaid Filter
+    if paid_status == 'paid':
+        tasks = tasks.filter(is_paid=True)
+    elif paid_status == 'unpaid':
+        tasks = tasks.filter(is_paid=False)
+
     # Date Filters
     if date_from and date_from.strip():
-        # Changed from created_at to completed_at__date
         tasks = tasks.filter(completed_at__date__gte=date_from.strip())
 
     if date_to and date_to.strip():
         try:
             parsed_to = datetime.strptime(date_to.strip(), "%Y-%m-%d")
             next_day = parsed_to + timedelta(days=1)
-            # Changed from created_at to completed_at
             tasks = tasks.filter(completed_at__lt=next_day)
         except ValueError:
             pass
