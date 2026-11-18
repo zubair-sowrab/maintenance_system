@@ -925,11 +925,7 @@ window.instantAddToOvertime = function(taskId, btnElement) {
     let hrs = btnElement.getAttribute('data-hours') || "0";
     let chg = btnElement.getAttribute('data-charge') || "0";
 
-    // THE FIX: If hours are 0, we silently send "0.01" (which equals 1 minute).
-    // This forces the database to register the overtime as > 0 and guarantees it appears on the Overtime page!
-    if (hrs === "0" || hrs === "0.0" || hrs === "0.00" || hrs === "") {
-        hrs = "0.01";
-    }
+
 
     // Trigger visual loading spinner
     btnElement.disabled = true;
